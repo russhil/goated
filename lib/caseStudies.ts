@@ -1,0 +1,292 @@
+export type CaseStudy = {
+  id: string;
+  category: 'client' | 'ai' | 'tools';
+  tags: string[];
+  status: 'live' | 'building';
+  title: string;
+  subtitle: string;
+  client: string;
+  year: string;
+  description: string;
+  stat: string;
+  problem: string;
+  built: string;
+  result: string;
+  resultStat: string;
+  mockupSvg: string;
+  image: string;
+  link?: string;
+};
+
+export const caseStudies: CaseStudy[] = [
+  {
+    id: 'azadi',
+    image: '/AZR.png',
+    category: 'tools',
+    tags: ['MUSIC', 'CATALOGUE MANAGEMENT'],
+    status: 'live',
+    title: 'Azadi Records',
+    subtitle: 'Music Catalogue System',
+    client: 'Azadi Records, Mumbai',
+    year: '2024',
+    description:
+      'We took 100+ spreadsheets across artists, royalties, splits and ISRC codes and collapsed them into one unified catalogue system. Now expanding to all labels on the roster including Seedhe Maut, with an artist-facing app in development.',
+    stat: '100+ spreadsheets → 1 system',
+    problem:
+      'Azadi Records were managing their entire catalogue — 32+ releases, multiple artists, complex royalty splits — across 6 disconnected spreadsheets. Every release meant hours of manual updates, and mistakes were inevitable.',
+    built:
+      'A centralised catalogue management system with a live overview dashboard, ISRC tracking, automated split calculations, and a licensor management module. Built in React with a Supabase backend.',
+    result:
+      'Onboarded in a single day. Expanding to every label on the Azadi roster. Artist-facing app in development.',
+    resultStat: '100+ spreadsheets. One dashboard.',
+    mockupSvg: `<svg viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="260" rx="8" fill="#F8F8F8"/>
+      <rect x="0" y="0" width="48" height="260" fill="#EEEEEE" rx="8"/>
+      <circle cx="24" cy="40" r="6" fill="#CCCCCC"/>
+      <circle cx="24" cy="60" r="6" fill="#CCCCCC"/>
+      <circle cx="24" cy="80" r="6" fill="#E8533A"/>
+      <rect x="68" y="20" width="72" height="44" rx="6" fill="white" stroke="#EEEEEE"/>
+      <text x="104" y="48" text-anchor="middle" font-size="14" font-weight="bold" fill="#0D0D0D">32</text>
+      <rect x="148" y="20" width="72" height="44" rx="6" fill="white" stroke="#EEEEEE"/>
+      <text x="184" y="48" text-anchor="middle" font-size="14" font-weight="bold" fill="#0D0D0D">10</text>
+      <rect x="228" y="20" width="72" height="44" rx="6" fill="white" stroke="#EEEEEE"/>
+      <text x="264" y="48" text-anchor="middle" font-size="14" font-weight="bold" fill="#0D0D0D">25</text>
+      <rect x="308" y="20" width="72" height="44" rx="6" fill="white" stroke="#EEEEEE"/>
+      <text x="344" y="48" text-anchor="middle" font-size="14" font-weight="bold" fill="#0D0D0D">5</text>
+      <path d="M68 120 Q120 90 180 105 Q240 120 300 95 Q340 85 380 100 L380 160 L68 160 Z" fill="#2DD4BF" opacity="0.2"/>
+      <path d="M68 120 Q120 90 180 105 Q240 120 300 95 Q340 85 380 100" stroke="#2DD4BF" stroke-width="2" fill="none"/>
+      <rect x="68" y="175" width="312" height="22" rx="4" fill="white" stroke="#EEEEEE"/>
+      <text x="78" y="190" font-size="10" font-family="monospace" fill="#3B82F6">AZR000</text>
+      <text x="140" y="190" font-size="10" fill="#999">Track Title - Artist</text>
+      <rect x="68" y="201" width="312" height="22" rx="4" fill="white" stroke="#EEEEEE"/>
+      <text x="78" y="216" font-size="10" font-family="monospace" fill="#3B82F6">AZR001</text>
+      <text x="140" y="216" font-size="10" fill="#999">Track Title - Artist</text>
+      <rect x="68" y="227" width="312" height="22" rx="4" fill="white" stroke="#EEEEEE"/>
+      <text x="78" y="242" font-size="10" font-family="monospace" fill="#3B82F6">AZR002</text>
+      <text x="140" y="242" font-size="10" fill="#999">Track Title - Artist</text>
+    </svg>`,
+  },
+  {
+    id: 'movement',
+    image: '/MBD.png',
+    category: 'client',
+    tags: ['HEALTHCARE', 'BOOKING SYSTEM'],
+    status: 'live',
+    title: 'Movement by Design',
+    subtitle: 'Clinic Booking & Patient Management',
+    client: 'Movement by Design, South Bombay',
+    link: 'https://movementbydesign.in',
+    year: '2025',
+    description:
+      'A custom booking and patient management system for a physiotherapy clinic in South Bombay. Replaces phone bookings and paper files entirely.',
+    stat: '100% bookings automated',
+    problem:
+      'A busy physiotherapy practice in South Bombay was managing all appointments over WhatsApp and phone calls. No cancellation flow, no reminders, double-bookings were common, and patient history lived in paper files.',
+    built:
+      'A custom booking system with online scheduling, automated WhatsApp reminders 24hrs before appointments, a patient history module with session notes, and an admin dashboard showing the week at a glance.',
+    result:
+      'No-shows reduced by 60%. The practice runs its full schedule without a single phone call for bookings. Patient records are now searchable and persistent.',
+    resultStat: '60% fewer no-shows.',
+    mockupSvg: `<svg viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="260" rx="8" fill="#F8F8F8"/>
+      <rect x="0" y="0" width="80" height="260" fill="#FAFAFA" rx="8"/>
+      <circle cx="20" cy="50" r="8" fill="#DDDDDD"/>
+      <rect x="34" y="46" width="36" height="8" rx="2" fill="#DDDDDD"/>
+      <circle cx="20" cy="80" r="8" fill="#DDDDDD"/>
+      <rect x="34" y="76" width="36" height="8" rx="2" fill="#DDDDDD"/>
+      <circle cx="20" cy="110" r="8" fill="#DDDDDD"/>
+      <rect x="34" y="106" width="36" height="8" rx="2" fill="#DDDDDD"/>
+      <text x="100" y="30" font-size="9" fill="#999" font-weight="500">MON</text>
+      <text x="150" y="30" font-size="9" fill="#999" font-weight="500">TUE</text>
+      <text x="200" y="30" font-size="9" fill="#999" font-weight="500">WED</text>
+      <text x="250" y="30" font-size="9" fill="#999" font-weight="500">THU</text>
+      <text x="300" y="30" font-size="9" fill="#999" font-weight="500">FRI</text>
+      <text x="350" y="30" font-size="9" fill="#999" font-weight="500">SAT</text>
+      ${Array.from({ length: 4 }, (_, row) =>
+        Array.from({ length: 6 }, (_, col) => {
+          const x = 95 + col * 50;
+          const y = 40 + row * 50;
+          const booked = (row === 0 && col === 1) || (row === 1 && col === 0) || (row === 2 && col === 3) || (row === 1 && col === 4) || (row === 3 && col === 2);
+          return `<rect x="${x}" y="${y}" width="42" height="40" rx="4" fill="${booked ? '#E8533A' : 'white'}" opacity="${booked ? '0.8' : '1'}" stroke="#EEEEEE" stroke-width="1"/>`;
+        }).join('')
+      ).join('')}
+      <rect x="310" y="6" width="80" height="22" rx="11" fill="#E8533A"/>
+      <text x="350" y="21" text-anchor="middle" font-size="9" fill="white" font-weight="500">+ New Booking</text>
+    </svg>`,
+  },
+  {
+    id: 'psy-crm',
+    image: '/PSY-CRM.png',
+    category: 'tools',
+    tags: ['CREATIVE', 'CRM'],
+    status: 'live',
+    title: 'PSY CRM',
+    subtitle: 'Tattoo Studio Client Management',
+    client: 'PSY Tattoo Studio, Mumbai',
+    year: '2024',
+    description:
+      'A bespoke CRM for a tattoo studio — manages client consultations, artist assignments, design references, and deposit collection in one system.',
+    stat: '3hrs saved per day on admin',
+    problem:
+      "PSY Tattoo Studio was tracking client consultations through Instagram DMs, a shared Notes app, and verbal communication. Deposits were missed, reference images were lost, and no one knew which artist was assigned to which client.",
+    built:
+      'A fully custom CRM with a client pipeline (lead → consultation → confirmed → completed), artist assignment, design reference uploads, deposit tracking, and automated appointment reminders.',
+    result:
+      "Zero missed deposits since launch. Every artist knows exactly what they're working on. The studio runs 3 hours shorter admin days.",
+    resultStat: '0 missed deposits since launch.',
+    mockupSvg: `<svg viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="260" rx="8" fill="#1A1A1A"/>
+      <rect x="0" y="0" width="160" height="260" fill="#222222" rx="8"/>
+      <text x="16" y="30" font-size="10" fill="#666" font-weight="500">CLIENTS</text>
+      <rect x="12" y="42" width="136" height="32" rx="4" fill="#2A2A2A"/>
+      <rect x="20" y="52" width="30" height="12" rx="6" fill="#E8533A" opacity="0.8"/>
+      <text x="58" y="62" font-size="9" fill="#AAA">Rahul M.</text>
+      <rect x="12" y="80" width="136" height="32" rx="4" fill="#2A2A2A"/>
+      <rect x="20" y="90" width="30" height="12" rx="6" fill="#F59E0B" opacity="0.8"/>
+      <text x="58" y="100" font-size="9" fill="#AAA">Priya S.</text>
+      <rect x="12" y="118" width="136" height="32" rx="4" fill="#2A2A2A"/>
+      <rect x="20" y="128" width="30" height="12" rx="6" fill="#22C55E" opacity="0.8"/>
+      <text x="58" y="138" font-size="9" fill="#AAA">Amit K.</text>
+      <rect x="12" y="156" width="136" height="32" rx="4" fill="#2A2A2A"/>
+      <rect x="20" y="166" width="30" height="12" rx="6" fill="#22C55E" opacity="0.8"/>
+      <text x="58" y="176" font-size="9" fill="#AAA">Sara J.</text>
+      <rect x="12" y="194" width="136" height="32" rx="4" fill="#2A2A2A"/>
+      <rect x="20" y="204" width="30" height="12" rx="6" fill="#666" opacity="0.8"/>
+      <text x="58" y="214" font-size="9" fill="#AAA">Dev P.</text>
+      <rect x="176" y="40" width="208" height="160" rx="8" fill="#2A2A2A"/>
+      <text x="192" y="68" font-size="13" fill="white" font-weight="600">Rahul M.</text>
+      <text x="192" y="96" font-size="10" fill="#888">Ref Images: 3</text>
+      <text x="192" y="116" font-size="10" fill="#888">Artist: Assigned</text>
+      <text x="192" y="136" font-size="10" fill="#22C55E">Deposit: ✓</text>
+      <rect x="296" y="10" width="88" height="24" rx="12" fill="#E8533A"/>
+      <text x="340" y="26" text-anchor="middle" font-size="9" fill="white" font-weight="500">New Client +</text>
+    </svg>`,
+  },
+  {
+    id: 'parchi',
+    image: '/PARCHI.png',
+    category: 'ai',
+    tags: ['AI', 'PRODUCTIVITY'],
+    status: 'building',
+    title: 'Parchi AI',
+    subtitle: 'AI-Powered Capture Tool',
+    client: 'Parchi Technologies',
+    link: 'https://www.parchi.tech',
+    year: '2025',
+    description:
+      'Parchi is a tool that automates clinic operations across India — appointments, records, billing, and patient communication in one place.',
+    stat: 'Captures 10x faster than manual notes',
+    problem:
+      'Important thoughts, tasks, and ideas disappear between the moment they occur and when you sit down to action them. Existing note apps require too much friction for fast capture.',
+    built:
+      'A fast-capture AI tool where you drop any thought — voice or text — and Parchi automatically categorises it, extracts action items, sets reminders, and surfaces related items when context matches. Inspired by parchi.tech.',
+    result:
+      'Currently in beta. Early users report capturing 3x more actionable tasks daily versus traditional note apps.',
+    resultStat: '3x more tasks captured daily.',
+    mockupSvg: `<svg viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="260" rx="8" fill="#F8F8F8"/>
+      <rect x="120" y="10" width="160" height="240" rx="24" fill="#1A1A1A" stroke="#333" stroke-width="1.5"/>
+      <rect x="134" y="44" width="132" height="42" rx="8" fill="#2A2A2A"/>
+      <text x="144" y="62" font-size="9" fill="white">Call Amit about launch</text>
+      <rect x="144" y="72" width="36" height="10" rx="5" fill="#E8533A" opacity="0.8"/>
+      <text x="148" y="80" font-size="6" fill="white">TASK</text>
+      <rect x="134" y="94" width="132" height="42" rx="8" fill="#2A2A2A"/>
+      <text x="144" y="112" font-size="9" fill="white">Blog post ideas for Q2</text>
+      <rect x="144" y="122" width="28" height="10" rx="5" fill="#3B82F6" opacity="0.8"/>
+      <text x="148" y="130" font-size="6" fill="white">IDEA</text>
+      <rect x="134" y="144" width="132" height="42" rx="8" fill="#2A2A2A"/>
+      <text x="144" y="162" font-size="9" fill="white">Review PR #42 tonight</text>
+      <rect x="144" y="172" width="36" height="10" rx="5" fill="#E8533A" opacity="0.8"/>
+      <text x="148" y="180" font-size="6" fill="white">TASK</text>
+      <rect x="134" y="204" width="96" height="28" rx="14" fill="#2A2A2A" stroke="#444"/>
+      <text x="144" y="222" font-size="9" fill="#666">Type or speak…</text>
+      <circle cx="248" cy="218" r="12" fill="#E8533A"/>
+      <rect x="244" y="212" width="2" height="12" rx="1" fill="white"/>
+      <rect x="248" y="212" width="2" height="12" rx="1" fill="white"/>
+      <rect x="240" y="215" width="2" height="6" rx="1" fill="white"/>
+      <rect x="252" y="215" width="2" height="6" rx="1" fill="white"/>
+    </svg>`,
+  },
+  {
+    id: 'psy-shop',
+    image: '/PSY-WEB.png',
+    category: 'client',
+    tags: ['E-COMMERCE', 'WEB'],
+    status: 'live',
+    title: 'PSY Website + Shop',
+    subtitle: 'Brand Site & Merch Storefront',
+    client: 'PSY Tattoo Studio, Mumbai',
+    link: 'https://psy-website-kappa.vercel.app/studio',
+    year: '2024',
+    description:
+      'A full brand website and e-commerce storefront — merch ordering, artist portfolios, appointment booking, and a backend order management CRM.',
+    stat: '50 merch orders in week 1',
+    problem:
+      'PSY Studio had no web presence beyond Instagram. Merch drops were managed through DMs, orders tracked in WhatsApp groups, and there was no way to browse artist portfolios or book online.',
+    built:
+      'A complete brand website with artist portfolio pages, an e-commerce store for merch drops with inventory management, integrated booking flow, and a backend order management system.',
+    result:
+      'Launched to 50 merch orders in the first week. Booking requests increased 3x from organic web traffic. The studio team manages all orders from one dashboard.',
+    resultStat: '3x booking increase from web traffic.',
+    mockupSvg: `<svg viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="260" rx="8" fill="#1A1A1A"/>
+      <rect x="0" y="0" width="400" height="18" rx="8" fill="#222"/>
+      <circle cx="16" cy="9" r="3" fill="#444"/>
+      <circle cx="28" cy="9" r="3" fill="#444"/>
+      <circle cx="40" cy="9" r="3" fill="#444"/>
+      <text x="200" y="13" text-anchor="middle" font-size="7" fill="#666">Home   Artists   Shop   Book</text>
+      <rect x="0" y="18" width="400" height="120" fill="#2A2A2A"/>
+      <text x="200" y="88" text-anchor="middle" font-size="36" font-weight="bold" fill="white" letter-spacing="8">PSY</text>
+      <rect x="30" y="150" width="100" height="90" rx="8" fill="#2A2A2A"/>
+      <text x="80" y="196" text-anchor="middle" font-size="11" fill="white" font-weight="500">MERCH</text>
+      <text x="80" y="216" text-anchor="middle" font-size="9" fill="#888">₹1,499</text>
+      <rect x="148" y="150" width="100" height="90" rx="8" fill="#2A2A2A"/>
+      <text x="198" y="196" text-anchor="middle" font-size="11" fill="white" font-weight="500">MERCH</text>
+      <text x="198" y="216" text-anchor="middle" font-size="9" fill="#888">₹1,999</text>
+      <rect x="266" y="150" width="100" height="90" rx="8" fill="#2A2A2A"/>
+      <text x="316" y="196" text-anchor="middle" font-size="11" fill="white" font-weight="500">MERCH</text>
+      <text x="316" y="216" text-anchor="middle" font-size="9" fill="#888">₹2,499</text>
+    </svg>`,
+  },
+  {
+    id: 'wwp',
+    image: '/Wear World Peace.png',
+    category: 'client',
+    tags: ['FASHION', 'E-COMMERCE'],
+    status: 'live',
+    title: 'Wear World Peace',
+    subtitle: 'www',
+    client: 'Wear World Peace, Mumbai',
+    link: 'https://www.wearworldpeace.com/',
+    year: '2025',
+    description:
+      'A full e-commerce website for a Mumbai-based streetwear brand — product catalogue, collections, cart, checkout, and an admin inventory dashboard.',
+    stat: 'Full site live in 3 weeks',
+    problem:
+      'Wear World Peace was selling exclusively through Instagram with no proper storefront. Managing orders, tracking stock, and processing payments was fully manual and creating fulfilment delays as the brand started scaling.',
+    built:
+      'A complete custom e-commerce site with product catalogue, collections pages, cart and checkout, payment integration, and an admin dashboard for inventory and order management.',
+    result:
+      'Full site live within 3 weeks of kickoff. Order fulfilment time cut in half. The brand now runs drops independently with zero ops support.',
+    resultStat: 'Fulfilment time cut in half.',
+    mockupSvg: `<svg viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="260" rx="8" fill="white" stroke="#EEEEEE"/>
+      <rect x="0" y="0" width="400" height="24" fill="#FAFAFA"/>
+      <text x="200" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="#0D0D0D" letter-spacing="3">WWP</text>
+      <rect x="20" y="36" width="360" height="80" rx="6" fill="#F5F5F5"/>
+      <text x="200" y="80" text-anchor="middle" font-size="11" fill="#BBBBBB">NEW COLLECTION — SS25</text>
+      <rect x="20" y="128" width="170" height="52" rx="6" fill="#F5F5F5"/>
+      <text x="105" y="158" text-anchor="middle" font-size="9" fill="#BBBBBB">Product Image</text>
+      <text x="105" y="174" text-anchor="middle" font-size="8" fill="#999">₹2,999</text>
+      <rect x="210" y="128" width="170" height="52" rx="6" fill="#F5F5F5"/>
+      <text x="295" y="158" text-anchor="middle" font-size="9" fill="#BBBBBB">Product Image</text>
+      <text x="295" y="174" text-anchor="middle" font-size="8" fill="#999">₹3,499</text>
+      <rect x="20" y="194" width="170" height="52" rx="6" fill="#F5F5F5"/>
+      <text x="105" y="224" text-anchor="middle" font-size="9" fill="#BBBBBB">Product Image</text>
+      <text x="105" y="240" text-anchor="middle" font-size="8" fill="#999">₹1,999</text>
+      <rect x="210" y="194" width="170" height="52" rx="6" fill="#F5F5F5"/>
+      <text x="295" y="224" text-anchor="middle" font-size="9" fill="#BBBBBB">Product Image</text>
+      <text x="295" y="240" text-anchor="middle" font-size="8" fill="#999">₹4,499</text>
+    </svg>`,
+  },
+];
