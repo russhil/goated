@@ -1,41 +1,27 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import Image from "next/image";
+import { useRevealOnScroll } from "@/hooks/useRevealOnScroll";
 
 const TEAM = [
   {
     name: "Vansh Sood",
     role: "Engineer",
     detail: "B.E. BITS Pilani",
-    photo: "/Parchi AI Image (1).jpg",
+    photo: "/vansh-sood.jpg",
   },
   {
     name: "Russhil Chawla",
     role: "Strategy & Growth",
     detail: "Final Year, IIM",
-    photo: "/Parchi AI Image.jpg",
+    photo: "/russhil-chawla.jpg",
   },
 ];
 
 export default function Team() {
   const sectionRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const reveals = el.querySelectorAll(".reveal");
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) entry.target.classList.add("visible");
-        });
-      },
-      { threshold: 0.1 }
-    );
-    reveals.forEach((r) => observer.observe(r));
-    return () => observer.disconnect();
-  }, []);
+  useRevealOnScroll(sectionRef);
 
   return (
     <section
@@ -53,14 +39,14 @@ export default function Team() {
       </h2>
 
       <p className="max-w-xl mx-auto text-center text-base text-gray-500 leading-relaxed mb-20 reveal">
-        We built GOATED. because we kept seeing the same problem —
+        We built GOATED. because we kept seeing the same problem -
         brilliant businesses held back by manual processes and generic
         tools. We&apos;re engineers and operators, based in Mumbai.
         We fix that.
       </p>
 
       {/* Founder cards */}
-      <div className="flex justify-center gap-20 flex-wrap stagger-children">
+      <div className="flex justify-center gap-12 flex-wrap stagger-children">
         {TEAM.map((member, i) => (
           <div
             key={i}

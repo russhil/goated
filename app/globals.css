@@ -8,8 +8,14 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  cursor: none;
   scroll-behavior: inherit;
+}
+
+/* Custom cursor only on non-touch devices and desktop sizes */
+@media (hover: hover) and (pointer: fine) {
+  * {
+    cursor: none;
+  }
 }
 
 html {
@@ -29,12 +35,7 @@ body {
   font-family: 'DM Sans', system-ui, sans-serif;
 }
 
-/* Restore default cursor on mobile */
-@media (max-width: 768px) {
-  * {
-    cursor: auto;
-  }
-}
+/* Removed mobile cursor patch as it's handled by media query above */
 
 /* Hide scrollbar */
 .hide-scrollbar {
@@ -64,24 +65,33 @@ body {
 .stagger-children > .reveal:nth-child(5) { transition-delay: 400ms; }
 .stagger-children > .reveal:nth-child(6) { transition-delay: 500ms; }
 
-/* Logo ticker */
+/* Logo ticker - never freezes */
 .ticker-track {
   display: flex;
   align-items: center;
   width: max-content;
-  animation: ticker 30s linear infinite;
+  animation: ticker 35s linear infinite;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
 }
-.ticker-track:hover {
-  animation-play-state: paused;
+.ticker-track-slow {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  animation: ticker 50s linear infinite;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
 }
 @keyframes ticker {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
 }
 
 .logo-item {
   flex-shrink: 0;
-  padding: 0 48px;
+  padding: 16px 48px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,13 +102,30 @@ body {
   object-fit: contain;
   filter: grayscale(100%) brightness(0.5);
   mix-blend-mode: multiply;
-  transition: filter 400ms ease, drop-shadow 400ms ease;
+  transition: transform 300ms ease;
 }
-.logo-item:hover img {
-  filter: drop-shadow(0 0 12px rgba(232, 83, 58, 0.7))
-          drop-shadow(0 0 24px rgba(232, 83, 58, 0.4))
-          drop-shadow(0 0 40px rgba(232, 83, 58, 0.2))
-          grayscale(0%) brightness(1.1);
+.logo-item img:hover {
+  transform: scale(1.2);
+}
+
+/* News / Featured-in logos */
+.news-logo-item {
+  flex-shrink: 0;
+  padding: 16px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.news-logo-item img {
+  height: 24px;
+  width: auto;
+  object-fit: contain;
+  filter: grayscale(100%) opacity(0.5);
+  mix-blend-mode: multiply;
+  transition: transform 300ms ease;
+}
+.news-logo-item img:hover {
+  transform: scale(1.2);
 }
 
 /* Word-by-word fade-in for hero */

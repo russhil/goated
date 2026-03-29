@@ -46,7 +46,8 @@ export default function CaseStudyPane({ caseStudy, onClose, onNext }: CaseStudyP
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-6 right-6 text-2xl text-gray-400 hover:text-black transition-colors z-10"
+              className="absolute top-4 right-4 md:top-6 md:right-6 w-11 h-11 flex items-center justify-center text-3xl text-gray-400 hover:text-black transition-colors z-10"
+              aria-label="Close case study"
             >
               ×
             </button>

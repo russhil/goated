@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { useRevealOnScroll } from "@/hooks/useRevealOnScroll";
 
 const STATS = [
   { value: 100, suffix: "%", label: "Bespoke builds. No templates.", duration: 1000 },
   { value: 3, suffix: "X", label: "Average efficiency gain for clients.", duration: 800 },
-  { value: 0, suffix: "", label: "Off-the-shelf solutions. Ever.", duration: 0 },
+  { value: 0, suffix: "", label: "Zero off-the-shelf solutions. Ever.", duration: 0 },
 ];
 
 function animateCounter(
@@ -40,30 +41,16 @@ export default function WhatWeAre() {
     statEls.forEach((el, i) => {
       const stat = STATS[i];
       setTimeout(() => {
-        el.parentElement!.style.opacity = '1';
-        el.parentElement!.style.transform = 'translateY(0)';
+        if (el.parentElement) {
+          el.parentElement.style.opacity = '1';
+          el.parentElement.style.transform = 'translateY(0)';
+        }
         animateCounter(el, stat.value, stat.suffix, stat.duration);
       }, i * 150);
     });
   }, []);
 
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const reveals = el.querySelectorAll(".reveal");
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-    reveals.forEach((r) => observer.observe(r));
-    return () => observer.disconnect();
-  }, []);
+  useRevealOnScroll(sectionRef);
 
   useEffect(() => {
     const statsEl = statsRef.current;
@@ -84,10 +71,10 @@ export default function WhatWeAre() {
     <section
       ref={sectionRef}
       id="what-we-are"
-      className="min-h-screen flex items-center px-6 md:px-16 py-20 md:py-32"
+      className="flex items-center px-6 md:px-16 py-20 md:py-32"
     >
       <div className="max-w-[1400px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
-        {/* Left column — sticky */}
+        {/* Left column - sticky */}
         <div className="lg:sticky lg:top-32 lg:self-start reveal">
           <div className="section-label">// what we do</div>
 
@@ -105,7 +92,7 @@ export default function WhatWeAre() {
           </p>
         </div>
 
-        {/* Right column — stats */}
+        {/* Right column - stats */}
         <div ref={statsRef} className="flex flex-col">
           {STATS.map((stat, i) => (
             <div

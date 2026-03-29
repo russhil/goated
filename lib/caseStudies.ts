@@ -33,7 +33,7 @@ export const caseStudies: CaseStudy[] = [
       'We took 100+ spreadsheets across artists, royalties, splits and ISRC codes and collapsed them into one unified catalogue system. Now expanding to all labels on the roster including Seedhe Maut, with an artist-facing app in development.',
     stat: '100+ spreadsheets → 1 system',
     problem:
-      'Azadi Records were managing their entire catalogue — 32+ releases, multiple artists, complex royalty splits — across 6 disconnected spreadsheets. Every release meant hours of manual updates, and mistakes were inevitable.',
+      'Azadi Records were managing their entire catalogue - 32+ releases, multiple artists, complex royalty splits - across 6 disconnected spreadsheets. Every release meant hours of manual updates, and mistakes were inevitable.',
     built:
       'A centralised catalogue management system with a live overview dashboard, ISRC tracking, automated split calculations, and a licensor management module. Built in React with a Supabase backend.',
     result:
@@ -125,7 +125,7 @@ export const caseStudies: CaseStudy[] = [
     client: 'PSY Tattoo Studio, Mumbai',
     year: '2024',
     description:
-      'A bespoke CRM for a tattoo studio — manages client consultations, artist assignments, design references, and deposit collection in one system.',
+      'A bespoke CRM for a tattoo studio - manages client consultations, artist assignments, design references, and deposit collection in one system.',
     stat: '3hrs saved per day on admin',
     problem:
       "PSY Tattoo Studio was tracking client consultations through Instagram DMs, a shared Notes app, and verbal communication. Deposits were missed, reference images were lost, and no one knew which artist was assigned to which client.",
@@ -174,12 +174,12 @@ export const caseStudies: CaseStudy[] = [
     link: 'https://www.parchi.tech',
     year: '2025',
     description:
-      'Parchi is a tool that automates clinic operations across India — appointments, records, billing, and patient communication in one place.',
+      'Parchi is a tool that automates clinic operations across India - appointments, records, billing, and patient communication in one place.',
     stat: 'Captures 10x faster than manual notes',
     problem:
       'Important thoughts, tasks, and ideas disappear between the moment they occur and when you sit down to action them. Existing note apps require too much friction for fast capture.',
     built:
-      'A fast-capture AI tool where you drop any thought — voice or text — and Parchi automatically categorises it, extracts action items, sets reminders, and surfaces related items when context matches. Inspired by parchi.tech.',
+      'A fast-capture AI tool where you drop any thought - voice or text - and Parchi automatically categorises it, extracts action items, sets reminders, and surfaces related items when context matches. Inspired by parchi.tech.',
     result:
       'Currently in beta. Early users report capturing 3x more actionable tasks daily versus traditional note apps.',
     resultStat: '3x more tasks captured daily.',
@@ -219,7 +219,7 @@ export const caseStudies: CaseStudy[] = [
     link: 'https://psy-website-kappa.vercel.app/studio',
     year: '2024',
     description:
-      'A full brand website and e-commerce storefront — merch ordering, artist portfolios, appointment booking, and a backend order management CRM.',
+      'A full brand website and e-commerce storefront - merch ordering, artist portfolios, appointment booking, and a backend order management CRM.',
     stat: '50 merch orders in week 1',
     problem:
       'PSY Studio had no web presence beyond Instagram. Merch drops were managed through DMs, orders tracked in WhatsApp groups, and there was no way to browse artist portfolios or book online.',
@@ -260,7 +260,7 @@ export const caseStudies: CaseStudy[] = [
     link: 'https://www.wearworldpeace.com/',
     year: '2025',
     description:
-      'A full e-commerce website for a Mumbai-based streetwear brand — product catalogue, collections, cart, checkout, and an admin inventory dashboard.',
+      'A full e-commerce website for a Mumbai-based streetwear brand - product catalogue, collections, cart, checkout, and an admin inventory dashboard.',
     stat: 'Full site live in 3 weeks',
     problem:
       'Wear World Peace was selling exclusively through Instagram with no proper storefront. Managing orders, tracking stock, and processing payments was fully manual and creating fulfilment delays as the brand started scaling.',
@@ -274,7 +274,7 @@ export const caseStudies: CaseStudy[] = [
       <rect x="0" y="0" width="400" height="24" fill="#FAFAFA"/>
       <text x="200" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="#0D0D0D" letter-spacing="3">WWP</text>
       <rect x="20" y="36" width="360" height="80" rx="6" fill="#F5F5F5"/>
-      <text x="200" y="80" text-anchor="middle" font-size="11" fill="#BBBBBB">NEW COLLECTION — SS25</text>
+      <text x="200" y="80" text-anchor="middle" font-size="11" fill="#BBBBBB">NEW COLLECTION - SS25</text>
       <rect x="20" y="128" width="170" height="52" rx="6" fill="#F5F5F5"/>
       <text x="105" y="158" text-anchor="middle" font-size="9" fill="#BBBBBB">Product Image</text>
       <text x="105" y="174" text-anchor="middle" font-size="8" fill="#999">₹2,999</text>

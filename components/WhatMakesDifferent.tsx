@@ -40,11 +40,11 @@ export default function WhatMakesDifferent() {
       const viewportHeight = window.innerHeight;
 
       const scrollProgress =
-        (window.scrollY - sectionTop) /
+        (window.scrollY - sectionTop + 64) /
         (sectionHeight - viewportHeight);
 
       const clamped = Math.max(0, Math.min(1, scrollProgress));
-      const rawIndex = clamped * 4;
+      const rawIndex = clamped * ITEMS.length;
       setProgress(rawIndex);
     };
 
@@ -53,11 +53,18 @@ export default function WhatMakesDifferent() {
   }, []);
 
   return (
-    <div ref={sectionRef} id="different" className="relative h-[250vh]">
+    <div ref={sectionRef} id="different" className="relative h-[180vh]">
       <div className="sticky top-0 h-screen flex items-center overflow-hidden px-6 md:px-16">
         <div className="max-w-[1400px] mx-auto w-full relative">
           {/* Section label */}
-          <div className="section-label mb-6">// why goated.</div>
+          <div className="section-label mb-4">// the difference</div>
+          
+          <h2
+            className="font-serif text-dark leading-[1.15] mb-12"
+            style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)" }}
+          >
+            Why GOATED.
+          </h2>
 
           <div className="relative min-h-[280px]">
             {ITEMS.map((item, i) => {
@@ -81,11 +88,11 @@ export default function WhatMakesDifferent() {
                   </span>
 
                   {/* Content */}
-                  <div className="pt-20 max-w-lg">
+                  <div className="pt-20 max-w-2xl">
                     <h3 className="text-2xl font-bold text-[#0D0D0D] mt-2">
                       {item.heading}
                     </h3>
-                    <p className="text-base text-gray-500 mt-3 max-w-lg">
+                    <p className="text-base text-gray-500 mt-3 max-w-xl">
                       {item.desc}
                     </p>
                   </div>
@@ -94,7 +101,7 @@ export default function WhatMakesDifferent() {
             })}
           </div>
 
-          {/* Progress dots — right edge */}
+          {/* Progress dots - right edge */}
           <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-3">
             {ITEMS.map((_, i) => {
               const dist = Math.abs(progress - i);

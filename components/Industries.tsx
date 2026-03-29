@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useRevealOnScroll } from "@/hooks/useRevealOnScroll";
 
 const INDUSTRIES = [
   "Music & Entertainment",
@@ -22,7 +23,7 @@ const CARDS = [
   {
     num: "02",
     title: "Healthcare & Clinics",
-    desc: "Booking automation, patient records, billing flows. From physiotherapy clinics to clinic networks across India — we replace the manual with the automatic.",
+    desc: "Booking automation, patient records, billing flows. From physiotherapy clinics to clinic networks across India - we replace the manual with the automatic.",
   },
   {
     num: "03",
@@ -33,22 +34,7 @@ const CARDS = [
 
 export default function Industries() {
   const sectionRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const reveals = el.querySelectorAll(".reveal");
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) entry.target.classList.add("visible");
-        });
-      },
-      { threshold: 0.1 }
-    );
-    reveals.forEach((r) => observer.observe(r));
-    return () => observer.disconnect();
-  }, []);
+  useRevealOnScroll(sectionRef);
 
   const pills = [...INDUSTRIES, ...INDUSTRIES];
 
@@ -56,7 +42,7 @@ export default function Industries() {
     <section
       ref={sectionRef}
       id="industries"
-      className="min-h-screen py-20 md:py-32"
+      className="py-20 md:py-32"
     >
       <div className="max-w-[1400px] mx-auto px-6 md:px-12">
         <div className="section-label reveal">// who we work with</div>
@@ -70,12 +56,11 @@ export default function Industries() {
 
       {/* Ticker */}
       <div className="overflow-hidden mb-20 reveal">
-        <div className="ticker-track flex gap-4 w-max">
+        <div className="ticker-track-slow flex gap-4 w-max">
           {pills.map((name, i) => (
             <span
               key={i}
-              className="inline-block px-6 py-3 border border-dark rounded-full font-sans text-sm whitespace-nowrap
-                         transition-all duration-300 hover:bg-dark hover:text-white"
+              className="inline-block px-6 py-3 bg-white border border-[#0D0D0D]/10 text-[#0D0D0D] rounded-full font-sans text-sm whitespace-nowrap"
             >
               {name}
             </span>

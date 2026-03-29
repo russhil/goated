@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -11,16 +11,25 @@ const NAV_ITEMS = [
 ];
 
 export default function Navbar() {
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const scrollRef = useRef<HTMLSpanElement>(null);
+  const scrollRefMobile = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
+    let ticking = false;
     const onScroll = () => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.body.scrollHeight - window.innerHeight;
-      const progress = docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
-      setScrollProgress(progress);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollTop = window.scrollY;
+          const docHeight = document.body.scrollHeight - window.innerHeight;
+          const progress = docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
+          if (scrollRef.current) scrollRef.current.textContent = `${progress}%`;
+          if (scrollRefMobile.current) scrollRefMobile.current.textContent = `${progress}%`;
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -50,7 +59,7 @@ export default function Navbar() {
             <span className="text-dark">]</span>
           </Link>
 
-          {/* Center nav — desktop */}
+          {/* Center nav - desktop */}
           <div className="hidden md:flex items-center gap-1">
             {NAV_ITEMS.map((item) => {
               const isActive =
@@ -87,10 +96,25 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Scroll indicator — desktop */}
-          <div className="hidden md:flex items-center gap-2 font-mono text-xs text-muted">
-            <span>// scroll to explore</span>
-            <span className="text-coral font-medium">{scrollProgress}%</span>
+          {/* Right section - desktop */}
+          <div className="hidden md:flex items-center gap-6">
+            {/* Scroll indicator */}
+            <div className="flex items-center gap-2 font-mono text-xs text-muted">
+              <span>// scroll to explore</span>
+              <span ref={scrollRef} className="text-coral font-medium">0%</span>
+            </div>
+            
+            {/* CTA */}
+            <a
+              href="#contact"
+              onClick={(e) => {
+                e.preventDefault();
+                handleNavClick("#contact");
+              }}
+              className="px-5 py-2 bg-dark text-white rounded-full text-sm font-sans font-medium transition-colors hover:bg-coral"
+            >
+              Let&apos;s Talk
+            </a>
           </div>
 
           {/* Mobile hamburger */}
@@ -137,7 +161,7 @@ export default function Navbar() {
           )
         )}
         <div className="mt-8 font-mono text-xs text-muted">
-          // scroll to explore — <span className="text-coral">{scrollProgress}%</span>
+          // scroll to explore - <span ref={scrollRefMobile} className="text-coral">0%</span>
         </div>
       </div>
     </>

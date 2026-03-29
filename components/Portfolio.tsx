@@ -8,7 +8,7 @@ const CASES = [
   {
     tags: ["MUSIC", "CATALOGUE MANAGEMENT"],
     status: "live",
-    title: "Azadi Records — Music Catalogue System",
+    title: "Azadi Records - Music Catalogue System",
     client: "Azadi Records, Mumbai",
     desc: "A full catalogue management system for one of India's leading independent hip-hop labels. Tracks royalties, manages ISRC codes, handles track splits across artists and producers, and gives the label a live operational overview of 32+ releases.",
     stat: "Replaced 6 spreadsheets with one system.",
@@ -112,7 +112,7 @@ export default function Portfolio() {
             <div className="overflow-hidden rounded-lg mb-5">
               <div className="bg-light aspect-[16/10] flex items-center justify-center transition-transform duration-300 group-hover:scale-[1.03]">
                 <span className="font-mono text-sm text-muted">
-                  MOCKUP — {c.title.split("—")[0].trim()}
+                  MOCKUP - {c.title.split("-")[0].trim()}
                 </span>
               </div>
             </div>

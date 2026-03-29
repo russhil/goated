@@ -49,9 +49,9 @@ export default function CustomCursor() {
 
     let raf: number;
     const animate = () => {
-      // Lerp smoothing (10% per frame)
-      pos.current.x += (target.current.x - pos.current.x) * 0.1;
-      pos.current.y += (target.current.y - pos.current.y) * 0.1;
+      // Lerp smoothing (30% per frame for better responsiveness)
+      pos.current.x += (target.current.x - pos.current.x) * 0.3;
+      pos.current.y += (target.current.y - pos.current.y) * 0.3;
 
       const size = isHovering.current ? 40 : 20;
 

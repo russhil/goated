@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function HeroQuote() {
   const [visible, setVisible] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 300);
-    return () => clearTimeout(timer);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => setVisible(true));
+    } else {
+      const timer = setTimeout(() => setVisible(true), 150);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   const quote1 = "The businesses that automate today";
@@ -18,9 +21,8 @@ export default function HeroQuote() {
 
   return (
     <section
-      ref={sectionRef}
       id="hero"
-      className="min-h-screen flex items-center justify-center px-6 md:px-12"
+      className="pt-40 pb-16 md:pt-48 md:pb-24 flex items-center justify-center px-6 md:px-12"
     >
       <div className="max-w-[900px] text-center">
         <blockquote className="relative">
@@ -36,7 +38,7 @@ export default function HeroQuote() {
             className="font-serif text-dark leading-[1.2]"
             style={{ fontSize: "clamp(2rem, 5vw, 4.5rem)" }}
           >
-            {/* First line — roman */}
+            {/* First line - roman */}
             {words1.map((word, i) => (
               <span
                 key={`w1-${i}`}
@@ -50,7 +52,7 @@ export default function HeroQuote() {
               </span>
             ))}
             <br className="hidden md:block" />
-            {/* Second line — italic */}
+            {/* Second line - italic */}
             {words2.map((word, i) => (
               <span
                 key={`w2-${i}`}
@@ -67,22 +69,22 @@ export default function HeroQuote() {
 
           {/* Closing quote mark */}
           <span
-            className="text-coral font-serif text-7xl md:text-9xl leading-none select-none opacity-80"
+            className="absolute -bottom-8 -right-4 md:-bottom-12 md:-right-8 text-coral font-serif text-7xl md:text-9xl leading-none select-none opacity-80"
             aria-hidden="true"
           >
             &rdquo;
           </span>
         </blockquote>
 
-        <p
-          className="mt-8 text-right font-sans text-sm text-muted word-animate"
+        <h1
+          className="mt-12 text-center font-sans tracking-[0.2em] uppercase text-muted text-xs md:text-sm word-animate"
           style={{
             animationDelay: visible ? `${(words1.length + words2.length) * 80 + 200}ms` : "0ms",
             animationPlayState: visible ? "running" : "paused",
           }}
         >
-          — GOATED. Founding Principle
-        </p>
+          Software &amp; AI Automation Agency
+        </h1>
       </div>
     </section>
   );
