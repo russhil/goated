@@ -44,7 +44,7 @@ export default function WhatMakesDifferent() {
         (sectionHeight - viewportHeight);
 
       const clamped = Math.max(0, Math.min(1, scrollProgress));
-      const rawIndex = clamped * ITEMS.length;
+      const rawIndex = clamped * (ITEMS.length - 1);
       setProgress(rawIndex);
     };
 
@@ -53,7 +53,7 @@ export default function WhatMakesDifferent() {
   }, []);
 
   return (
-    <div ref={sectionRef} id="different" className="relative h-[180vh]">
+    <div ref={sectionRef} id="different" className="relative h-[400vh]">
       <div className="sticky top-0 h-screen flex items-center overflow-hidden px-6 md:px-16">
         <div className="max-w-[1400px] mx-auto w-full relative">
           {/* Section label */}
