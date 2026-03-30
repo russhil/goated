@@ -27,38 +27,57 @@ const ITEMS = [
 
 export default function WhatMakesDifferent() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [progress, setProgress] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     const section = sectionRef.current;
     if (!section) return;
 
     const handleScroll = () => {
-      if (!section) return;
-      const sectionTop = section.offsetTop;
+      const rect = section.getBoundingClientRect();
       const sectionHeight = section.offsetHeight;
       const viewportHeight = window.innerHeight;
 
-      const scrollProgress =
-        (window.scrollY - sectionTop + 64) /
-        (sectionHeight - viewportHeight);
+      // How far we've scrolled into the section (0 = top of section at top of viewport)
+      const scrolledInto = -rect.top;
 
-      const clamped = Math.max(0, Math.min(1, scrollProgress));
+      // Total scrollable distance within the section (minus one viewport for the sticky)
+      const totalScrollable = sectionHeight - viewportHeight;
+      if (totalScrollable <= 0) return;
+
+      // Raw progress 0..1
+      const rawProgress = scrolledInto / totalScrollable;
+      const clamped = Math.max(0, Math.min(1, rawProgress));
+
+      // Map to index: each item gets an equal slice of scroll distance
+      // Snap to the nearest integer — no in-between states
       const rawIndex = clamped * (ITEMS.length - 1);
-      setProgress(rawIndex);
+      const snappedIndex = Math.round(rawIndex);
+
+      setActiveIndex(snappedIndex);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
-    <div ref={sectionRef} id="different" className="relative h-[400vh]">
+    <div
+      id="different"
+      ref={sectionRef}
+      className="relative w-full bg-white"
+      style={{
+        // Each card gets 175vh of scroll distance — heavy friction, can't skip
+        height: `${ITEMS.length * 170}vh`,
+      }}
+    >
+      {/* Sticky viewport — stays pinned while you scroll through the tall container */}
       <div className="sticky top-0 h-screen flex items-center overflow-hidden px-6 md:px-16">
         <div className="max-w-[1400px] mx-auto w-full relative">
           {/* Section label */}
-          <div className="section-label mb-4">// the difference</div>
-          
+          <div className="section-label mb-4">{"// the difference"}</div>
+
           <h2
             className="font-serif text-dark leading-[1.15] mb-12"
             style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)" }}
@@ -68,18 +87,19 @@ export default function WhatMakesDifferent() {
 
           <div className="relative min-h-[280px]">
             {ITEMS.map((item, i) => {
-              const dist = Math.abs(progress - i);
-              const opacity = Math.max(0, 1 - dist * 1.8);
-              const translateY = (progress - i) * -25;
+              const isActive = i === activeIndex;
+              const direction = i - activeIndex; // negative = above, positive = below
 
               return (
                 <div
                   key={item.num}
                   className="absolute top-0 left-0 w-full"
                   style={{
-                    opacity,
-                    transform: `translateY(${translateY}px)`,
-                    transition: 'opacity 200ms ease, transform 200ms ease',
+                    opacity: isActive ? 1 : 0,
+                    transform: `translateY(${direction * 30}px)`,
+                    transition:
+                      "opacity 450ms cubic-bezier(0.4, 0, 0.2, 1), transform 450ms cubic-bezier(0.4, 0, 0.2, 1)",
+                    pointerEvents: isActive ? "auto" : "none",
                   }}
                 >
                   {/* Large faded number */}
@@ -101,23 +121,22 @@ export default function WhatMakesDifferent() {
             })}
           </div>
 
-          {/* Progress dots - right edge */}
+          {/* Progress dots — right edge */}
           <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-3">
             {ITEMS.map((_, i) => {
-              const dist = Math.abs(progress - i);
-              const dotOpacity = Math.max(0, 1 - dist * 1.8);
-              const isActive = dotOpacity > 0.5;
+              const isActive = i === activeIndex;
 
               return (
                 <div
                   key={i}
-                  className="rounded-full transition-all duration-150 ease-in-out"
+                  className="rounded-full"
                   style={{
-                    width: isActive ? '8px' : '6px',
-                    height: isActive ? '8px' : '6px',
-                    backgroundColor: isActive ? '#E8533A' : '#E5E7EB',
-                    opacity: Math.max(0.3, dotOpacity),
-                    transform: isActive ? 'scale(1.25)' : 'scale(1)',
+                    width: isActive ? "8px" : "6px",
+                    height: isActive ? "8px" : "6px",
+                    backgroundColor: isActive ? "#E8533A" : "#E5E7EB",
+                    transform: isActive ? "scale(1.25)" : "scale(1)",
+                    transition: "all 400ms cubic-bezier(0.4, 0, 0.2, 1)",
+                    opacity: isActive ? 1 : 0.4,
                   }}
                 />
               );

@@ -47,7 +47,7 @@ export default function Navbar() {
   return (
     <>
       <nav className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-sm z-[100]" id="navbar">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-12 h-16 flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto px-6 md:px-12 h-16 flex items-center justify-between relative">
           {/* Logo */}
           <Link
             href="/"
@@ -60,7 +60,7 @@ export default function Navbar() {
           </Link>
 
           {/* Center nav - desktop */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
             {NAV_ITEMS.map((item) => {
               const isActive =
                 item.href === "/"
