@@ -10,12 +10,14 @@ const TEAM = [
     role: "Engineer",
     detail: "B.E. BITS Pilani",
     photo: "/vansh-sood.jpg",
+    linkedin: "https://linkedin.com/in/vanshsback",
   },
   {
     name: "Russhil Chawla",
     role: "Strategy & Growth",
     detail: "Final Year, IIM",
     photo: "/russhil-chawla.jpg",
+    linkedin: "https://linkedin.com/in/rixx",
   },
 ];
 
@@ -63,9 +65,34 @@ export default function Team() {
                 unoptimized
               />
             </div>
-            <h4 className="text-lg font-bold text-[#0D0D0D] mt-5 text-center">
-              {member.name}
-            </h4>
+            <div className="mt-5 flex items-center justify-center gap-2">
+              <h4 className="text-lg font-bold text-[#0D0D0D] text-center">
+                {member.name}
+              </h4>
+              <a
+                href={member.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-[#0077b5] transition-colors"
+                aria-label={`${member.name}'s LinkedIn`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                  <rect width="4" height="12" x="2" y="9" />
+                  <circle cx="4" cy="4" r="2" />
+                </svg>
+              </a>
+            </div>
             <p className="text-sm text-[#E8533A] mt-1 text-center">
               {member.role}
             </p>
