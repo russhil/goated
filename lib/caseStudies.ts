@@ -255,20 +255,20 @@ export const caseStudies: CaseStudy[] = [
     tags: ['FASHION', 'E-COMMERCE'],
     status: 'live',
     title: 'Wear World Peace',
-    subtitle: 'www',
-    client: 'Wear World Peace, Mumbai',
+    subtitle: 'E-Commerce & Operations',
+    client: 'Wear World Peace',
     link: 'https://www.wearworldpeace.com/',
     year: '2025',
     description:
-      'A full e-commerce website for a Mumbai-based streetwear brand - product catalogue, collections, cart, checkout, and an admin inventory dashboard.',
-    stat: 'Full site live in 3 weeks',
+      'Built the full e-commerce infrastructure for Wear World Peace - the clothing brand founded by NBA player Ron Artest (Metta World Peace). Took them from Instagram DM sales to a fully operational online store with shipping, order management, and remarketing.',
+    stat: 'Instagram DMs to full storefront',
     problem:
-      'Wear World Peace was selling exclusively through Instagram with no proper storefront. Managing orders, tracking stock, and processing payments was fully manual and creating fulfilment delays as the brand started scaling.',
+      'Wear World Peace - the clothing line founded by NBA champion Ron Artest - was running its entire business through Instagram. Every sale happened in DMs, shipping was coordinated manually, there was no order tracking, and the brand had zero infrastructure to scale beyond one-off drops.',
     built:
-      'A complete custom e-commerce site with product catalogue, collections pages, cart and checkout, payment integration, and an admin dashboard for inventory and order management.',
+      'A fully functional e-commerce website with product catalogue, collections, cart and checkout. Beyond the storefront, we set up their entire operations layer - shipping logistics, order management, inventory tracking, and remarketing flows to bring customers back after purchase.',
     result:
-      'Full site live within 3 weeks of kickoff. Order fulfilment time cut in half. The brand now runs drops independently with zero ops support.',
-    resultStat: 'Fulfilment time cut in half.',
+      'The brand went from DM-based sales to a fully self-sufficient e-commerce operation. Orders now flow from storefront to doorstep without manual intervention. Remarketing drives repeat purchases, and the team manages everything from a single dashboard.',
+    resultStat: 'DM sales to full e-commerce ops.',
     mockupSvg: `<svg viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect width="400" height="260" rx="8" fill="white" stroke="#EEEEEE"/>
       <rect x="0" y="0" width="400" height="24" fill="#FAFAFA"/>
