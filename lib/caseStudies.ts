@@ -260,15 +260,15 @@ export const caseStudies: CaseStudy[] = [
     link: 'https://www.wearworldpeace.com/',
     year: '2025',
     description:
-      'Built the full e-commerce infrastructure for Wear World Peace - the clothing brand founded by NBA player Ron Artest (Metta World Peace). Took them from Instagram DM sales to a fully operational online store with shipping, order management, and remarketing.',
-    stat: 'Instagram DMs to full storefront',
+      'Built the full e-commerce infrastructure for Wear World Peace - the clothing brand founded by NBA player Ron Artest (Metta World Peace). A complete online store with shipping, operations, order management, and remarketing.',
+    stat: 'From zero web presence to full storefront',
     problem:
-      'Wear World Peace - the clothing line founded by NBA champion Ron Artest - was running its entire business through Instagram. Every sale happened in DMs, shipping was coordinated manually, there was no order tracking, and the brand had zero infrastructure to scale beyond one-off drops.',
+      'Wear World Peace - the clothing brand founded by NBA champion Ron Artest - had built strong demand through Instagram but didn\'t have a dedicated website. The brand needed a proper online home to showcase collections, handle orders at scale, and support their growing customer base.',
     built:
-      'A fully functional e-commerce website with product catalogue, collections, cart and checkout. Beyond the storefront, we set up their entire operations layer - shipping logistics, order management, inventory tracking, and remarketing flows to bring customers back after purchase.',
+      'A fully functional e-commerce website with product catalogue, collections, cart and checkout. On top of the storefront, we set up shipping logistics, order management, inventory tracking, and remarketing flows to drive repeat purchases.',
     result:
-      'The brand went from DM-based sales to a fully self-sufficient e-commerce operation. Orders now flow from storefront to doorstep without manual intervention. Remarketing drives repeat purchases, and the team manages everything from a single dashboard.',
-    resultStat: 'DM sales to full e-commerce ops.',
+      'The brand now has a complete online storefront and a fully operational backend. Orders flow seamlessly from checkout to delivery, remarketing brings customers back, and the team manages everything from one dashboard.',
+    resultStat: 'Zero to fully operational e-commerce.',
     mockupSvg: `<svg viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect width="400" height="260" rx="8" fill="white" stroke="#EEEEEE"/>
       <rect x="0" y="0" width="400" height="24" fill="#FAFAFA"/>
