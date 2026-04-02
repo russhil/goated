@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 
-const logos = [
+const logos: { name: string; file: string; width?: number }[] = [
   { name: 'Azadi Records', file: 'logos/azadi.png' },
   { name: 'NBA', file: 'logos/nba.png' },
   { name: 'DlaN5', file: 'DlaN5 NP.png' },
@@ -10,7 +10,7 @@ const logos = [
   { name: 'Everest Fleet', file: 'logos/everestfleet.png' },
   { name: 'KPMG', file: 'KPMG Blue Logo.webp' },
   { name: 'Partner', file: 'logos/partner1.png' },
-  { name: 'Wear World Peace', file: 'logos/wearworldpeace.png' },
+  { name: 'Wear World Peace', file: 'logos/wearworldpeace.png', width: 80 },
 ];
 
 const newsLogos = [
@@ -41,7 +41,7 @@ export default function LogoTicker() {
               <Image
                 src={`/${logo.file}`}
                 alt={logo.name}
-                width={120}
+                width={logo.width ?? 120}
                 height={32}
                 loading="lazy"
               />
