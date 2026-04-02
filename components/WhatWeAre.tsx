@@ -86,9 +86,10 @@ export default function WhatWeAre() {
           </h2>
 
           <p className="text-base text-gray-500 leading-relaxed max-w-sm mt-6">
-            We build custom software and AI automations from scratch.
-            Internal tools, automated workflows, systems that eliminate
-            the manual work killing your team&apos;s time. No templates. Ever.
+            We&apos;re a software development agency that builds custom software
+            and AI automations from scratch. Internal tools, automated workflows,
+            and business process automation. Systems that eliminate the manual work
+            killing your team&apos;s time. No templates. Ever.
           </p>
         </div>
 

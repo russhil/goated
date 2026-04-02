@@ -58,11 +58,10 @@ export default function Team() {
             <div className="w-28 h-28 rounded-full overflow-hidden mx-auto ring-1 ring-[#EEEEEE]">
               <Image
                 src={member.photo}
-                alt={member.name}
+                alt={`${member.name} - ${member.role} at GOATED. software agency Mumbai`}
                 width={112}
                 height={112}
                 className="w-full h-full object-cover object-top"
-                unoptimized
               />
             </div>
             <div className="mt-5 flex items-center justify-center gap-2">

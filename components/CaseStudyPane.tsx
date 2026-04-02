@@ -94,11 +94,10 @@ export default function CaseStudyPane({ caseStudy, onClose, onNext }: CaseStudyP
               <div className="relative w-full h-80 bg-[#F5F5F5] rounded-xl overflow-hidden">
                 <Image
                   src={caseStudy.image}
-                  alt={caseStudy.title}
+                  alt={`${caseStudy.title} - ${caseStudy.subtitle} built by GOATED. software agency`}
                   fill
                   className="object-cover object-top"
                   sizes="60vw"
-                  unoptimized
                 />
               </div>
 

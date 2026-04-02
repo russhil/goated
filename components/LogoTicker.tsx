@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 const logos = [
   { name: 'Azadi Records', file: 'logos/azadi.png' },
   { name: 'NBA', file: 'logos/nba.png' },
@@ -20,7 +22,7 @@ const newsLogos = [
   { name: 'Radio Mirchi', file: 'logos/news/radiomirchi.png' },
 ];
 
-// Duplicate 2x for seamless infinite loop (instead of 4x)
+// Duplicate 2x for seamless infinite loop
 const allLogos = [...logos, ...logos];
 
 export default function LogoTicker() {
@@ -36,11 +38,12 @@ export default function LogoTicker() {
         <div className="ticker-track">
           {allLogos.map((logo, i) => (
             <div key={i} className="logo-item">
-              <img
+              <Image
                 src={`/${logo.file}`}
                 alt={logo.name}
                 width={120}
                 height={32}
+                loading="lazy"
               />
             </div>
           ))}
@@ -56,11 +59,12 @@ export default function LogoTicker() {
         <div className="flex items-center justify-center flex-wrap gap-10 max-w-[900px] mx-auto px-6">
           {newsLogos.map((logo, i) => (
             <div key={i} className="news-logo-item">
-              <img
+              <Image
                 src={`/${logo.file}`}
                 alt={logo.name}
                 width={120}
                 height={24}
+                loading="lazy"
               />
             </div>
           ))}

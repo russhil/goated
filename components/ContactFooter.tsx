@@ -160,28 +160,51 @@ export default function ContactFooter() {
           </div>
 
           {/* Nav links */}
-          <div className="flex items-center gap-6 md:justify-center">
-            {["Home", "Portfolio", "Contact"].map((label) => {
-              const href = label === "Home" ? "/#hero" : label === "Portfolio" ? "/portfolio" : "/#contact";
-              return (
-              <a
-                key={label}
-                href={href}
-                onClick={(e) => {
-                  if (label !== "Portfolio") {
-                     e.preventDefault();
-                     handleNavClick(href.replace('/', ''));
-                  }
-                }}
-                className="font-sans text-sm text-muted hover:text-dark transition-colors"
-              >
-                {label}
-              </a>
-            )})}
+          <div className="flex flex-col items-start md:items-center gap-3">
+            <div className="flex items-center gap-6">
+              {["Home", "Portfolio", "Contact"].map((label) => {
+                const href = label === "Home" ? "/#hero" : label === "Portfolio" ? "/portfolio" : "/#contact";
+                return (
+                <a
+                  key={label}
+                  href={href}
+                  onClick={(e) => {
+                    if (label !== "Portfolio") {
+                       e.preventDefault();
+                       handleNavClick(href.replace('/', ''));
+                    }
+                  }}
+                  className="font-sans text-sm text-muted hover:text-dark transition-colors"
+                >
+                  {label}
+                </a>
+              )})}
+            </div>
+            <div className="flex items-center gap-6">
+              {[
+                { label: "What We Do", href: "/#what-we-are" },
+                { label: "Industries", href: "/#industries" },
+                { label: "Why Us", href: "/#different" },
+                { label: "FAQ", href: "/#faq" },
+              ].map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNavClick(href.replace('/', ''));
+                  }}
+                  className="font-sans text-xs text-muted/70 hover:text-dark transition-colors"
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
           </div>
 
           {/* Location & email */}
           <div className="md:text-right">
+            <p className="font-sans text-sm text-muted">Software & AI Agency</p>
             <p className="font-sans text-sm text-muted">Mumbai, India</p>
             <a
               href="mailto:hello@goatedd.tech"

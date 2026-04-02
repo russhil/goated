@@ -250,7 +250,7 @@ export const caseStudies: CaseStudy[] = [
   },
   {
     id: 'wwp',
-    image: '/Wear World Peace.png',
+    image: '/wear-world-peace.png',
     category: 'client',
     tags: ['FASHION', 'E-COMMERCE'],
     status: 'live',

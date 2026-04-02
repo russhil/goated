@@ -14,9 +14,9 @@ const config: Config = {
         light: "#F5F5F5",
       },
       fontFamily: {
-        serif: ['"Playfair Display"', "Georgia", "serif"],
-        sans: ['"DM Sans"', "system-ui", "sans-serif"],
-        mono: ['"JetBrains Mono"', "monospace"],
+        serif: ["var(--font-serif)", '"Playfair Display"', "Georgia", "serif"],
+        sans: ["var(--font-sans)", '"DM Sans"', "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", '"JetBrains Mono"', "monospace"],
       },
     },
   },

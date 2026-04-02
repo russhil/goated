@@ -42,7 +42,7 @@ export default function CaseStudyGrid() {
           What we&apos;ve built.
         </h2>
         <p className="font-sans text-gray-500 mb-10 text-center max-w-2xl mx-auto">
-          Custom software and AI systems.
+          Custom software development and AI automation projects built by our agency.
           <br />
           All live and in production.
         </p>
@@ -67,7 +67,7 @@ export default function CaseStudyGrid() {
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           {filteredStudies.map((cs) => (
-            <div
+            <article
               key={cs.id}
               onClick={() => setActiveCaseStudy(cs)}
               className="group border border-[#EEEEEE] rounded-xl overflow-hidden cursor-pointer transition-all duration-300 ease-out hover:border-[#E8533A]/30 hover:shadow-[0_0_0_1px_rgba(232,83,58,0.15),0_8px_32px_rgba(232,83,58,0.12),0_2px_8px_rgba(232,83,58,0.08)] hover:-translate-y-1"
@@ -76,11 +76,10 @@ export default function CaseStudyGrid() {
               <div className="relative h-56 bg-[#F5F5F5] overflow-hidden">
                 <Image
                   src={cs.image}
-                  alt={cs.title}
+                  alt={`${cs.title} - ${cs.subtitle} custom software by GOATED.`}
                   fill
                   className="object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  unoptimized
                 />
               </div>
 
@@ -111,11 +110,18 @@ export default function CaseStudyGrid() {
                 <p className="text-2xl font-serif text-[#E8533A] mt-4">{cs.stat}</p>
 
                 {/* CTA */}
-                <p className="text-[#E8533A] text-sm mt-4 hover:underline cursor-pointer">
+                <a
+                  href={`/portfolio/${cs.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setActiveCaseStudy(cs);
+                  }}
+                  className="text-[#E8533A] text-sm mt-4 hover:underline cursor-pointer block"
+                >
                   View Case Study →
-                </p>
+                </a>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       </section>

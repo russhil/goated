@@ -83,7 +83,7 @@ export default function HeroQuote() {
             animationPlayState: visible ? "running" : "paused",
           }}
         >
-          Software &amp; AI Automation Agency
+          Custom Software Development &amp; AI Automation Agency | Mumbai, India
         </h1>
       </div>
     </section>
