@@ -10,13 +10,13 @@ export const metadata: Metadata = {
   description:
     "Explore GOATED.'s portfolio of custom software and AI automation projects. Case studies in healthcare booking systems, music catalogue management, e-commerce platforms, CRM development, and AI-powered productivity tools.",
   alternates: {
-    canonical: "https://goated.dev/portfolio",
+    canonical: "https://goatedd.tech/portfolio",
   },
   openGraph: {
     title: "Our Work | Software & AI Automation Case Studies | GOATED.",
     description:
       "Custom software and AI automation projects, all live and in production. See how we've helped businesses automate operations and scale.",
-    url: "https://goated.dev/portfolio",
+    url: "https://goatedd.tech/portfolio",
   },
 };
 
@@ -26,7 +26,7 @@ function PortfolioJsonLd() {
     "@type": "CollectionPage",
     name: "GOATED. Portfolio | Software & AI Case Studies",
     description: "Custom software and AI automation case studies by GOATED.",
-    url: "https://goated.dev/portfolio",
+    url: "https://goatedd.tech/portfolio",
     hasPart: caseStudies.map((cs) => ({
       "@type": "CreativeWork",
       name: cs.title,

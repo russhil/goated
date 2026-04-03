@@ -88,7 +88,7 @@ export default async function Image() {
           }}
         >
           <span style={{ fontSize: "16px", color: "#666", letterSpacing: "2px" }}>
-            goated.dev
+            goatedd.tech
           </span>
           <span
             style={{

@@ -23,12 +23,12 @@ export async function generateMetadata({
     title: `${cs.title} | ${cs.subtitle} | GOATED. Case Study`,
     description: `${cs.description} Built by GOATED., a custom software development and AI automation agency in Mumbai.`,
     alternates: {
-      canonical: `https://goated.dev/portfolio/${cs.id}`,
+      canonical: `https://goatedd.tech/portfolio/${cs.id}`,
     },
     openGraph: {
       title: `${cs.title} | ${cs.subtitle} | GOATED.`,
       description: cs.description,
-      url: `https://goated.dev/portfolio/${cs.id}`,
+      url: `https://goatedd.tech/portfolio/${cs.id}`,
     },
   };
 }
@@ -49,19 +49,19 @@ export default function CaseStudyPage({
         "@type": "ListItem",
         position: 1,
         name: "Home",
-        item: "https://goated.dev",
+        item: "https://goatedd.tech",
       },
       {
         "@type": "ListItem",
         position: 2,
         name: "Portfolio",
-        item: "https://goated.dev/portfolio",
+        item: "https://goatedd.tech/portfolio",
       },
       {
         "@type": "ListItem",
         position: 3,
         name: cs.title,
-        item: `https://goated.dev/portfolio/${cs.id}`,
+        item: `https://goatedd.tech/portfolio/${cs.id}`,
       },
     ],
   };
@@ -74,7 +74,7 @@ export default function CaseStudyPage({
     creator: {
       "@type": "Organization",
       name: "GOATED.",
-      url: "https://goated.dev",
+      url: "https://goatedd.tech",
     },
     dateCreated: cs.year,
     ...(cs.link ? { url: cs.link } : {}),

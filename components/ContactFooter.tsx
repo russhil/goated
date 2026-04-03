@@ -162,14 +162,14 @@ export default function ContactFooter() {
           {/* Nav links */}
           <div className="flex flex-col items-start md:items-center gap-3">
             <div className="flex items-center gap-6">
-              {["Home", "Portfolio", "Contact"].map((label) => {
-                const href = label === "Home" ? "/#hero" : label === "Portfolio" ? "/portfolio" : "/#contact";
+              {["Home", "Portfolio", "Blog", "Contact"].map((label) => {
+                const href = label === "Home" ? "/#hero" : label === "Portfolio" ? "/portfolio" : label === "Blog" ? "/blog" : "/#contact";
                 return (
                 <a
                   key={label}
                   href={href}
                   onClick={(e) => {
-                    if (label !== "Portfolio") {
+                    if (label !== "Portfolio" && label !== "Blog") {
                        e.preventDefault();
                        handleNavClick(href.replace('/', ''));
                     }

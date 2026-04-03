@@ -33,7 +33,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://goated.dev"),
+  metadataBase: new URL("https://goatedd.tech"),
   title: {
     default: "GOATED. | Custom Software & AI Automation Agency in Mumbai, India",
     template: "%s | GOATED.",
@@ -62,14 +62,14 @@ export const metadata: Metadata = {
     "business process automation",
     "digital transformation agency",
   ],
-  authors: [{ name: "GOATED.", url: "https://goated.dev" }],
+  authors: [{ name: "GOATED.", url: "https://goatedd.tech" }],
   creator: "GOATED.",
   publisher: "GOATED.",
   openGraph: {
     title: "GOATED. | Custom Software & AI Automation Agency",
     description:
       "We build custom software, AI automations, and internal tools from scratch. Bespoke solutions that make your business unstoppable.",
-    url: "https://goated.dev",
+    url: "https://goatedd.tech",
     siteName: "GOATED.",
     locale: "en_IN",
     type: "website",
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
       "We build custom software, AI automations, and internal tools from scratch. Bespoke solutions that make your business unstoppable.",
   },
   alternates: {
-    canonical: "https://goated.dev",
+    canonical: "https://goatedd.tech",
   },
   robots: {
     index: true,
@@ -107,15 +107,15 @@ export default function RootLayout({
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: "GOATED.",
-      url: "https://goated.dev",
+      url: "https://goatedd.tech",
       description: "Custom Software & AI Automation Agency based in Mumbai, India.",
     },
     {
       "@context": "https://schema.org",
       "@type": "ProfessionalService",
       name: "GOATED.",
-      url: "https://goated.dev",
-      logo: "https://goated.dev/icon.png",
+      url: "https://goatedd.tech",
+      logo: "https://goatedd.tech/icon.png",
       description:
         "GOATED. is a custom software development and AI automation agency based in Mumbai. We build bespoke software, AI-powered workflows, internal tools, and business automation systems.",
       serviceType: [

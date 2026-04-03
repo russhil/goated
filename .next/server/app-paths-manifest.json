@@ -1,5 +1,21 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
+  "/icon.png/route": "app/icon.png/route.js",
+  "/robots.txt/route": "app/robots.txt/route.js",
+  "/sitemap.xml/route": "app/sitemap.xml/route.js",
   "/page": "app/page.js",
-  "/portfolio/page": "app/portfolio/page.js"
+  "/blog/page": "app/blog/page.js",
+  "/portfolio/page": "app/portfolio/page.js",
+  "/portfolio/[slug]/page": "app/portfolio/[slug]/page.js",
+  "/blog/[slug]/page": "app/blog/[slug]/page.js",
+  "/blog/[slug]/twitter-image/[[...__metadata_id__]]/route": "app/blog/[slug]/twitter-image/[[...__metadata_id__]]/route.js",
+  "/blog/[slug]/opengraph-image/[[...__metadata_id__]]/route": "app/blog/[slug]/opengraph-image/[[...__metadata_id__]]/route.js",
+  "/portfolio/[slug]/opengraph-image/[[...__metadata_id__]]/route": "app/portfolio/[slug]/opengraph-image/[[...__metadata_id__]]/route.js",
+  "/portfolio/[slug]/twitter-image/[[...__metadata_id__]]/route": "app/portfolio/[slug]/twitter-image/[[...__metadata_id__]]/route.js",
+  "/blog/twitter-image/route": "app/blog/twitter-image/route.js",
+  "/blog/opengraph-image/route": "app/blog/opengraph-image/route.js",
+  "/portfolio/opengraph-image/route": "app/portfolio/opengraph-image/route.js",
+  "/portfolio/twitter-image/route": "app/portfolio/twitter-image/route.js",
+  "/opengraph-image/route": "app/opengraph-image/route.js",
+  "/twitter-image/route": "app/twitter-image/route.js"
 }

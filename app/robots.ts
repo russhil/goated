@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
       },
     ],
-    sitemap: "https://goated.dev/sitemap.xml",
+    sitemap: "https://goatedd.tech/sitemap.xml",
   };
 }

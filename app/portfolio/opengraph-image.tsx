@@ -98,7 +98,7 @@ export default async function Image() {
           }}
         >
           <span style={{ fontSize: "16px", color: "#666", letterSpacing: "2px" }}>
-            goated.dev/portfolio
+            goatedd.tech/portfolio
           </span>
           <div style={{ display: "flex", gap: "16px" }}>
             {["AI Automation", "E-Commerce", "CRM", "Healthcare", "Music"].map(

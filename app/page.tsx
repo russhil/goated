@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description:
     "GOATED. builds custom software, AI-powered workflows, and automation systems from scratch. A bespoke software development and AI automation agency in Mumbai serving businesses across India. No templates. No off-the-shelf solutions.",
   alternates: {
-    canonical: "https://goated.dev",
+    canonical: "https://goatedd.tech",
   },
 };
 
