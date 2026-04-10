@@ -100,10 +100,13 @@ body {
   object-fit: contain;
   filter: grayscale(100%) brightness(0.5);
   mix-blend-mode: multiply;
-  transition: transform 300ms ease;
+  transition: filter 400ms ease, drop-shadow 400ms ease, transform 400ms ease;
 }
-.logo-item img:hover {
-  transform: scale(1.2);
+.logo-item:hover img {
+  filter: drop-shadow(0 0 15px rgba(232, 83, 58, 0.8))
+          drop-shadow(0 0 30px rgba(232, 83, 58, 0.6))
+          grayscale(0%) brightness(1.2);
+  transform: scale(1.15);
 }
 
 /* News / Featured-in logos */

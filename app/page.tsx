@@ -10,6 +10,7 @@ import Team from "@/components/Team";
 import ContactFooter from "@/components/ContactFooter";
 import FAQ from "@/components/FAQ";
 import { FAQS } from "@/lib/faqData";
+import FooterBlur from "@/components/FooterBlur";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -82,6 +83,7 @@ export default function Home() {
       <Team />
       <FAQ />
       <ContactFooter />
+      <FooterBlur />
     </main>
   );
 }

@@ -18,11 +18,6 @@ const ITEMS = [
     heading: "We move fast. Unusually fast.",
     desc: "Our first working prototype lands in your hands within 2 weeks. You give feedback on real software, not mockups.",
   },
-  {
-    num: "04",
-    heading: "We disappear when the job is done.",
-    desc: "No lock-in. No retainer dependency. We document everything, hand it over clean, and you own it fully.",
-  },
 ];
 
 export default function WhatMakesDifferent() {
@@ -72,7 +67,6 @@ export default function WhatMakesDifferent() {
         height: `${ITEMS.length * 170}vh`,
       }}
     >
-      {/* Sticky viewport — stays pinned while you scroll through the tall container */}
       <div className="sticky top-0 h-screen flex items-center overflow-hidden px-6 md:px-16">
         <div className="max-w-[1400px] mx-auto w-full relative">
           {/* Section label */}
@@ -103,7 +97,7 @@ export default function WhatMakesDifferent() {
                   }}
                 >
                   {/* Large faded number */}
-                  <span className="text-8xl font-serif text-gray-100 absolute -top-4 left-0 select-none">
+                  <span className="text-8xl font-serif text-gray-200 absolute -top-4 left-0 select-none">
                     {item.num}
                   </span>
 

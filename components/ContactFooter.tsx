@@ -149,7 +149,7 @@ export default function ContactFooter() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-[#F0F0F0] pt-12 pb-8 max-w-[1400px] mx-auto px-6 md:px-12">
+      <footer className="border-t border-dark/10 pt-12 pb-8 max-w-[1400px] mx-auto px-6 md:px-12 sticky bottom-0 z-10 bg-gradient-to-t from-white/95 to-white/60 backdrop-blur-md">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start mb-12">
           {/* Logo */}
           <div className="font-mono text-sm tracking-tight">

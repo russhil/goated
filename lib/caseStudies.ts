@@ -33,7 +33,8 @@ export const caseStudies: CaseStudy[] = [
       'We took 100+ spreadsheets across artists, royalties, splits and ISRC codes and collapsed them into one unified catalogue system. Now expanding to all labels on the roster including Seedhe Maut, with an artist-facing app in development.',
     stat: '100+ spreadsheets → 1 system',
     problem:
-      'Azadi Records were managing their entire catalogue - 32+ releases, multiple artists, complex royalty splits - across 6 disconnected spreadsheets. Every release meant hours of manual updates, and mistakes were inevitable.',
+<<<<<<< Updated upstream
+      'Azadi Records managed their entire catalogue — 32+ releases, multiple artists, complex royalty splits — across 100 disconnected spreadsheets. Every release meant hours of manual updates, and mistakes were inevitable.',
     built:
       'A centralised catalogue management system with a live overview dashboard, ISRC tracking, automated split calculations, and a licensor management module. Built in React with a Supabase backend.',
     result:
@@ -103,13 +104,13 @@ export const caseStudies: CaseStudy[] = [
       <text x="300" y="30" font-size="9" fill="#999" font-weight="500">FRI</text>
       <text x="350" y="30" font-size="9" fill="#999" font-weight="500">SAT</text>
       ${Array.from({ length: 4 }, (_, row) =>
-        Array.from({ length: 6 }, (_, col) => {
-          const x = 95 + col * 50;
-          const y = 40 + row * 50;
-          const booked = (row === 0 && col === 1) || (row === 1 && col === 0) || (row === 2 && col === 3) || (row === 1 && col === 4) || (row === 3 && col === 2);
-          return `<rect x="${x}" y="${y}" width="42" height="40" rx="4" fill="${booked ? '#E8533A' : 'white'}" opacity="${booked ? '0.8' : '1'}" stroke="#EEEEEE" stroke-width="1"/>`;
-        }).join('')
-      ).join('')}
+      Array.from({ length: 6 }, (_, col) => {
+        const x = 95 + col * 50;
+        const y = 40 + row * 50;
+        const booked = (row === 0 && col === 1) || (row === 1 && col === 0) || (row === 2 && col === 3) || (row === 1 && col === 4) || (row === 3 && col === 2);
+        return `<rect x="${x}" y="${y}" width="42" height="40" rx="4" fill="${booked ? '#E8533A' : 'white'}" opacity="${booked ? '0.8' : '1'}" stroke="#EEEEEE" stroke-width="1"/>`;
+      }).join('')
+    ).join('')}
       <rect x="310" y="6" width="80" height="22" rx="11" fill="#E8533A"/>
       <text x="350" y="21" text-anchor="middle" font-size="9" fill="white" font-weight="500">+ New Booking</text>
     </svg>`,

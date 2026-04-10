@@ -47,7 +47,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-sm z-[100]" id="navbar">
+      <nav className="fixed top-0 left-0 w-full bg-gradient-to-b from-white/95 to-white/0 backdrop-blur-md pb-4 z-[100]" id="navbar">
         <div className="max-w-[1400px] mx-auto px-6 md:px-12 h-16 flex items-center justify-between relative">
           {/* Logo */}
           <Link
