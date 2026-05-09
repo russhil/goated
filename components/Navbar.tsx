@@ -4,10 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useBooking } from "./BookingProvider";
+import { useAuth } from "./AuthProvider";
+import { isAdmin } from "@/lib/admin";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
   { label: "Portfolio", href: "/portfolio" },
+  { label: "Explore Jobs", href: "/explore" },
   { label: "Blogs", href: "/blog" },
 ];
 
@@ -15,10 +18,23 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const { open: openBooking } = useBooking();
+  const { user, loading, openSignIn, signOut } = useAuth();
+  const userIsAdmin = isAdmin(user?.email);
+  const initial = (user?.email || "?").charAt(0).toUpperCase();
 
   const handleBook = () => {
     setMobileOpen(false);
     openBooking();
+  };
+
+  const handleSignIn = () => {
+    setMobileOpen(false);
+    openSignIn(pathname || "/explore/dashboard");
+  };
+
+  const handleSignOut = async () => {
+    setMobileOpen(false);
+    await signOut();
   };
 
   return (
@@ -50,6 +66,8 @@ export default function Navbar() {
                   ? pathname === "/"
                   : item.href === "/portfolio"
                   ? pathname === "/portfolio"
+                  : item.href === "/explore"
+                  ? pathname?.startsWith("/explore")
                   : item.href === "/blog"
                   ? pathname?.startsWith("/blog")
                   : false;
@@ -57,7 +75,7 @@ export default function Navbar() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`px-3.5 py-1.5 rounded-full text-sm font-sans transition-all duration-300 ${
+                  className={`px-3.5 py-1.5 rounded-full text-sm font-sans transition-all duration-300 whitespace-nowrap ${
                     isActive ? "bg-coral/10 text-coral" : "text-dark/70 hover:text-dark hover:bg-white/40"
                   }`}
                 >
@@ -67,10 +85,63 @@ export default function Navbar() {
             })}
           </div>
 
+          {/* Auth — desktop */}
+          {!loading && (
+            <div className="hidden md:flex items-center gap-1 mr-1 shrink-0">
+              {user ? (
+                <div className="relative group">
+                  <Link
+                    href="/explore/dashboard"
+                    aria-label="Account"
+                    className="block w-8 h-8 rounded-full bg-coral text-white flex items-center justify-center font-mono text-xs font-bold ring-2 ring-transparent hover:ring-coral/40 transition"
+                  >
+                    {initial}
+                  </Link>
+                  <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-white shadow-xl border border-dark/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
+                    <div className="absolute -top-2 right-0 h-2 w-full" />
+
+                    <div className="px-4 py-3 border-b border-dark/10">
+                      <p className="font-mono text-[11px] text-muted truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                    <Link
+                      href="/explore/dashboard"
+                      className="block px-4 py-2.5 font-sans text-sm text-dark hover:bg-dark/5 transition"
+                    >
+                      Your applications
+                    </Link>
+                    {userIsAdmin && (
+                      <Link
+                        href="/admin"
+                        className="block px-4 py-2.5 font-sans text-sm text-coral hover:bg-coral/5 transition"
+                      >
+                        Admin panel
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full text-left px-4 py-2.5 font-sans text-sm text-muted hover:text-dark hover:bg-dark/5 transition"
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleSignIn}
+                  className="px-3 py-1.5 rounded-full text-sm font-sans text-dark/70 hover:text-dark hover:bg-white/40 transition-all duration-300 whitespace-nowrap"
+                >
+                  Sign in
+                </button>
+              )}
+            </div>
+          )}
+
           {/* CTA - desktop */}
           <button
             onClick={handleBook}
-            className="hidden md:inline-flex items-center gap-1.5 px-4 py-1.5 bg-dark text-white rounded-full text-sm font-sans font-medium transition-all duration-300 hover:bg-coral hover:shadow-[0_4px_16px_rgba(232,83,58,0.35)] shrink-0"
+            className="hidden md:inline-flex items-center gap-1.5 px-4 py-1.5 bg-dark text-white rounded-full text-sm font-sans font-medium transition-all duration-300 hover:bg-coral hover:shadow-[0_4px_16px_rgba(232,83,58,0.35)] hover:-translate-y-0.5 shrink-0 animate-soft-pulse"
           >
             <svg
               width="14"
@@ -119,6 +190,24 @@ export default function Navbar() {
             {item.label}
           </Link>
         ))}
+        {!loading && user && userIsAdmin && (
+          <Link
+            href="/admin"
+            onClick={() => setMobileOpen(false)}
+            className="font-serif text-2xl text-coral hover:underline transition-colors"
+          >
+            Admin
+          </Link>
+        )}
+        {!loading && user && (
+          <Link
+            href="/explore/dashboard"
+            onClick={() => setMobileOpen(false)}
+            className="font-serif text-2xl text-dark/70 hover:text-coral transition-colors"
+          >
+            Your applications
+          </Link>
+        )}
         <button
           onClick={handleBook}
           className="mt-4 inline-flex items-center gap-2 px-7 py-3 bg-dark text-white rounded-full text-base font-sans font-medium hover:bg-coral transition-colors"
@@ -131,6 +220,23 @@ export default function Navbar() {
           </svg>
           Book a call
         </button>
+        {!loading && (
+          user ? (
+            <button
+              onClick={handleSignOut}
+              className="font-mono text-sm text-muted hover:text-dark transition-colors"
+            >
+              {"// sign out"}
+            </button>
+          ) : (
+            <button
+              onClick={handleSignIn}
+              className="font-mono text-sm text-muted hover:text-dark transition-colors"
+            >
+              {"// sign in"}
+            </button>
+          )
+        )}
       </div>
     </>
   );

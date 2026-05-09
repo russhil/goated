@@ -30,7 +30,7 @@ export default function HeroQuote() {
         <blockquote className="relative">
           {/* Opening quote mark */}
           <span
-            className="absolute -top-8 -left-4 md:-top-12 md:-left-8 text-coral font-serif text-7xl md:text-9xl leading-none select-none opacity-80"
+            className="absolute -top-8 -left-4 md:-top-12 md:-left-8 text-coral font-serif text-7xl md:text-9xl leading-none select-none opacity-80 animate-slow-float"
             aria-hidden="true"
           >
             &ldquo;
@@ -71,42 +71,49 @@ export default function HeroQuote() {
 
           {/* Closing quote mark */}
           <span
-            className="absolute -bottom-8 -right-4 md:-bottom-12 md:-right-8 text-coral font-serif text-7xl md:text-9xl leading-none select-none opacity-80"
+            className="absolute -bottom-8 -right-4 md:-bottom-12 md:-right-8 text-coral font-serif text-7xl md:text-9xl leading-none select-none opacity-80 animate-slow-float"
             aria-hidden="true"
           >
             &rdquo;
           </span>
         </blockquote>
 
-        <h1
-          className="mt-12 text-center font-sans tracking-[0.2em] uppercase text-muted text-xs md:text-sm word-animate"
-          style={{
-            animationDelay: visible ? `${(words1.length + words2.length) * 80 + 200}ms` : "0ms",
-            animationPlayState: visible ? "running" : "paused",
-          }}
-        >
-          Custom Software Development &amp; AI Automation Agency | Mumbai, India
-        </h1>
-
-        <div
-          className="mt-10 flex items-center justify-center gap-4 word-animate"
-          style={{
-            animationDelay: visible ? `${(words1.length + words2.length) * 80 + 400}ms` : "0ms",
-            animationPlayState: visible ? "running" : "paused",
-          }}
-        >
-          <button
-            onClick={openBooking}
-            className="inline-flex items-center gap-2 px-7 py-3.5 bg-dark text-white rounded-full text-sm md:text-base font-sans font-medium hover:bg-coral transition-all duration-300 hover:shadow-[0_8px_24px_rgba(232,83,58,0.4)]"
+        <div className="mt-12 flex flex-col items-center gap-8">
+          <h1
+            className="font-sans tracking-[0.2em] uppercase text-muted text-xs md:text-sm word-animate"
+            style={{
+              animationDelay: visible ? `${(words1.length + words2.length) * 80 + 200}ms` : "0ms",
+              animationPlayState: visible ? "running" : "paused",
+            }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            Book a 15-min call
-          </button>
+            Software studio. AI engineers. Real ROI. &middot; Mumbai
+          </h1>
+
+          <div
+            className="flex flex-col items-center gap-3 word-animate"
+            style={{
+              animationDelay: visible ? `${(words1.length + words2.length) * 80 + 400}ms` : "0ms",
+              animationPlayState: visible ? "running" : "paused",
+            }}
+          >
+            <button
+              onClick={openBooking}
+              className="group relative inline-flex items-center gap-2 px-7 py-3.5 bg-dark text-white rounded-full text-sm md:text-base font-sans font-medium hover:bg-coral transition-all duration-300 hover:shadow-[0_8px_24px_rgba(232,83,58,0.4)] hover:-translate-y-0.5"
+            >
+              <span className="absolute inset-0 rounded-full bg-coral/30 opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 -z-10 blur-md" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:rotate-6">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              Book a call with us
+              <span className="ml-1 transition-transform duration-300 group-hover:translate-x-1">→</span>
+            </button>
+            <p className="font-mono text-xs text-muted/70 tracking-wide">
+              {"// explore how we can help your business"}
+            </p>
+          </div>
         </div>
       </div>
     </section>

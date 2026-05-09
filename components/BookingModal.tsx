@@ -56,7 +56,7 @@ export default function BookingModal({ isOpen, onClose }: Props) {
             <span className="text-coral font-bold">.</span>
             <span className="text-dark">]</span>
             <span className="text-muted ml-2 md:ml-3 hidden sm:inline">
-              {"// book a 15-min alignment call"}
+              {"// book a call — explore how we can help your business"}
             </span>
           </div>
           <button

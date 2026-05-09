@@ -6,7 +6,7 @@ import { useBooking } from "./BookingProvider";
 
 export default function ContactFooter() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [formState, setFormState] = useState({ name: "", email: "", message: "" });
+  const [formState, setFormState] = useState({ name: "", email: "", phone: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { open: openBooking } = useBooking();
@@ -18,21 +18,27 @@ export default function ContactFooter() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch("https://formspree.io/f/xnjoppzr", {
+      const response = await fetch("/api/contact", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json"
         },
-        body: JSON.stringify(formState)
+        body: JSON.stringify(formState),
       });
-      
-      if (response.ok) {
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data?.ok) {
         setSubmitted(true);
-        setFormState({ name: "", email: "", message: "" });
+        setFormState({ name: "", email: "", phone: "", message: "" });
         setTimeout(() => setSubmitted(false), 5000);
+      } else if (response.status === 429) {
+        alert(data?.error || "Too many submissions. Try again in a bit.");
       } else {
-        alert("Something went wrong. Please try again or email us directly at hello@goatedd.tech");
+        alert(
+          data?.error ||
+            "Something went wrong. Please try again or email us directly at hello@goatedd.tech"
+        );
       }
     } catch (error) {
       console.error("Error submitting form", error);
@@ -66,17 +72,19 @@ export default function ContactFooter() {
             <div className="flex flex-col gap-3">
               <button
                 onClick={openBooking}
-                className="inline-flex items-center gap-2 px-7 py-4 bg-coral text-white font-sans text-base font-medium rounded-full hover:shadow-[0_10px_32px_rgba(232,83,58,0.4)] hover:-translate-y-0.5 transition-all duration-300 w-fit"
+                className="group relative inline-flex items-center gap-2 px-7 py-4 bg-coral text-white font-sans text-base font-medium rounded-full hover:shadow-[0_10px_32px_rgba(232,83,58,0.4)] hover:-translate-y-0.5 transition-all duration-300 w-fit"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <span className="absolute inset-0 rounded-full bg-coral/40 opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 -z-10 blur-lg" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:rotate-6">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                   <line x1="16" y1="2" x2="16" y2="6" />
                   <line x1="8" y1="2" x2="8" y2="6" />
                   <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
-                Book a 15-min call →
+                Book a call with us
+                <span className="ml-1 transition-transform duration-300 group-hover:translate-x-1">→</span>
               </button>
-              <p className="font-mono text-xs text-muted">{"// pick a slot — no forms, no waiting"}</p>
+              <p className="font-mono text-xs text-muted">{"// explore how we can help your business"}</p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -118,6 +126,19 @@ export default function ContactFooter() {
                       className="form-input"
                       value={formState.email}
                       onChange={(e) => setFormState({ ...formState, email: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="phone" className="sr-only">Your phone number</label>
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      required
+                      placeholder="Your phone number"
+                      className="form-input"
+                      value={formState.phone}
+                      onChange={(e) => setFormState({ ...formState, phone: e.target.value })}
                     />
                   </div>
                   <div>
@@ -187,14 +208,20 @@ export default function ContactFooter() {
           {/* Nav links */}
           <div className="flex flex-col items-start md:items-center gap-3">
             <div className="flex items-center gap-6">
-              {["Home", "Portfolio", "Blogs", "Contact"].map((label) => {
-                const href = label === "Home" ? "/#hero" : label === "Portfolio" ? "/portfolio" : label === "Blogs" ? "/blog" : "/#contact";
+              {["Home", "Portfolio", "Explore Jobs", "Blogs", "Contact"].map((label) => {
+                const href =
+                  label === "Home" ? "/#hero"
+                  : label === "Portfolio" ? "/portfolio"
+                  : label === "Explore Jobs" ? "/explore"
+                  : label === "Blogs" ? "/blog"
+                  : "/#contact";
+                const isRoute = label === "Portfolio" || label === "Explore Jobs" || label === "Blogs";
                 return (
                 <a
                   key={label}
                   href={href}
                   onClick={(e) => {
-                    if (label !== "Portfolio" && label !== "Blogs") {
+                    if (!isRoute) {
                        e.preventDefault();
                        handleNavClick(href.replace('/', ''));
                     }
