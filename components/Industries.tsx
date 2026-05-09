@@ -42,7 +42,7 @@ export default function Industries() {
     <section
       ref={sectionRef}
       id="industries"
-      className="py-20 md:py-32"
+      className="py-14 md:py-20"
     >
       <div className="max-w-[1400px] mx-auto px-6 md:px-12">
         <div className="section-label reveal">// who we work with</div>

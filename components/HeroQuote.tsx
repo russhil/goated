@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useBooking } from "./BookingProvider";
 
 export default function HeroQuote() {
   const [visible, setVisible] = useState(false);
+  const { open: openBooking } = useBooking();
 
   useEffect(() => {
     if (document.fonts && document.fonts.ready) {
@@ -22,7 +24,7 @@ export default function HeroQuote() {
   return (
     <section
       id="hero"
-      className="pt-40 pb-16 md:pt-48 md:pb-24 flex items-center justify-center px-6 md:px-12"
+      className="pt-32 pb-12 md:pt-40 md:pb-16 flex items-center justify-center px-6 md:px-12"
     >
       <div className="max-w-[900px] text-center">
         <blockquote className="relative">
@@ -85,6 +87,27 @@ export default function HeroQuote() {
         >
           Custom Software Development &amp; AI Automation Agency | Mumbai, India
         </h1>
+
+        <div
+          className="mt-10 flex items-center justify-center gap-4 word-animate"
+          style={{
+            animationDelay: visible ? `${(words1.length + words2.length) * 80 + 400}ms` : "0ms",
+            animationPlayState: visible ? "running" : "paused",
+          }}
+        >
+          <button
+            onClick={openBooking}
+            className="inline-flex items-center gap-2 px-7 py-3.5 bg-dark text-white rounded-full text-sm md:text-base font-sans font-medium hover:bg-coral transition-all duration-300 hover:shadow-[0_8px_24px_rgba(232,83,58,0.4)]"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Book a 15-min call
+          </button>
+        </div>
       </div>
     </section>
   );

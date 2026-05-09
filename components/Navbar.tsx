@@ -1,59 +1,41 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useBooking } from "./BookingProvider";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
   { label: "Portfolio", href: "/portfolio" },
-  { label: "Blog", href: "/blog" },
-  { label: "Contact", href: "#contact" },
+  { label: "Blogs", href: "/blog" },
 ];
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const scrollRef = useRef<HTMLSpanElement>(null);
-  const scrollRefMobile = useRef<HTMLSpanElement>(null);
+  const { open: openBooking } = useBooking();
 
-  useEffect(() => {
-    let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const scrollTop = window.scrollY;
-          const docHeight = document.body.scrollHeight - window.innerHeight;
-          const progress = docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
-          if (scrollRef.current) scrollRef.current.textContent = `${progress}%`;
-          if (scrollRefMobile.current) scrollRefMobile.current.textContent = `${progress}%`;
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const handleNavClick = (href: string) => {
+  const handleBook = () => {
     setMobileOpen(false);
-    if (href.startsWith("#")) {
-      const el = document.querySelector(href);
-      if (el) el.scrollIntoView({ behavior: "smooth" });
-    }
+    openBooking();
   };
 
   return (
     <>
-      <nav className="fixed top-0 left-0 w-full bg-gradient-to-b from-white/95 to-white/0 backdrop-blur-md pb-4 z-[100]" id="navbar">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-12 h-16 flex items-center justify-between relative">
+      <nav
+        className="fixed top-3 md:top-4 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-1.5rem)] md:w-[calc(100%-3rem)] max-w-[1100px]"
+        id="navbar"
+      >
+        <div
+          className="flex items-center justify-between gap-2 px-3 md:px-4 py-2 rounded-full bg-gradient-to-br from-white/35 via-white/20 to-white/10 backdrop-blur-2xl backdrop-saturate-150 border border-white/40"
+          style={{
+            boxShadow:
+              "0 8px 32px rgba(13,13,13,0.06), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(13,13,13,0.04)",
+          }}
+        >
           {/* Logo */}
-          <Link
-            href="/"
-            className="font-mono text-sm tracking-tight select-none"
-          >
+          <Link href="/" className="font-mono text-sm tracking-tight select-none pl-2 shrink-0">
             <span className="text-dark">[</span>
             <span className="text-dark font-bold">GOATED</span>
             <span className="text-coral font-bold">.</span>
@@ -61,34 +43,22 @@ export default function Navbar() {
           </Link>
 
           {/* Center nav - desktop */}
-          <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+          <div className="hidden md:flex items-center gap-1">
             {NAV_ITEMS.map((item) => {
               const isActive =
                 item.href === "/"
                   ? pathname === "/"
                   : item.href === "/portfolio"
                   ? pathname === "/portfolio"
+                  : item.href === "/blog"
+                  ? pathname?.startsWith("/blog")
                   : false;
-              return item.href.startsWith("#") ? (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavClick(item.href);
-                  }}
-                  className="px-4 py-1.5 rounded-full text-sm font-sans transition-all duration-300 text-dark/60 hover:text-dark"
-                >
-                  {item.label}
-                </a>
-              ) : (
+              return (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`px-4 py-1.5 rounded-full text-sm font-sans transition-all duration-300 ${
-                    isActive
-                      ? "bg-coral/10 text-coral"
-                      : "text-dark/60 hover:text-dark"
+                  className={`px-3.5 py-1.5 rounded-full text-sm font-sans transition-all duration-300 ${
+                    isActive ? "bg-coral/10 text-coral" : "text-dark/70 hover:text-dark hover:bg-white/40"
                   }`}
                 >
                   {item.label}
@@ -97,30 +67,32 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Right section - desktop */}
-          <div className="hidden md:flex items-center gap-6">
-            {/* Scroll indicator */}
-            <div className="flex items-center gap-2 font-mono text-xs text-muted">
-              <span>// scroll to explore</span>
-              <span ref={scrollRef} className="text-coral font-medium">0%</span>
-            </div>
-            
-            {/* CTA */}
-            <a
-              href="#contact"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavClick("#contact");
-              }}
-              className="px-5 py-2 bg-dark text-white rounded-full text-sm font-sans font-medium transition-colors hover:bg-coral"
+          {/* CTA - desktop */}
+          <button
+            onClick={handleBook}
+            className="hidden md:inline-flex items-center gap-1.5 px-4 py-1.5 bg-dark text-white rounded-full text-sm font-sans font-medium transition-all duration-300 hover:bg-coral hover:shadow-[0_4px_16px_rgba(232,83,58,0.35)] shrink-0"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              Let&apos;s Talk
-            </a>
-          </div>
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Book a call
+          </button>
 
           {/* Mobile hamburger */}
           <button
-            className="md:hidden flex flex-col gap-1.5 w-6"
+            className="md:hidden flex flex-col gap-1.5 w-6 mr-2"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
@@ -137,33 +109,28 @@ export default function Navbar() {
           mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       >
-        {NAV_ITEMS.map((item) =>
-          item.href.startsWith("#") ? (
-            <a
-              key={item.label}
-              href={item.href}
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavClick(item.href);
-              }}
-              className="font-serif text-4xl text-dark hover:text-coral transition-colors"
-            >
-              {item.label}
-            </a>
-          ) : (
-            <Link
-              key={item.label}
-              href={item.href}
-              onClick={() => setMobileOpen(false)}
-              className="font-serif text-4xl text-dark hover:text-coral transition-colors"
-            >
-              {item.label}
-            </Link>
-          )
-        )}
-        <div className="mt-8 font-mono text-xs text-muted">
-          // scroll to explore - <span ref={scrollRefMobile} className="text-coral">0%</span>
-        </div>
+        {NAV_ITEMS.map((item) => (
+          <Link
+            key={item.label}
+            href={item.href}
+            onClick={() => setMobileOpen(false)}
+            className="font-serif text-4xl text-dark hover:text-coral transition-colors"
+          >
+            {item.label}
+          </Link>
+        ))}
+        <button
+          onClick={handleBook}
+          className="mt-4 inline-flex items-center gap-2 px-7 py-3 bg-dark text-white rounded-full text-base font-sans font-medium hover:bg-coral transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          Book a call
+        </button>
       </div>
     </>
   );

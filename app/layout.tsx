@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Playfair_Display, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import FooterBlur from "@/components/FooterBlur";
+import BookingProvider from "@/components/BookingProvider";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -191,8 +192,10 @@ export default function RootLayout({
         />
       </head>
       <body>
-        {children}
-        <FooterBlur />
+        <BookingProvider>
+          {children}
+          <FooterBlur />
+        </BookingProvider>
       </body>
     </html>
   );

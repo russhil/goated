@@ -5,7 +5,6 @@ import HeroQuote from "@/components/HeroQuote";
 import LogoTicker from "@/components/LogoTicker";
 import WhatWeAre from "@/components/WhatWeAre";
 import Industries from "@/components/Industries";
-import WhatMakesDifferent from "@/components/WhatMakesDifferent";
 import Team from "@/components/Team";
 import ContactFooter from "@/components/ContactFooter";
 import FAQ from "@/components/FAQ";
@@ -24,7 +23,7 @@ export const metadata: Metadata = {
 
 function PortfolioLink() {
   return (
-    <section className="px-6 md:px-12 py-16 md:py-24 max-w-[1400px] mx-auto">
+    <section className="px-6 md:px-12 py-12 md:py-16 max-w-[1400px] mx-auto">
       <div className="section-label">{'// case studies'}</div>
       <h2
         className="font-serif text-[#0D0D0D] leading-[1.15] mb-6"
@@ -78,7 +77,6 @@ export default function Home() {
       <LogoTicker />
       <WhatWeAre />
       <Industries />
-      <WhatMakesDifferent />
       <PortfolioLink />
       <Team />
       <FAQ />

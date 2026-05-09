@@ -14,7 +14,7 @@ export default function FAQ() {
     <section
       ref={sectionRef}
       id="faq"
-      className="py-20 md:py-32 px-6 md:px-16 max-w-[900px] mx-auto"
+      className="py-14 md:py-20 px-6 md:px-16 max-w-[900px] mx-auto"
     >
       <div className="section-label reveal">{"// frequently asked questions"}</div>
 

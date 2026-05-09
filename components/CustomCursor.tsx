@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useBooking } from "./BookingProvider";
 
 export default function CustomCursor() {
   const cursorRef = useRef<HTMLDivElement>(null);
   const pos = useRef({ x: 0, y: 0 });
   const target = useRef({ x: 0, y: 0 });
   const isHovering = useRef(false);
+  const { isOpen } = useBooking();
 
   useEffect(() => {
     // Hide on mobile
@@ -49,7 +51,6 @@ export default function CustomCursor() {
 
     let raf: number;
     const animate = () => {
-      // Lerp smoothing (30% per frame for better responsiveness)
       pos.current.x += (target.current.x - pos.current.x) * 0.3;
       pos.current.y += (target.current.y - pos.current.y) * 0.3;
 
@@ -74,15 +75,25 @@ export default function CustomCursor() {
     };
   }, []);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.documentElement.style.cursor = "auto";
+    } else {
+      document.documentElement.style.cursor = "";
+    }
+  }, [isOpen]);
+
   return (
     <div
       ref={cursorRef}
-      className="fixed top-0 left-0 pointer-events-none z-[9999] rounded-full hidden md:block"
+      className={`fixed top-0 left-0 pointer-events-none z-[9999] rounded-full hidden md:block transition-opacity duration-200 ${
+        isOpen ? "opacity-0" : "opacity-100"
+      }`}
       style={{
         width: 20,
         height: 20,
         background: "rgba(232, 83, 58, 0.5)",
-        transition: "width 0.2s ease, height 0.2s ease",
+        transition: "width 0.2s ease, height 0.2s ease, opacity 0.2s ease",
       }}
     />
   );

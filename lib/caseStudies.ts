@@ -33,7 +33,6 @@ export const caseStudies: CaseStudy[] = [
       'We took 100+ spreadsheets across artists, royalties, splits and ISRC codes and collapsed them into one unified catalogue system. Now expanding to all labels on the roster including Seedhe Maut, with an artist-facing app in development.',
     stat: '100+ spreadsheets → 1 system',
     problem:
-<<<<<<< Updated upstream
       'Azadi Records managed their entire catalogue — 32+ releases, multiple artists, complex royalty splits — across 100 disconnected spreadsheets. Every release meant hours of manual updates, and mistakes were inevitable.',
     built:
       'A centralised catalogue management system with a live overview dashboard, ISRC tracking, automated split calculations, and a licensor management module. Built in React with a Supabase backend.',
@@ -288,6 +287,114 @@ export const caseStudies: CaseStudy[] = [
       <rect x="210" y="194" width="170" height="52" rx="6" fill="#F5F5F5"/>
       <text x="295" y="224" text-anchor="middle" font-size="9" fill="#BBBBBB">Product Image</text>
       <text x="295" y="240" text-anchor="middle" font-size="8" fill="#999">₹4,499</text>
+    </svg>`,
+  },
+  {
+    id: 'zenspace',
+    image: '/zenspace.png',
+    category: 'client',
+    tags: ['CREATIVE', 'BRAND SITE'],
+    status: 'live',
+    title: 'Zenspace',
+    subtitle: 'Tattoo Studio Brand Site',
+    client: 'Zenspace Tattoo Studio',
+    year: '2025',
+    description:
+      'A complete brand site for Zenspace — categories, artist directory, piercing services, and a streamlined "Book consultation" flow. Built to convert browsers into bookings.',
+    stat: 'Brand site → consultation pipeline',
+    problem:
+      'Zenspace was sending prospective clients to Instagram. With no website, every consultation request was a manual DM thread, artist portfolios were scattered, and there was no way to filter by style or artist before reaching out.',
+    built:
+      'A full brand website with category-based navigation (tattoos, piercing, custom), artist directory with portfolios, and a single "Book consultation" CTA wired to WhatsApp. Soft purple gradient design, smooth navigation, mobile-first.',
+    result:
+      'Consultation requests now arrive pre-qualified — clients pick their artist and style before messaging. The Instagram-only era is over.',
+    resultStat: 'Pre-qualified consults from day one.',
+    mockupSvg: `<svg viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="zen-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#F5F0FF"/>
+          <stop offset="100%" stop-color="#E8DFFF"/>
+        </linearGradient>
+      </defs>
+      <rect width="400" height="260" rx="8" fill="url(#zen-bg)"/>
+      <rect x="40" y="20" width="320" height="36" rx="18" fill="white" opacity="0.6"/>
+      <circle cx="60" cy="38" r="8" fill="#7C3AED" opacity="0.7"/>
+      <text x="76" y="42" font-size="9" fill="#0D0D0D" font-weight="600">Zenspace</text>
+      <text x="160" y="42" font-size="8" fill="#666">Home</text>
+      <text x="200" y="42" font-size="8" fill="#666">Category</text>
+      <text x="252" y="42" font-size="8" fill="#666">Artists</text>
+      <text x="290" y="42" font-size="8" fill="#666">Contact</text>
+      <rect x="318" y="28" width="38" height="20" rx="10" fill="#0D0D0D"/>
+      <text x="337" y="41" text-anchor="middle" font-size="7" fill="white" font-weight="500">Book</text>
+      <circle cx="200" cy="98" r="8" fill="none" stroke="#0D0D0D" stroke-width="1.5"/>
+      <text x="200" y="130" text-anchor="middle" font-size="11" font-style="italic" font-family="serif" fill="#0D0D0D">A place where we create</text>
+      <text x="200" y="146" text-anchor="middle" font-size="11" font-style="italic" font-family="serif" fill="#0D0D0D">your story</text>
+      <rect x="20" y="170" width="68" height="80" rx="6" fill="white" opacity="0.7"/>
+      <rect x="96" y="170" width="68" height="80" rx="6" fill="white" opacity="0.7"/>
+      <rect x="172" y="170" width="68" height="80" rx="6" fill="white" opacity="0.7"/>
+      <rect x="248" y="170" width="68" height="80" rx="6" fill="white" opacity="0.7"/>
+      <rect x="324" y="170" width="56" height="80" rx="6" fill="white" opacity="0.7"/>
+    </svg>`,
+  },
+  {
+    id: 'inkdesk',
+    image: '/inkdesk.png',
+    category: 'tools',
+    tags: ['CREATIVE', 'CRM', 'TATTOO'],
+    status: 'live',
+    title: 'InkDesk',
+    subtitle: 'Tattoo Studio Operating System',
+    client: 'GOATED. (in-house product)',
+    link: 'https://inkdesk.goatedd.tech/dashboard',
+    year: '2025',
+    description:
+      'A purpose-built CRM for tattoo studios — orders, customers, artists, expenses, campaigns and finance in one operating system. Built from learnings on PSY CRM and being rolled out as a productized offering.',
+    stat: 'One dashboard for the whole studio',
+    problem:
+      'Tattoo studios juggle artist payouts, deposit tracking, customer source attribution, and expense logging across spreadsheets and notes. Existing CRMs are built for sales teams, not artists. Studios needed a single tool built for how they actually work.',
+    built:
+      'A dashboard-first studio operating system: System Overview with revenue/orders/customers/avg-order metrics, recent orders feed, top artists leaderboard with payout splits, customer source breakdown (Instagram, referral, walk-in), expense logging, and a campaigns module. Multi-tenant from day one.',
+    result:
+      'Live at inkdesk.goatedd.tech. Onboarding studios now — replacing the spreadsheet chaos with a clean, opinionated workflow.',
+    resultStat: 'Spreadsheets → operating system.',
+    mockupSvg: `<svg viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="260" rx="8" fill="#FBF7F2"/>
+      <rect x="0" y="0" width="92" height="260" fill="white"/>
+      <text x="14" y="26" font-size="9" font-weight="700" fill="#0D0D0D" letter-spacing="1">INKDESK</text>
+      <text x="14" y="38" font-size="6" fill="#999" letter-spacing="1">BY GOATED</text>
+      <rect x="8" y="54" width="76" height="22" rx="6" fill="#E8F5EE"/>
+      <text x="20" y="68" font-size="8" fill="#16A34A" font-weight="600">Dashboard</text>
+      <text x="20" y="92" font-size="8" fill="#666">Customers</text>
+      <text x="20" y="110" font-size="8" fill="#666">Orders</text>
+      <text x="20" y="128" font-size="8" fill="#666">Artists</text>
+      <text x="20" y="146" font-size="8" fill="#666">Campaigns</text>
+      <text x="20" y="164" font-size="8" fill="#666">Finance</text>
+      <text x="108" y="32" font-size="14" font-family="serif" font-weight="600" fill="#0D0D0D">System Overview</text>
+      <text x="108" y="46" font-size="7" fill="#999">Welcome back, admin</text>
+      <rect x="108" y="58" width="60" height="40" rx="4" fill="white"/>
+      <text x="114" y="72" font-size="6" fill="#666">Revenue</text>
+      <text x="114" y="90" font-size="11" fill="#0D0D0D" font-weight="700">₹2,500</text>
+      <rect x="174" y="58" width="60" height="40" rx="4" fill="white"/>
+      <text x="180" y="72" font-size="6" fill="#666">Orders</text>
+      <text x="180" y="90" font-size="11" fill="#0D0D0D" font-weight="700">1</text>
+      <rect x="240" y="58" width="60" height="40" rx="4" fill="white"/>
+      <text x="246" y="72" font-size="6" fill="#666">Customers</text>
+      <text x="246" y="90" font-size="11" fill="#0D0D0D" font-weight="700">10</text>
+      <rect x="306" y="58" width="60" height="40" rx="4" fill="white"/>
+      <text x="312" y="72" font-size="6" fill="#666">Avg Order</text>
+      <text x="312" y="90" font-size="11" fill="#0D0D0D" font-weight="700">₹6,800</text>
+      <rect x="108" y="108" width="124" height="124" rx="6" fill="white"/>
+      <text x="116" y="124" font-size="8" font-weight="600" fill="#0D0D0D">Recent Orders</text>
+      <line x1="116" y1="138" x2="222" y2="138" stroke="#EEE"/>
+      <text x="116" y="154" font-size="6" fill="#0D0D0D">Aarav K. — ₹2,500</text>
+      <text x="116" y="170" font-size="6" fill="#0D0D0D">Isha V. — ₹8,000</text>
+      <text x="116" y="186" font-size="6" fill="#0D0D0D">Rahul B. — ₹4,500</text>
+      <rect x="240" y="108" width="126" height="124" rx="6" fill="white"/>
+      <text x="248" y="124" font-size="8" font-weight="600" fill="#0D0D0D">Top Artists</text>
+      <rect x="248" y="138" width="110" height="4" rx="2" fill="#16A34A"/>
+      <rect x="248" y="152" width="84" height="4" rx="2" fill="#16A34A"/>
+      <rect x="248" y="166" width="74" height="4" rx="2" fill="#16A34A"/>
+      <rect x="248" y="180" width="62" height="4" rx="2" fill="#16A34A"/>
     </svg>`,
   },
 ];

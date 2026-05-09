@@ -27,7 +27,7 @@ const allLogos = [...logos, ...logos];
 
 export default function LogoTicker() {
   return (
-    <section className="py-12 md:py-16 border-y border-[#F0F0F0] overflow-hidden">
+    <section className="py-8 md:py-12 border-y border-[#F0F0F0] overflow-hidden">
       {/* Label */}
       <p className="font-mono text-[11px] tracking-[0.2em] text-coral text-center mb-10 lowercase">
         {'// worked alongside'}

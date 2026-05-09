@@ -71,7 +71,7 @@ export default function WhatWeAre() {
     <section
       ref={sectionRef}
       id="what-we-are"
-      className="flex items-center px-6 md:px-16 py-20 md:py-32"
+      className="flex items-center px-6 md:px-16 py-14 md:py-20"
     >
       <div className="max-w-[1400px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
         {/* Left column - sticky */}

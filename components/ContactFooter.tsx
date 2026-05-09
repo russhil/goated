@@ -2,12 +2,14 @@
 
 import { useRef, useState } from "react";
 import { useRevealOnScroll } from "@/hooks/useRevealOnScroll";
+import { useBooking } from "./BookingProvider";
 
 export default function ContactFooter() {
   const sectionRef = useRef<HTMLElement>(null);
   const [formState, setFormState] = useState({ name: "", email: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { open: openBooking } = useBooking();
 
   useRevealOnScroll(sectionRef);
 
@@ -46,19 +48,42 @@ export default function ContactFooter() {
   };
 
   return (
-    <section ref={sectionRef} id="contact" className="py-20 md:py-32">
+    <section ref={sectionRef} id="contact" className="py-14 md:py-20">
       {/* Contact Section */}
-      <div className="max-w-[1400px] mx-auto px-6 md:px-12 mb-32 reveal">
+      <div className="max-w-[1400px] mx-auto px-6 md:px-12 mb-20 reveal">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-12 md:gap-16 items-center">
-          
-          {/* Left Column: Form & Heading */}
-          <div className="flex flex-col gap-10">
+
+          {/* Left Column: Booking + Form & Heading */}
+          <div className="flex flex-col gap-8">
             <h2
               className="font-serif text-dark leading-[1.15]"
               style={{ fontSize: "clamp(2.5rem, 4vw, 4rem)" }}
             >
               Ready to be unstoppable?
             </h2>
+
+            {/* Primary booking CTA */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={openBooking}
+                className="inline-flex items-center gap-2 px-7 py-4 bg-coral text-white font-sans text-base font-medium rounded-full hover:shadow-[0_10px_32px_rgba(232,83,58,0.4)] hover:-translate-y-0.5 transition-all duration-300 w-fit"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                Book a 15-min call →
+              </button>
+              <p className="font-mono text-xs text-muted">{"// pick a slot — no forms, no waiting"}</p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="font-mono text-xs uppercase tracking-widest text-muted/60">or send a message</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
 
             {/* Contact form */}
             <div className="w-full">
@@ -162,14 +187,14 @@ export default function ContactFooter() {
           {/* Nav links */}
           <div className="flex flex-col items-start md:items-center gap-3">
             <div className="flex items-center gap-6">
-              {["Home", "Portfolio", "Blog", "Contact"].map((label) => {
-                const href = label === "Home" ? "/#hero" : label === "Portfolio" ? "/portfolio" : label === "Blog" ? "/blog" : "/#contact";
+              {["Home", "Portfolio", "Blogs", "Contact"].map((label) => {
+                const href = label === "Home" ? "/#hero" : label === "Portfolio" ? "/portfolio" : label === "Blogs" ? "/blog" : "/#contact";
                 return (
                 <a
                   key={label}
                   href={href}
                   onClick={(e) => {
-                    if (label !== "Portfolio" && label !== "Blog") {
+                    if (label !== "Portfolio" && label !== "Blogs") {
                        e.preventDefault();
                        handleNavClick(href.replace('/', ''));
                     }
@@ -184,7 +209,6 @@ export default function ContactFooter() {
               {[
                 { label: "What We Do", href: "/#what-we-are" },
                 { label: "Industries", href: "/#industries" },
-                { label: "Why Us", href: "/#different" },
                 { label: "FAQ", href: "/#faq" },
               ].map(({ label, href }) => (
                 <a
