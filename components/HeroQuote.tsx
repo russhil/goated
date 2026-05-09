@@ -24,7 +24,7 @@ export default function HeroQuote() {
   return (
     <section
       id="hero"
-      className="pt-32 pb-12 md:pt-40 md:pb-16 flex items-center justify-center px-6 md:px-12"
+      className="pt-32 pb-16 md:pt-40 md:pb-24 flex items-center justify-center px-6 md:px-12"
     >
       <div className="max-w-[900px] text-center">
         <blockquote className="relative">
@@ -90,7 +90,7 @@ export default function HeroQuote() {
           </h1>
 
           <div
-            className="flex flex-col items-center gap-3 word-animate"
+            className="flex flex-col items-center gap-14 word-animate"
             style={{
               animationDelay: visible ? `${(words1.length + words2.length) * 80 + 400}ms` : "0ms",
               animationPlayState: visible ? "running" : "paused",
@@ -110,9 +110,6 @@ export default function HeroQuote() {
               Book a call with us
               <span className="ml-1 transition-transform duration-300 group-hover:translate-x-1">→</span>
             </button>
-            <p className="font-mono text-xs text-muted/70 tracking-wide">
-              {"// explore how we can help your business"}
-            </p>
           </div>
         </div>
       </div>

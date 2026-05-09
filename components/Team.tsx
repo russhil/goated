@@ -29,7 +29,7 @@ export default function Team() {
     <section
       ref={sectionRef}
       id="team"
-      className="py-14 md:py-20 px-6 md:px-16 text-center max-w-[1400px] mx-auto"
+      className="py-16 md:py-24 px-6 md:px-16 text-center max-w-[1400px] mx-auto"
     >
       <div className="section-label reveal">// the team</div>
 

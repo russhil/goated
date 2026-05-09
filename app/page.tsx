@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 function PortfolioLink() {
   return (
-    <section className="px-6 md:px-12 py-12 md:py-16 max-w-[1400px] mx-auto">
+    <section className="px-6 md:px-12 py-16 md:py-24 max-w-[1400px] mx-auto">
       <div className="section-label">{'// case studies'}</div>
       <h2
         className="font-serif text-[#0D0D0D] leading-[1.15] mb-6"

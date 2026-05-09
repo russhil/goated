@@ -54,7 +54,7 @@ export default function ContactFooter() {
   };
 
   return (
-    <section ref={sectionRef} id="contact" className="py-14 md:py-20">
+    <section ref={sectionRef} id="contact" className="py-16 md:py-24">
       {/* Contact Section */}
       <div className="max-w-[1400px] mx-auto px-6 md:px-12 mb-20 reveal">
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-12 md:gap-16 items-center">
@@ -69,7 +69,7 @@ export default function ContactFooter() {
             </h2>
 
             {/* Primary booking CTA */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-8">
               <button
                 onClick={openBooking}
                 className="group relative inline-flex items-center gap-2 px-7 py-4 bg-coral text-white font-sans text-base font-medium rounded-full hover:shadow-[0_10px_32px_rgba(232,83,58,0.4)] hover:-translate-y-0.5 transition-all duration-300 w-fit"
@@ -84,7 +84,6 @@ export default function ContactFooter() {
                 Book a call with us
                 <span className="ml-1 transition-transform duration-300 group-hover:translate-x-1">→</span>
               </button>
-              <p className="font-mono text-xs text-muted">{"// explore how we can help your business"}</p>
             </div>
 
             <div className="flex items-center gap-3">
