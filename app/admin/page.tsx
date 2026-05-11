@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import CustomCursor from "@/components/CustomCursor";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdmin } from "@/lib/admin";
 import AdminRow from "./admin-row";
 import InquiryRow from "./inquiry-row";
+import BookingRow from "./booking-row";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -43,7 +43,6 @@ export default async function AdminPage({
   if (!isAdmin(user.email)) {
     return (
       <main>
-        <CustomCursor />
         <Navbar />
         <section className="min-h-screen flex items-center justify-center px-6">
           <div className="max-w-md text-center">
@@ -79,12 +78,16 @@ export default async function AdminPage({
     );
   }
 
-  const view = searchParams.view === "inquiries" ? "inquiries" : "applications";
+  const view =
+    searchParams.view === "inquiries"
+      ? "inquiries"
+      : searchParams.view === "bookings"
+        ? "bookings"
+        : "applications";
   const admin = createAdminClient();
 
   return (
     <main>
-      <CustomCursor />
       <Navbar />
 
       <section className="pt-32 pb-6 md:pt-40 md:pb-8 px-6 md:px-12 max-w-[1100px] mx-auto">
@@ -112,13 +115,22 @@ export default async function AdminPage({
             label="Client inquiries"
             active={view === "inquiries"}
           />
+          <TabPill
+            href="/admin?view=bookings"
+            label="Booked meetings"
+            active={view === "bookings"}
+          />
         </div>
       </section>
 
-      {view === "applications" ? (
+      {view === "applications" && (
         <ApplicationsView searchParams={searchParams} adminClient={admin} />
-      ) : (
+      )}
+      {view === "inquiries" && (
         <InquiriesView searchParams={searchParams} adminClient={admin} />
+      )}
+      {view === "bookings" && (
+        <BookingsView searchParams={searchParams} adminClient={admin} />
       )}
     </main>
   );
@@ -271,6 +283,78 @@ async function InquiriesView({
           <EmptyState
             heading="No inquiries yet."
             body="When visitors fill out the contact form on the homepage, they'll show up here."
+          />
+        )}
+      </section>
+    </>
+  );
+}
+
+async function BookingsView({
+  searchParams,
+  adminClient,
+}: {
+  searchParams: SearchParams;
+  adminClient: ReturnType<typeof createAdminClient>;
+}) {
+  let query = adminClient
+    .from("booking_inquiries")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (searchParams.status) query = query.eq("status", searchParams.status);
+
+  const { data: bookings, error } = await query;
+
+  const counts = (bookings ?? []).reduce<Record<string, number>>((acc, b) => {
+    acc[b.status] = (acc[b.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  return (
+    <>
+      <section className="px-6 md:px-12 pb-4 max-w-[1100px] mx-auto">
+        <div className="flex items-center gap-3 flex-wrap text-xs font-mono mb-4">
+          <span className="text-muted">{bookings?.length ?? 0} total</span>
+          {Object.entries(counts).map(([k, v]) => (
+            <span key={k} className="text-muted">
+              · {k.replace("_", " ")}: <span className="text-dark">{v}</span>
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <FilterPill
+            href="/admin?view=bookings"
+            label="All"
+            active={!searchParams.status}
+          />
+          <span className="text-muted/50 px-1">|</span>
+          {["pending", "booked", "no_show", "archived"].map((s) => (
+            <FilterPill
+              key={s}
+              href={`/admin?view=bookings&status=${s}`}
+              label={s.replace("_", " ")}
+              active={searchParams.status === s}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1100px] mx-auto pt-6">
+        {error && (
+          <p className="font-sans text-sm text-red-600 mb-6">
+            Failed to load bookings: {error.message}
+          </p>
+        )}
+        {bookings && bookings.length > 0 ? (
+          <ul className="flex flex-col gap-4">
+            {bookings.map((b) => (
+              <BookingRow key={b.id} inquiry={b} />
+            ))}
+          </ul>
+        ) : (
+          <EmptyState
+            heading="No booking inquiries yet."
+            body="When a prospect fills out the qualifier before booking a call, they'll show up here."
           />
         )}
       </section>

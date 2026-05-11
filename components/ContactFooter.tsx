@@ -141,13 +141,13 @@ export default function ContactFooter() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="message" className="sr-only">Tell us what you're building</label>
+                    <label htmlFor="message" className="sr-only">Tell us about your business</label>
                     <textarea
                       id="message"
                       name="message"
                       required
                       rows={4}
-                      placeholder="Tell us what you're building"
+                      placeholder="Tell us about your business"
                       className="form-input resize-none"
                       value={formState.message}
                       onChange={(e) => setFormState({ ...formState, message: e.target.value })}

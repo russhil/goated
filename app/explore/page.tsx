@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
-import CustomCursor from "@/components/CustomCursor";
 import AutoSignInTrigger from "@/components/AutoSignInTrigger";
 import { JOBS } from "@/lib/jobs";
 import { createClient } from "@/lib/supabase/server";
@@ -25,7 +24,6 @@ export default async function ExplorePage() {
       <Suspense fallback={null}>
         <AutoSignInTrigger />
       </Suspense>
-      <CustomCursor />
       <Navbar />
 
       <section className="pt-32 pb-12 md:pt-40 md:pb-16 px-6 md:px-12 max-w-[1400px] mx-auto">

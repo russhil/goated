@@ -126,3 +126,33 @@ alter table public.contact_submissions enable row level security;
 -- No policies — service role only.
 
 
+-- ============================================================================
+-- 6. Booking inquiries
+--
+-- The "Book a call" CTA on the homepage runs prospects through a one-question
+-- qualifier ("what does your business do / what do you need help with") before
+-- the Cal.com calendar loads. Each qualifier submission lands here so the team
+-- can see who's about to book (and follow up on no-shows).
+-- Inserted server-side by /api/booking-inquiry. Service role only.
+-- ============================================================================
+create table if not exists public.booking_inquiries (
+  id                    uuid primary key default gen_random_uuid(),
+  name                  text not null,
+  email                 text not null,
+  business_description  text not null,
+  status                text not null default 'pending'
+                        check (status in ('pending', 'booked', 'no_show', 'archived')),
+  admin_notes           text,
+  booked_at             timestamptz,
+  created_at            timestamptz not null default now()
+);
+
+create index if not exists booking_inquiries_created_at_idx
+  on public.booking_inquiries (created_at desc);
+
+create index if not exists booking_inquiries_status_idx
+  on public.booking_inquiries (status);
+
+alter table public.booking_inquiries enable row level security;
+-- No policies — service role only.
+

@@ -75,12 +75,22 @@ export default function CustomCursor() {
     };
   }, []);
 
+  // Toggle the body class that hides the native cursor. Adding the class
+  // makes `* { cursor: none }` apply (see globals.css); removing it restores
+  // the native cursor. We pull the class while the booking modal is open so
+  // users can read/click Cal.com normally.
   useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (window.matchMedia("(max-width: 768px)").matches) return;
+
     if (isOpen) {
-      document.documentElement.style.cursor = "auto";
+      document.body.classList.remove("cursor-hidden");
     } else {
-      document.documentElement.style.cursor = "";
+      document.body.classList.add("cursor-hidden");
     }
+    return () => {
+      document.body.classList.remove("cursor-hidden");
+    };
   }, [isOpen]);
 
   return (

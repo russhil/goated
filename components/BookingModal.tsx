@@ -3,18 +3,29 @@
 import { useEffect, useState } from "react";
 import Cal, { getCalApi } from "@calcom/embed-react";
 import { CAL_LINK } from "@/lib/booking";
+import BookingQualifier from "./BookingQualifier";
+import type { BookingPrefill, BookingStep } from "./BookingProvider";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  step: BookingStep;
+  prefill: BookingPrefill | null;
+  onQualified: (data: BookingPrefill) => void;
 };
 
-export default function BookingModal({ isOpen, onClose }: Props) {
+export default function BookingModal({
+  isOpen,
+  onClose,
+  step,
+  prefill,
+  onQualified,
+}: Props) {
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    if (isOpen) setHasMounted(true);
-  }, [isOpen]);
+    if (isOpen && step === "booking") setHasMounted(true);
+  }, [isOpen, step]);
 
   useEffect(() => {
     (async () => {
@@ -30,6 +41,11 @@ export default function BookingModal({ isOpen, onClose }: Props) {
       });
     })();
   }, []);
+
+  const headerLabel =
+    step === "qualify"
+      ? "// quick screen — then your calendar"
+      : "// book a call — explore how we can help your business";
 
   return (
     <div
@@ -56,7 +72,7 @@ export default function BookingModal({ isOpen, onClose }: Props) {
             <span className="text-coral font-bold">.</span>
             <span className="text-dark">]</span>
             <span className="text-muted ml-2 md:ml-3 hidden sm:inline">
-              {"// book a call — explore how we can help your business"}
+              {headerLabel}
             </span>
           </div>
           <button
@@ -72,12 +88,22 @@ export default function BookingModal({ isOpen, onClose }: Props) {
         </div>
 
         <div className="relative flex-1 bg-white overflow-y-auto">
-          {hasMounted && (
+          {step === "qualify" && (
+            <BookingQualifier onQualified={onQualified} />
+          )}
+
+          {step === "booking" && hasMounted && (
             <Cal
               namespace="alignment-call"
               calLink={CAL_LINK}
               style={{ width: "100%", height: "100%", minHeight: "100%" }}
-              config={{ layout: "month_view", theme: "light" }}
+              config={{
+                layout: "month_view",
+                theme: "light",
+                name: prefill?.name ?? "",
+                email: prefill?.email ?? "",
+                notes: prefill?.notes ?? "",
+              }}
             />
           )}
         </div>

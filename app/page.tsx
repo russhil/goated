@@ -3,6 +3,7 @@ import CustomCursor from "@/components/CustomCursor";
 import Navbar from "@/components/Navbar";
 import HeroQuote from "@/components/HeroQuote";
 import LogoTicker from "@/components/LogoTicker";
+import VideoShowreelLazy from "@/components/VideoShowreelLazy";
 import WhatWeAre from "@/components/WhatWeAre";
 import Industries from "@/components/Industries";
 import Team from "@/components/Team";
@@ -75,6 +76,7 @@ export default function Home() {
       <Navbar />
       <HeroQuote />
       <LogoTicker />
+      <VideoShowreelLazy />
       <WhatWeAre />
       <Industries />
       <PortfolioLink />
