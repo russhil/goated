@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import posthog from "posthog-js";
 
 function SignInForm() {
   const searchParams = useSearchParams();
@@ -22,6 +23,7 @@ function SignInForm() {
   }, [next, router]);
 
   const handleGoogle = async () => {
+    posthog.capture("sign_in_initiated", { provider: "google" });
     setPending(true);
     setError("");
 

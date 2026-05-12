@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { caseStudies, CaseStudy } from '@/lib/caseStudies';
 import CaseStudyPane from './CaseStudyPane';
+import posthog from 'posthog-js';
 
 const FILTERS: { label: string; value: 'all' | 'client' | 'ai' | 'tools' }[] = [
   { label: 'SHOW ALL', value: 'all' },
@@ -52,7 +53,7 @@ export default function CaseStudyGrid() {
           {FILTERS.map((f) => (
             <button
               key={f.value}
-              onClick={() => setActiveFilter(f.value)}
+              onClick={() => { posthog.capture("portfolio_filter_applied", { filter: f.value }); setActiveFilter(f.value); }}
               className={`rounded-full px-5 py-2 text-sm font-mono uppercase tracking-wider transition-all duration-200 ${
                 activeFilter === f.value
                   ? 'bg-[#0D0D0D] text-white'
@@ -69,7 +70,7 @@ export default function CaseStudyGrid() {
           {filteredStudies.map((cs) => (
             <article
               key={cs.id}
-              onClick={() => setActiveCaseStudy(cs)}
+              onClick={() => { posthog.capture("case_study_opened", { case_study_id: cs.id, title: cs.title, category: cs.category }); setActiveCaseStudy(cs); }}
               className="group border border-[#EEEEEE] rounded-xl overflow-hidden cursor-pointer transition-all duration-300 ease-out hover:border-[#E8533A]/30 hover:shadow-[0_0_0_1px_rgba(232,83,58,0.15),0_8px_32px_rgba(232,83,58,0.12),0_2px_8px_rgba(232,83,58,0.08)] hover:-translate-y-1"
             >
               {/* Screenshot area */}

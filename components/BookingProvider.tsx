@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import BookingModal from "./BookingModal";
+import posthog from "posthog-js";
 
 export type BookingStep = "qualify" | "booking";
 
@@ -40,6 +41,7 @@ export default function BookingProvider({ children }: { children: React.ReactNod
   const close = useCallback(() => setIsOpen(false), []);
 
   const proceedToBooking = useCallback((data: BookingPrefill) => {
+    posthog.capture("booking_calendar_reached");
     setPrefill(data);
     setStep("booking");
   }, []);

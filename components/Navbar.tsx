@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useBooking } from "./BookingProvider";
 import { useAuth } from "./AuthProvider";
 import { isAdmin } from "@/lib/admin";
+import posthog from "posthog-js";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
@@ -22,7 +23,8 @@ export default function Navbar() {
   const userIsAdmin = isAdmin(user?.email);
   const initial = (user?.email || "?").charAt(0).toUpperCase();
 
-  const handleBook = () => {
+  const handleBook = (source: "navbar_desktop" | "navbar_mobile") => {
+    posthog.capture("booking_cta_clicked", { source });
     setMobileOpen(false);
     openBooking();
   };
@@ -140,7 +142,7 @@ export default function Navbar() {
 
           {/* CTA - desktop */}
           <button
-            onClick={handleBook}
+            onClick={() => handleBook("navbar_desktop")}
             className="hidden md:inline-flex items-center gap-1.5 px-4 py-1.5 bg-dark text-white rounded-full text-sm font-sans font-medium transition-all duration-300 hover:bg-coral hover:shadow-[0_4px_16px_rgba(232,83,58,0.35)] hover:-translate-y-0.5 shrink-0 animate-soft-pulse"
           >
             <svg
@@ -209,7 +211,7 @@ export default function Navbar() {
           </Link>
         )}
         <button
-          onClick={handleBook}
+          onClick={() => handleBook("navbar_mobile")}
           className="mt-4 inline-flex items-center gap-2 px-7 py-3 bg-dark text-white rounded-full text-base font-sans font-medium hover:bg-coral transition-colors"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

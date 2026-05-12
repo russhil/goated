@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { BookingPrefill } from "./BookingProvider";
+import posthog from "posthog-js";
 
 type Props = {
   onQualified: (data: BookingPrefill) => void;
@@ -40,6 +41,9 @@ export default function BookingQualifier({ onQualified }: Props) {
         setSubmitting(false);
         return;
       }
+      posthog.capture("booking_qualifier_submitted", {
+        description_length: businessDescription.trim().length,
+      });
       onQualified({
         name: name.trim(),
         email: email.trim(),

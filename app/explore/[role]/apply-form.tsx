@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { applyToRole } from "./actions";
 import type { Job } from "@/lib/jobs";
+import posthog from "posthog-js";
 
 type ExistingApplication = {
   status: string;
@@ -39,6 +40,10 @@ export default function ApplyForm({
     startTransition(async () => {
       const result = await applyToRole(job.slug, formData);
       if (result.ok) {
+        posthog.capture("job_application_submitted", {
+          role: job.slug,
+          is_update: existing != null,
+        });
         setSuccess(true);
       } else {
         setError(result.error || "Something went wrong.");

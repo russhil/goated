@@ -11,6 +11,7 @@ import {
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import SignInModal from "./SignInModal";
+import posthog from "posthog-js";
 
 type AuthContextValue = {
   user: User | null;
@@ -47,11 +48,17 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       setLoading(false);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
       setUser(session?.user ?? null);
-      // If they just signed in, close the modal.
-      if (session?.user) setIsOpen(false);
+      // If they just signed in, close the modal and identify in PostHog.
+      if (session?.user) {
+        setIsOpen(false);
+        posthog.identify(session.user.id, { email: session.user.email });
+      }
+      if (event === "SIGNED_OUT") {
+        posthog.reset();
+      }
     });
 
     return () => {

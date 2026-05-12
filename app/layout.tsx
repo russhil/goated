@@ -3,6 +3,7 @@ import { Playfair_Display, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import BookingProvider from "@/components/BookingProvider";
 import AuthProvider from "@/components/AuthProvider";
+import PHProvider from "@/app/providers";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -192,9 +193,11 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AuthProvider>
-          <BookingProvider>{children}</BookingProvider>
-        </AuthProvider>
+        <PHProvider>
+          <AuthProvider>
+            <BookingProvider>{children}</BookingProvider>
+          </AuthProvider>
+        </PHProvider>
       </body>
     </html>
   );

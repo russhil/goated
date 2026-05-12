@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const HITS = new Map<string, { count: number; first: number }>();
 const WINDOW_MS = 60 * 60 * 1000;
@@ -83,6 +84,14 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: email,
+    event: "booking_inquiry_saved",
+    properties: { inquiry_id: row.id, name },
+  });
+  await posthog.shutdown();
 
   return NextResponse.json({ ok: true, inquiryId: row.id });
 }

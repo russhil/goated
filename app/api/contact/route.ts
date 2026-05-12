@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 // Lightweight in-memory rate limit by IP. Resets when the server restarts —
 // good enough for protecting a contact form on a small site. For production
@@ -99,6 +100,14 @@ export async function POST(request: NextRequest) {
       .update({ forwarded_to_email: true })
       .eq("id", row.id);
   }
+
+  const posthog = getPostHogClient();
+  posthog.capture({
+    distinctId: email,
+    event: "contact_submission_saved",
+    properties: { submission_id: row.id, has_phone: !!phone, forwarded_to_email: forwarded },
+  });
+  await posthog.shutdown();
 
   return NextResponse.json({ ok: true });
 }

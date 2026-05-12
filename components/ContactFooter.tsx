@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRevealOnScroll } from "@/hooks/useRevealOnScroll";
 import { useBooking } from "./BookingProvider";
+import posthog from "posthog-js";
 
 export default function ContactFooter() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -29,6 +30,10 @@ export default function ContactFooter() {
       const data = await response.json().catch(() => ({}));
 
       if (response.ok && data?.ok) {
+        posthog.capture("contact_form_submitted", {
+          has_phone: !!formState.phone,
+          message_length: formState.message.length,
+        });
         setSubmitted(true);
         setFormState({ name: "", email: "", phone: "", message: "" });
         setTimeout(() => setSubmitted(false), 5000);
@@ -71,7 +76,7 @@ export default function ContactFooter() {
             {/* Primary booking CTA */}
             <div className="flex flex-col gap-8">
               <button
-                onClick={openBooking}
+                onClick={() => { posthog.capture("booking_cta_clicked", { source: "contact_footer" }); openBooking(); }}
                 className="group relative inline-flex items-center gap-2 px-7 py-4 bg-coral text-white font-sans text-base font-medium rounded-full hover:shadow-[0_10px_32px_rgba(232,83,58,0.4)] hover:-translate-y-0.5 transition-all duration-300 w-fit"
               >
                 <span className="absolute inset-0 rounded-full bg-coral/40 opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 -z-10 blur-lg" />
@@ -181,6 +186,7 @@ export default function ContactFooter() {
             </div>
             <a
               href="mailto:hello@goatedd.tech"
+              onClick={() => posthog.capture("email_cta_clicked", { source: "contact_footer" })}
               className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-gray-200 hover:border-coral hover:bg-coral hover:text-white rounded-full transition-all duration-300 font-sans text-lg font-medium text-dark group w-fit"
             >
               hello@goatedd.tech
