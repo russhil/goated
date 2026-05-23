@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { caseStudies, CaseStudy } from '@/lib/caseStudies';
+import { CaseStudy } from '@/lib/caseStudies';
 import CaseStudyPane from './CaseStudyPane';
 import posthog from 'posthog-js';
 
@@ -13,7 +13,7 @@ const FILTERS: { label: string; value: 'all' | 'client' | 'ai' | 'tools' }[] = [
   { label: 'INTERNAL TOOLS', value: 'tools' },
 ];
 
-export default function CaseStudyGrid() {
+export default function CaseStudyGrid({ caseStudies }: { caseStudies: CaseStudy[] }) {
   const [activeFilter, setActiveFilter] = useState<'all' | 'client' | 'ai' | 'tools'>('all');
   const [activeCaseStudy, setActiveCaseStudy] = useState<CaseStudy | null>(null);
 
@@ -75,13 +75,15 @@ export default function CaseStudyGrid() {
             >
               {/* Screenshot area */}
               <div className="relative h-56 bg-[#F5F5F5] overflow-hidden">
-                <Image
-                  src={cs.image}
-                  alt={`${cs.title} - ${cs.subtitle} custom software by GOATED.`}
-                  fill
-                  className="object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
+                {cs.image && (
+                  <Image
+                    src={cs.image}
+                    alt={`${cs.title} - ${cs.subtitle} custom software by GOATED.`}
+                    fill
+                    className="object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
+                )}
               </div>
 
               {/* Card body */}

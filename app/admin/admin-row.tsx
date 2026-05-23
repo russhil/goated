@@ -24,12 +24,13 @@ const STATUSES = [
   { value: "rejected", label: "Rejected" },
 ];
 
-const ROLE_LABEL: Record<string, string> = {
-  devops: "DevOps",
-  "growth-strategy": "Growth & Strategy",
-};
-
-export default function AdminRow({ app }: { app: Application }) {
+export default function AdminRow({
+  app,
+  roleLabel,
+}: {
+  app: Application;
+  roleLabel?: string;
+}) {
   const [status, setStatus] = useState(app.status);
   const [notes, setNotes] = useState(app.admin_notes ?? "");
   const [pending, startTransition] = useTransition();
@@ -55,7 +56,7 @@ export default function AdminRow({ app }: { app: Application }) {
       <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
         <div>
           <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-1">
-            {ROLE_LABEL[app.role] ?? app.role}
+            {roleLabel ?? app.role}
           </p>
           <h3 className="font-serif text-dark text-xl">
             {app.full_name || app.email}

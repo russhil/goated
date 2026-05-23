@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { caseStudies } from "@/lib/caseStudies";
+import { getPublishedCaseStudies, getCaseStudyBySlug } from "@/lib/caseStudies";
 import Navbar from "@/components/Navbar";
 import ContactFooter from "@/components/ContactFooter";
 import CustomCursor from "@/components/CustomCursor";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const caseStudies = await getPublishedCaseStudies();
   return caseStudies.map((cs) => ({ slug: cs.id }));
 }
 
@@ -16,7 +17,7 @@ export async function generateMetadata({
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  const cs = caseStudies.find((c) => c.id === params.slug);
+  const cs = await getCaseStudyBySlug(params.slug);
   if (!cs) return {};
 
   return {
@@ -33,11 +34,12 @@ export async function generateMetadata({
   };
 }
 
-export default function CaseStudyPage({
+export default async function CaseStudyPage({
   params,
 }: {
   params: { slug: string };
 }) {
+  const caseStudies = await getPublishedCaseStudies();
   const cs = caseStudies.find((c) => c.id === params.slug);
   if (!cs) notFound();
 
@@ -170,14 +172,16 @@ export default function CaseStudyPage({
 
         {/* Hero image */}
         <div className="relative w-full h-80 md:h-[420px] bg-[#F5F5F5] rounded-xl overflow-hidden mt-8">
-          <Image
-            src={cs.image}
-            alt={`${cs.title} - ${cs.subtitle} built by GOATED. software agency Mumbai`}
-            fill
-            className="object-cover object-top"
-            sizes="(max-width: 900px) 100vw, 900px"
-            priority
-          />
+          {cs.image && (
+            <Image
+              src={cs.image}
+              alt={`${cs.title} - ${cs.subtitle} built by GOATED. software agency Mumbai`}
+              fill
+              className="object-cover object-top"
+              sizes="(max-width: 900px) 100vw, 900px"
+              priority
+            />
+          )}
         </div>
 
         {/* Key stat */}

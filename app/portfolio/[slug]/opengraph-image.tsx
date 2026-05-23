@@ -1,17 +1,17 @@
 import { ImageResponse } from "next/og";
-import { caseStudies } from "@/lib/caseStudies";
+import { getCaseStudyBySlug } from "@/lib/caseStudies";
 
 export const runtime = "edge";
 export const alt = "Case Study | GOATED.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export function generateImageMetadata({
+export async function generateImageMetadata({
   params,
 }: {
   params: { slug: string };
 }) {
-  const cs = caseStudies.find((c) => c.id === params.slug);
+  const cs = await getCaseStudyBySlug(params.slug);
   return [
     {
       id: "og",
@@ -29,7 +29,7 @@ export default async function Image({
 }: {
   params: { slug: string };
 }) {
-  const cs = caseStudies.find((c) => c.id === params.slug);
+  const cs = await getCaseStudyBySlug(params.slug);
 
   const title = cs?.title ?? "Case Study";
   const subtitle = cs?.subtitle ?? "";

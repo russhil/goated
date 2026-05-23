@@ -3,7 +3,7 @@ import Navbar from '@/components/Navbar';
 import ContactFooter from '@/components/ContactFooter';
 import CaseStudyGrid from '@/components/CaseStudyGrid';
 import CustomCursor from '@/components/CustomCursor';
-import { caseStudies } from "@/lib/caseStudies";
+import { getPublishedCaseStudies, type CaseStudy } from "@/lib/caseStudies";
 
 export const metadata: Metadata = {
   title: "Our Work | Software & AI Automation Case Studies",
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   },
 };
 
-function PortfolioJsonLd() {
+function PortfolioJsonLd({ caseStudies }: { caseStudies: CaseStudy[] }) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -44,14 +44,15 @@ function PortfolioJsonLd() {
   );
 }
 
-export default function PortfolioPage() {
+export default async function PortfolioPage() {
+  const caseStudies = await getPublishedCaseStudies();
   return (
     <main>
-      <PortfolioJsonLd />
+      <PortfolioJsonLd caseStudies={caseStudies} />
       <CustomCursor />
       <Navbar />
       <div className="pt-16">
-        <CaseStudyGrid />
+        <CaseStudyGrid caseStudies={caseStudies} />
       </div>
       <ContactFooter />
     </main>

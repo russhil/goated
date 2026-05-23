@@ -1,7 +1,12 @@
-export type JobRole = "devops" | "growth-strategy";
+import { createPublicClient } from "@/lib/supabase/public";
+
+// A job slug. Jobs are dynamic (stored in public.jobs), so this is just a string.
+export type JobRole = string;
+
+export type JobFieldKey = "github_url" | "linkedin_url" | "instagram_url" | "pitch";
 
 export type JobField = {
-  key: "github_url" | "linkedin_url" | "instagram_url" | "pitch";
+  key: JobFieldKey;
   label: string;
   placeholder: string;
   type: "url" | "text" | "textarea";
@@ -9,7 +14,7 @@ export type JobField = {
 };
 
 export type Job = {
-  slug: JobRole;
+  slug: string;
   title: string;
   tagline: string;
   description: string;
@@ -20,77 +25,50 @@ export type Job = {
   fields: JobField[];
 };
 
-export const JOBS: Job[] = [
-  {
-    slug: "devops",
-    title: "DevOps Engineer",
-    tagline: "Ship infra that scales without drama.",
-    description:
-      "We're looking for someone who's obsessed with making things deploy faster, monitor smarter, and never page at 3am. You'll own the pipelines and infra across our client builds and in-house products.",
-    task: {
-      heading: "Show us your craziest project",
-      body: "Send us the most ambitious thing you've shipped. Could be a homegrown Kubernetes cluster, a CI/CD pipeline you obsessed over, a self-hosted observability stack — whatever you're proud of. Drop the GitHub repo and tell us what made it hard.",
-    },
-    fields: [
-      {
-        key: "github_url",
-        label: "GitHub link",
-        placeholder: "https://github.com/yourname/your-craziest-project",
-        type: "url",
-        required: true,
-      },
-      {
-        key: "linkedin_url",
-        label: "LinkedIn",
-        placeholder: "https://linkedin.com/in/yourname",
-        type: "url",
-        required: true,
-      },
-      {
-        key: "pitch",
-        label: "What made it hard? (optional)",
-        placeholder: "30 seconds of context — the thing you're most proud of fixing.",
-        type: "textarea",
-        required: false,
-      },
-    ],
-  },
-  {
-    slug: "growth-strategy",
-    title: "Growth & Strategy",
-    tagline: "Turn audience into pipeline. Pipeline into revenue.",
-    description:
-      "We're looking for someone with a sharp eye for narrative, distribution, and what makes people actually click. You'll work directly with the founders on positioning, content, and growth experiments across our brand and our clients.",
-    task: {
-      heading: "Show us how you think",
-      body: "Drop your LinkedIn and Instagram so we can see what you've shipped publicly — content, campaigns, brand work, side projects, anything that shows your taste and your reach. If you've got a one-line pitch on what we should be doing differently, even better.",
-    },
-    fields: [
-      {
-        key: "linkedin_url",
-        label: "LinkedIn",
-        placeholder: "https://linkedin.com/in/yourname",
-        type: "url",
-        required: true,
-      },
-      {
-        key: "instagram_url",
-        label: "Instagram",
-        placeholder: "https://instagram.com/yourname",
-        type: "url",
-        required: true,
-      },
-      {
-        key: "pitch",
-        label: "One-liner: what should we be doing differently? (optional)",
-        placeholder: "Be opinionated.",
-        type: "textarea",
-        required: false,
-      },
-    ],
-  },
-];
+type JobRow = {
+  slug: string;
+  title: string;
+  tagline: string | null;
+  description: string | null;
+  task_heading: string | null;
+  task_body: string | null;
+  fields: JobField[] | null;
+};
 
-export function getJob(slug: string): Job | undefined {
-  return JOBS.find((j) => j.slug === slug);
+const JOB_COLUMNS =
+  "slug, title, tagline, description, task_heading, task_body, fields";
+
+function rowToJob(row: JobRow): Job {
+  return {
+    slug: row.slug,
+    title: row.title,
+    tagline: row.tagline ?? "",
+    description: row.description ?? "",
+    task: { heading: row.task_heading ?? "", body: row.task_body ?? "" },
+    fields: Array.isArray(row.fields) ? row.fields : [],
+  };
+}
+
+// Published roles for the public /explore pages, in display order.
+export async function getPublishedJobs(): Promise<Job[]> {
+  const supabase = createPublicClient();
+  const { data } = await supabase
+    .from("jobs")
+    .select(JOB_COLUMNS)
+    .eq("published", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  return (data ?? []).map((r) => rowToJob(r as JobRow));
+}
+
+// A single published role by slug, or undefined if missing/unpublished.
+export async function getJobBySlug(slug: string): Promise<Job | undefined> {
+  const supabase = createPublicClient();
+  const { data } = await supabase
+    .from("jobs")
+    .select(JOB_COLUMNS)
+    .eq("slug", slug)
+    .eq("published", true)
+    .maybeSingle();
+  return data ? rowToJob(data as JobRow) : undefined;
 }

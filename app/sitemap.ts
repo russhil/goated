@@ -1,8 +1,9 @@
 import { MetadataRoute } from "next";
-import { caseStudies } from "@/lib/caseStudies";
+import { getPublishedCaseStudies } from "@/lib/caseStudies";
 import { blogPosts } from "@/lib/blogPosts";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const caseStudies = await getPublishedCaseStudies();
   const caseStudyUrls = caseStudies.map((cs) => ({
     url: `https://goatedd.tech/portfolio/${cs.id}`,
     lastModified: new Date(),

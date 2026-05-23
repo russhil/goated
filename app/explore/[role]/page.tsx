@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import CustomCursor from "@/components/CustomCursor";
-import { getJob, type JobRole } from "@/lib/jobs";
+import { getJobBySlug } from "@/lib/jobs";
 import { createClient } from "@/lib/supabase/server";
 import ApplyForm from "./apply-form";
 
@@ -12,7 +12,7 @@ type Props = { params: { role: string } };
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const job = getJob(params.role);
+  const job = await getJobBySlug(params.role);
   if (!job) return { title: "Role not found" };
   return {
     title: `${job.title} — Open role`,
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function RolePage({ params }: Props) {
-  const job = getJob(params.role);
+  const job = await getJobBySlug(params.role);
   if (!job) notFound();
 
   const supabase = createClient();
@@ -38,7 +38,7 @@ export default async function RolePage({ params }: Props) {
     .from("applications")
     .select("status, github_url, linkedin_url, instagram_url, pitch, full_name")
     .eq("user_id", user.id)
-    .eq("role", job.slug as JobRole)
+    .eq("role", job.slug)
     .maybeSingle();
 
   return (

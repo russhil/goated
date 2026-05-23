@@ -3,29 +3,18 @@
 import { useEffect, useState } from "react";
 import Cal, { getCalApi } from "@calcom/embed-react";
 import { CAL_LINK } from "@/lib/booking";
-import BookingQualifier from "./BookingQualifier";
-import type { BookingPrefill, BookingStep } from "./BookingProvider";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  step: BookingStep;
-  prefill: BookingPrefill | null;
-  onQualified: (data: BookingPrefill) => void;
 };
 
-export default function BookingModal({
-  isOpen,
-  onClose,
-  step,
-  prefill,
-  onQualified,
-}: Props) {
+export default function BookingModal({ isOpen, onClose }: Props) {
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    if (isOpen && step === "booking") setHasMounted(true);
-  }, [isOpen, step]);
+    if (isOpen) setHasMounted(true);
+  }, [isOpen]);
 
   useEffect(() => {
     (async () => {
@@ -41,11 +30,6 @@ export default function BookingModal({
       });
     })();
   }, []);
-
-  const headerLabel =
-    step === "qualify"
-      ? "// quick screen — then your calendar"
-      : "// book a call — explore how we can help your business";
 
   return (
     <div
@@ -72,7 +56,7 @@ export default function BookingModal({
             <span className="text-coral font-bold">.</span>
             <span className="text-dark">]</span>
             <span className="text-muted ml-2 md:ml-3 hidden sm:inline">
-              {headerLabel}
+              {"// book a call — explore how we can help your business"}
             </span>
           </div>
           <button
@@ -88,11 +72,7 @@ export default function BookingModal({
         </div>
 
         <div className="relative flex-1 bg-white overflow-y-auto">
-          {step === "qualify" && (
-            <BookingQualifier onQualified={onQualified} />
-          )}
-
-          {step === "booking" && hasMounted && (
+          {hasMounted && (
             <Cal
               namespace="alignment-call"
               calLink={CAL_LINK}
@@ -100,9 +80,6 @@ export default function BookingModal({
               config={{
                 layout: "month_view",
                 theme: "light",
-                name: prefill?.name ?? "",
-                email: prefill?.email ?? "",
-                notes: prefill?.notes ?? "",
               }}
             />
           )}

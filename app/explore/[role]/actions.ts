@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getJob, type JobRole } from "@/lib/jobs";
+import { getJobBySlug, type JobRole } from "@/lib/jobs";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 type ApplyState = { ok: boolean; error?: string };
@@ -15,7 +15,7 @@ export async function applyToRole(
   role: JobRole,
   formData: FormData
 ): Promise<ApplyState> {
-  const job = getJob(role);
+  const job = await getJobBySlug(role);
   if (!job) return { ok: false, error: "Unknown role" };
 
   const supabase = createClient();

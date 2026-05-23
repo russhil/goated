@@ -7,6 +7,8 @@ import { isAdmin } from "@/lib/admin";
 import AdminRow from "./admin-row";
 import InquiryRow from "./inquiry-row";
 import BookingRow from "./booking-row";
+import JobRow, { type AdminJob } from "./job-row";
+import CaseStudyRow, { type AdminCaseStudy } from "./case-study-row";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -14,11 +16,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-const ROLE_LABEL: Record<string, string> = {
-  devops: "DevOps",
-  "growth-strategy": "Growth & Strategy",
-};
 
 type SearchParams = {
   view?: string;
@@ -83,7 +80,11 @@ export default async function AdminPage({
       ? "inquiries"
       : searchParams.view === "bookings"
         ? "bookings"
-        : "applications";
+        : searchParams.view === "jobs"
+          ? "jobs"
+          : searchParams.view === "case-studies"
+            ? "case-studies"
+            : "applications";
   const admin = createAdminClient();
 
   return (
@@ -120,6 +121,12 @@ export default async function AdminPage({
             label="Booked meetings"
             active={view === "bookings"}
           />
+          <TabPill href="/admin?view=jobs" label="Jobs" active={view === "jobs"} />
+          <TabPill
+            href="/admin?view=case-studies"
+            label="Case studies"
+            active={view === "case-studies"}
+          />
         </div>
       </section>
 
@@ -132,6 +139,8 @@ export default async function AdminPage({
       {view === "bookings" && (
         <BookingsView searchParams={searchParams} adminClient={admin} />
       )}
+      {view === "jobs" && <JobsView adminClient={admin} />}
+      {view === "case-studies" && <CaseStudiesView adminClient={admin} />}
     </main>
   );
 }
@@ -150,7 +159,14 @@ async function ApplicationsView({
   if (searchParams.role) query = query.eq("role", searchParams.role);
   if (searchParams.status) query = query.eq("status", searchParams.status);
 
-  const { data: applications, error } = await query;
+  const [{ data: applications, error }, { data: jobs }] = await Promise.all([
+    query,
+    adminClient.from("jobs").select("slug, title").order("sort_order", { ascending: true }),
+  ]);
+
+  const roleLabel = new Map<string, string>(
+    (jobs ?? []).map((j: { slug: string; title: string }) => [j.slug, j.title])
+  );
 
   const counts = (applications ?? []).reduce<Record<string, number>>((acc, a) => {
     acc[a.status] = (acc[a.status] || 0) + 1;
@@ -175,12 +191,12 @@ async function ApplicationsView({
             active={!searchParams.role && !searchParams.status}
           />
           <span className="text-muted/50 px-1">|</span>
-          {Object.entries(ROLE_LABEL).map(([slug, label]) => (
+          {(jobs ?? []).map((j: { slug: string; title: string }) => (
             <FilterPill
-              key={slug}
-              href={`/admin?view=applications&role=${slug}`}
-              label={label}
-              active={searchParams.role === slug}
+              key={j.slug}
+              href={`/admin?view=applications&role=${j.slug}`}
+              label={j.title}
+              active={searchParams.role === j.slug}
             />
           ))}
           <span className="text-muted/50 px-1">|</span>
@@ -204,7 +220,7 @@ async function ApplicationsView({
         {applications && applications.length > 0 ? (
           <ul className="flex flex-col gap-4">
             {applications.map((app) => (
-              <AdminRow key={app.id} app={app} />
+              <AdminRow key={app.id} app={app} roleLabel={roleLabel.get(app.role)} />
             ))}
           </ul>
         ) : (
@@ -359,6 +375,94 @@ async function BookingsView({
         )}
       </section>
     </>
+  );
+}
+
+async function JobsView({
+  adminClient,
+}: {
+  adminClient: ReturnType<typeof createAdminClient>;
+}) {
+  const { data: jobs, error } = await adminClient
+    .from("jobs")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  return (
+    <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1100px] mx-auto pt-6">
+      {error && (
+        <p className="font-sans text-sm text-red-600 mb-6">
+          Failed to load jobs: {error.message}
+        </p>
+      )}
+
+      <p className="font-mono text-xs text-muted mb-6">
+        {`// ${jobs?.length ?? 0} role${(jobs?.length ?? 0) === 1 ? "" : "s"} — published roles appear on /explore`}
+      </p>
+
+      <div className="mb-10">
+        <p className="font-serif text-xl text-dark mb-4">Add a new role</p>
+        <ul className="flex flex-col gap-4">
+          <JobRow />
+        </ul>
+      </div>
+
+      {jobs && jobs.length > 0 && (
+        <>
+          <p className="font-serif text-xl text-dark mb-4">Existing roles</p>
+          <ul className="flex flex-col gap-4">
+            {jobs.map((job) => (
+              <JobRow key={job.id} job={job as AdminJob} />
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}
+
+async function CaseStudiesView({
+  adminClient,
+}: {
+  adminClient: ReturnType<typeof createAdminClient>;
+}) {
+  const { data: studies, error } = await adminClient
+    .from("case_studies")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  return (
+    <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1100px] mx-auto pt-6">
+      {error && (
+        <p className="font-sans text-sm text-red-600 mb-6">
+          Failed to load case studies: {error.message}
+        </p>
+      )}
+
+      <p className="font-mono text-xs text-muted mb-6">
+        {`// ${studies?.length ?? 0} case stud${(studies?.length ?? 0) === 1 ? "y" : "ies"} — published ones appear on /portfolio`}
+      </p>
+
+      <div className="mb-10">
+        <p className="font-serif text-xl text-dark mb-4">Add a new case study</p>
+        <ul className="flex flex-col gap-4">
+          <CaseStudyRow />
+        </ul>
+      </div>
+
+      {studies && studies.length > 0 && (
+        <>
+          <p className="font-serif text-xl text-dark mb-4">Existing case studies</p>
+          <ul className="flex flex-col gap-4">
+            {studies.map((study) => (
+              <CaseStudyRow key={study.id} study={study as AdminCaseStudy} />
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
   );
 }
 

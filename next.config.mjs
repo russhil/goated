@@ -1,7 +1,20 @@
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseHost = supabaseUrl ? new URL(supabaseUrl).hostname : undefined;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
+    // Allow case-study images uploaded to the Supabase Storage public bucket.
+    remotePatterns: supabaseHost
+      ? [
+          {
+            protocol: "https",
+            hostname: supabaseHost,
+            pathname: "/storage/v1/object/public/**",
+          },
+        ]
+      : [],
   },
   async rewrites() {
     return [

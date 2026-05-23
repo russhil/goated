@@ -4,21 +4,10 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import BookingModal from "./BookingModal";
 import posthog from "posthog-js";
 
-export type BookingStep = "qualify" | "booking";
-
-export type BookingPrefill = {
-  name: string;
-  email: string;
-  notes: string;
-};
-
 type BookingContextValue = {
   open: () => void;
   close: () => void;
   isOpen: boolean;
-  step: BookingStep;
-  prefill: BookingPrefill | null;
-  proceedToBooking: (data: BookingPrefill) => void;
 };
 
 const BookingContext = createContext<BookingContextValue | null>(null);
@@ -31,20 +20,12 @@ export function useBooking() {
 
 export default function BookingProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [step, setStep] = useState<BookingStep>("qualify");
-  const [prefill, setPrefill] = useState<BookingPrefill | null>(null);
 
   const open = useCallback(() => {
-    setStep("qualify");
+    posthog.capture("booking_calendar_reached");
     setIsOpen(true);
   }, []);
   const close = useCallback(() => setIsOpen(false), []);
-
-  const proceedToBooking = useCallback((data: BookingPrefill) => {
-    posthog.capture("booking_calendar_reached");
-    setPrefill(data);
-    setStep("booking");
-  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,17 +41,9 @@ export default function BookingProvider({ children }: { children: React.ReactNod
   }, [isOpen]);
 
   return (
-    <BookingContext.Provider
-      value={{ open, close, isOpen, step, prefill, proceedToBooking }}
-    >
+    <BookingContext.Provider value={{ open, close, isOpen }}>
       {children}
-      <BookingModal
-        isOpen={isOpen}
-        onClose={close}
-        step={step}
-        prefill={prefill}
-        onQualified={proceedToBooking}
-      />
+      <BookingModal isOpen={isOpen} onClose={close} />
     </BookingContext.Provider>
   );
 }

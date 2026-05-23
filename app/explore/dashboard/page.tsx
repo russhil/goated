@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import CustomCursor from "@/components/CustomCursor";
-import { JOBS } from "@/lib/jobs";
+import { getPublishedJobs } from "@/lib/jobs";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -35,11 +35,15 @@ export default async function DashboardPage() {
     redirect("/explore?signin=1&next=/explore/dashboard");
   }
 
-  const { data: applications } = await supabase
-    .from("applications")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+  const [{ data: applications }, jobs] = await Promise.all([
+    supabase
+      .from("applications")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+    getPublishedJobs(),
+  ]);
+  const titleBySlug = new Map(jobs.map((j) => [j.slug, j.title]));
 
   return (
     <main>
@@ -76,7 +80,7 @@ export default async function DashboardPage() {
         {applications && applications.length > 0 ? (
           <ul className="flex flex-col gap-4">
             {applications.map((app) => {
-              const job = JOBS.find((j) => j.slug === app.role);
+              const jobTitle = titleBySlug.get(app.role) ?? app.role;
               return (
                 <li
                   key={app.id}
@@ -85,7 +89,7 @@ export default async function DashboardPage() {
                   <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
                     <div>
                       <h2 className="font-serif text-dark text-2xl mb-1">
-                        {job?.title ?? app.role}
+                        {jobTitle}
                       </h2>
                       <p className="font-mono text-xs text-muted">
                         {"// applied "}

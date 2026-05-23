@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import AutoSignInTrigger from "@/components/AutoSignInTrigger";
-import { JOBS } from "@/lib/jobs";
+import { getPublishedJobs } from "@/lib/jobs";
 import { createClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
 
@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 
 export default async function ExplorePage() {
   const supabase = createClient();
-  const {
+  const [{
     data: { user },
-  } = await supabase.auth.getUser();
+  }, jobs] = await Promise.all([supabase.auth.getUser(), getPublishedJobs()]);
 
   return (
     <main>
@@ -55,8 +55,14 @@ export default async function ExplorePage() {
       </section>
 
       <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1400px] mx-auto">
+        {jobs.length === 0 ? (
+          <div className="border border-dashed border-dark/15 rounded-2xl p-12 text-center">
+            <p className="font-serif text-2xl text-dark mb-3">No open roles right now.</p>
+            <p className="font-sans text-muted">Check back soon — we&apos;re always on the lookout.</p>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {JOBS.map((job) => (
+          {jobs.map((job) => (
             <Link
               key={job.slug}
               href={`/explore/${job.slug}`}
@@ -64,9 +70,9 @@ export default async function ExplorePage() {
             >
               <div className="flex items-start justify-between mb-6">
                 <span className="font-mono text-xs text-coral uppercase tracking-widest">
-                  {job.slug === "devops" ? "engineering" : "growth"}
+                  {"// open role"}
                 </span>
-                <span className="font-mono text-xs text-muted">{"// open"}</span>
+                <span className="font-mono text-xs text-muted">{"// apply"}</span>
               </div>
               <h2
                 className="font-serif text-dark leading-tight mb-3"
@@ -89,6 +95,7 @@ export default async function ExplorePage() {
             </Link>
           ))}
         </div>
+        )}
       </section>
     </main>
   );
