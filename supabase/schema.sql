@@ -369,3 +369,147 @@ insert into storage.buckets (id, name, public)
 values ('case-studies', 'case-studies', true)
 on conflict (id) do nothing;
 
+
+-- ============================================================================
+-- 10. Internal Ops (Admin HQ) — clients, sub-projects, finances
+--
+-- Admin-only back office at /admin/hq. All tables are service-role only
+-- (RLS on, zero policies) — every read/write goes through requireAdmin()
+-- server actions using the service-role key. Client contract/collected totals
+-- are NOT stored here; they are derived from client_subprojects.
+-- ============================================================================
+
+-- 10.1 Team roster (contributors + petty-cash payers)
+create table if not exists public.team_members (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  role        text,
+  email       text,
+  active      boolean not null default true,
+  created_at  timestamptz not null default now()
+);
+
+alter table public.team_members enable row level security;
+-- No policies — service role only.
+
+-- 10.2 Clients
+create table if not exists public.clients (
+  id              uuid primary key default gen_random_uuid(),
+  name            text not null,
+  industry        text,
+  currency        text not null default 'INR',
+  github_url      text,
+  db_url          text,
+  live_url        text,
+  description     text,
+  story           text,
+  cost            numeric(14,2) not null default 0,
+  kickoff_date    date,
+  credentials     jsonb not null default '[]'::jsonb,   -- [{label,username,secret,note}]
+  nda_path        text,
+  contract_path   text,
+  contributor_ids uuid[] not null default '{}',
+  archived        boolean not null default false,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+
+create index if not exists clients_archived_idx on public.clients (archived, created_at desc);
+
+drop trigger if exists clients_set_updated_at on public.clients;
+create trigger clients_set_updated_at
+  before update on public.clients
+  for each row execute function public.set_updated_at();
+
+alter table public.clients enable row level security;
+-- No policies — service role only.
+
+-- 10.3 Sub-projects (the source of truth for client money + progress)
+create table if not exists public.client_subprojects (
+  id                uuid primary key default gen_random_uuid(),
+  client_id         uuid not null references public.clients(id) on delete cascade,
+  name              text not null,
+  description       text,
+  accrued_revenue   numeric(14,2) not null default 0,
+  collected_revenue numeric(14,2) not null default 0,
+  progress          int not null default 0 check (progress between 0 and 100),
+  contributor_ids   uuid[] not null default '{}',
+  sort_order        int not null default 0,
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now()
+);
+
+create index if not exists client_subprojects_client_idx
+  on public.client_subprojects (client_id, sort_order asc, created_at asc);
+
+drop trigger if exists client_subprojects_set_updated_at on public.client_subprojects;
+create trigger client_subprojects_set_updated_at
+  before update on public.client_subprojects
+  for each row execute function public.set_updated_at();
+
+alter table public.client_subprojects enable row level security;
+-- No policies — service role only.
+
+-- 10.4 Petty cash ledger
+create table if not exists public.petty_cash (
+  id          uuid primary key default gen_random_uuid(),
+  paid_by_id  uuid references public.team_members(id) on delete set null,
+  purpose     text not null,
+  amount      numeric(14,2) not null,
+  currency    text not null default 'INR',
+  spent_on    date not null,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists petty_cash_spent_idx on public.petty_cash (spent_on desc);
+
+alter table public.petty_cash enable row level security;
+-- No policies — service role only.
+
+-- 10.5 Company expenses ledger
+create table if not exists public.company_expenses (
+  id               uuid primary key default gen_random_uuid(),
+  category         text not null default 'misc',
+  vendor           text,
+  description      text,
+  amount           numeric(14,2) not null,
+  currency         text not null default 'INR',
+  incurred_on      date not null,
+  recurring        boolean not null default false,
+  recurring_period text,
+  created_at       timestamptz not null default now()
+);
+
+create index if not exists company_expenses_incurred_idx on public.company_expenses (incurred_on desc);
+
+alter table public.company_expenses enable row level security;
+-- No policies — service role only.
+
+-- 10.6 Derived rollup view (inspection only — the app computes rollups in JS).
+-- security_invoker + revoke keep anon/authenticated from reading client money
+-- through PostgREST.
+create or replace view public.client_financials
+  with (security_invoker = true) as
+select
+  c.id as client_id,
+  coalesce(sum(sp.accrued_revenue), 0)                             as total_contract,
+  coalesce(sum(sp.collected_revenue), 0)                           as collected_revenue,
+  coalesce(sum(sp.accrued_revenue), 0)
+    - coalesce(sum(sp.collected_revenue), 0)                       as outstanding,
+  case
+    when coalesce(sum(sp.accrued_revenue), 0) > 0
+      then sum(sp.progress * sp.accrued_revenue) / sum(sp.accrued_revenue)
+    else coalesce(avg(sp.progress), 0)
+  end                                                              as avg_progress,
+  count(sp.id)                                                     as subproject_count
+from public.clients c
+left join public.client_subprojects sp on sp.client_id = c.id
+group by c.id;
+
+revoke all on public.client_financials from anon, authenticated;
+
+-- 10.7 Private bucket for NDA / Contract PDFs.
+insert into storage.buckets (id, name, public)
+values ('client-docs', 'client-docs', false)
+on conflict (id) do nothing;
+
