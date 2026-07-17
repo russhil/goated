@@ -16,6 +16,7 @@ import {
   type Credential,
 } from "@/lib/hq";
 import ContributorPicker from "./contributor-picker";
+import SubprojectRow from "./subproject-row";
 import {
   createClient,
   updateClient,
@@ -238,7 +239,25 @@ export default function ClientRow({
           </div>
 
           {/* CREDENTIALS_SLOT — replaced in Task 7 */}
-          {/* SUBPROJECTS_SLOT — replaced in Task 6 */}
+          {!isNew && (
+            <div className="mb-5">
+              <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-3">
+                {`// sub-projects (${roll.count})`}
+              </p>
+              <div className="flex flex-col gap-3">
+                {subprojects.map((sp) => (
+                  <SubprojectRow
+                    key={sp.id}
+                    clientId={client!.id}
+                    subproject={sp}
+                    team={team}
+                    currency={currency}
+                  />
+                ))}
+                <SubprojectRow clientId={client!.id} team={team} currency={currency} />
+              </div>
+            </div>
+          )}
           {/* PDF_SLOT — replaced in Task 8 */}
 
           <div className="flex items-center justify-between gap-3 flex-wrap">

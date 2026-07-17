@@ -117,3 +117,71 @@ export async function deleteClient(id: string): Promise<Result> {
   revalidateHq();
   return { ok: true };
 }
+
+export type SubprojectInput = {
+  name: string;
+  description: string;
+  accrued_revenue: number;
+  collected_revenue: number;
+  progress: number;
+  contributor_ids: string[];
+  sort_order: number;
+};
+
+function subprojectPayload(input: SubprojectInput) {
+  return {
+    name: input.name.trim(),
+    description: (input.description || "").trim() || null,
+    accrued_revenue: Number.isFinite(input.accrued_revenue) ? input.accrued_revenue : 0,
+    collected_revenue: Number.isFinite(input.collected_revenue) ? input.collected_revenue : 0,
+    progress: Math.min(100, Math.max(0, Math.round(Number(input.progress) || 0))),
+    contributor_ids: Array.isArray(input.contributor_ids)
+      ? input.contributor_ids.filter(Boolean)
+      : [],
+    sort_order: Number.isFinite(input.sort_order) ? input.sort_order : 0,
+  };
+}
+
+export async function createSubproject(
+  clientId: string,
+  input: SubprojectInput
+): Promise<Result> {
+  const gate = await requireAdmin();
+  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const payload = subprojectPayload(input);
+  if (!payload.name) return { ok: false, error: "name is required" };
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("client_subprojects")
+    .insert({ client_id: clientId, ...payload });
+  if (error) return { ok: false, error: error.message };
+  revalidateHq();
+  return { ok: true };
+}
+
+export async function updateSubproject(
+  id: string,
+  input: SubprojectInput
+): Promise<Result> {
+  const gate = await requireAdmin();
+  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const payload = subprojectPayload(input);
+  if (!payload.name) return { ok: false, error: "name is required" };
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("client_subprojects").update(payload).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidateHq();
+  return { ok: true };
+}
+
+export async function deleteSubproject(id: string): Promise<Result> {
+  const gate = await requireAdmin();
+  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const admin = createAdminClient();
+  const { error } = await admin.from("client_subprojects").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidateHq();
+  return { ok: true };
+}
