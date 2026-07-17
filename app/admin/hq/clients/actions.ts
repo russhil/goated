@@ -211,15 +211,23 @@ export async function uploadClientDoc(
   if (file.size > 10 * 1024 * 1024) return { ok: false, error: "PDF must be under 10MB" };
 
   const admin = createAdminClient();
+  const col = DOC_COL[kind];
+
+  // Confirm the client exists (and grab any current doc) BEFORE touching
+  // storage, so a stale/malformed clientId can't leave an orphaned object.
+  const { data: existing } = await admin
+    .from("clients")
+    .select(col)
+    .eq("id", clientId)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: "client not found" };
+  const oldPath = (existing as Record<string, string | null>)[col];
+
   const path = `${clientId}/${kind}-${Date.now()}.pdf`;
   const { error: upErr } = await admin.storage
     .from(DOC_BUCKET)
     .upload(path, file, { contentType: "application/pdf", upsert: true });
   if (upErr) return { ok: false, error: upErr.message };
-
-  const col = DOC_COL[kind];
-  const { data: existing } = await admin.from("clients").select(col).eq("id", clientId).single();
-  const oldPath = existing ? (existing as Record<string, string | null>)[col] : null;
 
   const { error: updErr } = await admin.from("clients").update({ [col]: path }).eq("id", clientId);
   if (updErr) return { ok: false, error: updErr.message };
