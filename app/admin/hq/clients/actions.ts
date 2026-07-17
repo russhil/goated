@@ -185,3 +185,82 @@ export async function deleteSubproject(id: string): Promise<Result> {
   revalidateHq();
   return { ok: true };
 }
+
+const DOC_BUCKET = "client-docs";
+const DOC_KINDS = ["nda", "contract"] as const;
+type DocKind = (typeof DOC_KINDS)[number];
+const DOC_COL: Record<DocKind, "nda_path" | "contract_path"> = {
+  nda: "nda_path",
+  contract: "contract_path",
+};
+
+export async function uploadClientDoc(
+  formData: FormData
+): Promise<{ ok: boolean; error?: string }> {
+  const gate = await requireAdmin();
+  if (!gate.admin) return { ok: false, error: "forbidden" };
+
+  const clientId = String(formData.get("clientId") || "");
+  const kind = String(formData.get("kind") || "") as DocKind;
+  const file = formData.get("file");
+
+  if (!clientId) return { ok: false, error: "missing client" };
+  if (!DOC_KINDS.includes(kind)) return { ok: false, error: "invalid kind" };
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "no file provided" };
+  if (file.type !== "application/pdf") return { ok: false, error: "file must be a PDF" };
+  if (file.size > 10 * 1024 * 1024) return { ok: false, error: "PDF must be under 10MB" };
+
+  const admin = createAdminClient();
+  const path = `${clientId}/${kind}-${Date.now()}.pdf`;
+  const { error: upErr } = await admin.storage
+    .from(DOC_BUCKET)
+    .upload(path, file, { contentType: "application/pdf", upsert: true });
+  if (upErr) return { ok: false, error: upErr.message };
+
+  const col = DOC_COL[kind];
+  const { data: existing } = await admin.from("clients").select(col).eq("id", clientId).single();
+  const oldPath = existing ? (existing as Record<string, string | null>)[col] : null;
+
+  const { error: updErr } = await admin.from("clients").update({ [col]: path }).eq("id", clientId);
+  if (updErr) return { ok: false, error: updErr.message };
+  if (oldPath && oldPath !== path) await admin.storage.from(DOC_BUCKET).remove([oldPath]);
+
+  revalidateHq();
+  return { ok: true };
+}
+
+export async function getClientDocUrl(
+  clientId: string,
+  kind: string
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  const gate = await requireAdmin();
+  if (!gate.admin) return { ok: false, error: "forbidden" };
+  if (!DOC_KINDS.includes(kind as DocKind)) return { ok: false, error: "invalid kind" };
+
+  const admin = createAdminClient();
+  const col = DOC_COL[kind as DocKind];
+  const { data: client } = await admin.from("clients").select(col).eq("id", clientId).single();
+  const path = client ? (client as Record<string, string | null>)[col] : null;
+  if (!path) return { ok: false, error: "no document" };
+
+  const { data, error } = await admin.storage.from(DOC_BUCKET).createSignedUrl(path, 60);
+  if (error || !data) return { ok: false, error: error?.message || "could not sign url" };
+  return { ok: true, url: data.signedUrl };
+}
+
+export async function removeClientDoc(clientId: string, kind: string): Promise<Result> {
+  const gate = await requireAdmin();
+  if (!gate.admin) return { ok: false, error: "forbidden" };
+  if (!DOC_KINDS.includes(kind as DocKind)) return { ok: false, error: "invalid kind" };
+
+  const admin = createAdminClient();
+  const col = DOC_COL[kind as DocKind];
+  const { data: client } = await admin.from("clients").select(col).eq("id", clientId).single();
+  const path = client ? (client as Record<string, string | null>)[col] : null;
+  if (path) await admin.storage.from(DOC_BUCKET).remove([path]);
+
+  const { error } = await admin.from("clients").update({ [col]: null }).eq("id", clientId);
+  if (error) return { ok: false, error: error.message };
+  revalidateHq();
+  return { ok: true };
+}

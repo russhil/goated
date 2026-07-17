@@ -18,6 +18,7 @@ import {
 import ContributorPicker from "./contributor-picker";
 import CredentialsEditor from "./credentials-editor";
 import SubprojectRow from "./subproject-row";
+import DocManager from "./doc-manager";
 import {
   createClient,
   updateClient,
@@ -259,7 +260,13 @@ export default function ClientRow({
               </div>
             </div>
           )}
-          {/* PDF_SLOT — replaced in Task 8 */}
+          {!isNew && (
+            <DocManager
+              clientId={client!.id}
+              hasNda={Boolean(client!.nda_path)}
+              hasContract={Boolean(client!.contract_path)}
+            />
+          )}
 
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
