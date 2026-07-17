@@ -105,9 +105,13 @@ export default async function AdminPage({
         </p>
         <a
           href="/admin/hq"
-          className="inline-block mb-6 px-4 py-2 rounded-full text-sm font-sans bg-coral text-white hover:bg-dark transition-colors"
+          className="group inline-flex items-center gap-2 mb-6 px-5 py-2.5 rounded-full text-sm font-medium font-sans bg-coral text-white hover:bg-dark transition-colors duration-300 shadow-sm"
         >
-          → Client HQ (internal ops)
+          Open Client HQ
+          <span className="font-mono text-white/70">{"// internal ops"}</span>
+          <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-0.5">
+            →
+          </span>
         </a>
 
         {/* Top-level view tabs */}
