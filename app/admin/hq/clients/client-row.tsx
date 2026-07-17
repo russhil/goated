@@ -16,6 +16,7 @@ import {
   type Credential,
 } from "@/lib/hq";
 import ContributorPicker from "./contributor-picker";
+import CredentialsEditor from "./credentials-editor";
 import SubprojectRow from "./subproject-row";
 import {
   createClient,
@@ -238,7 +239,7 @@ export default function ClientRow({
             <ContributorPicker team={team} value={contributorIds} onChange={setContributorIds} />
           </div>
 
-          {/* CREDENTIALS_SLOT — replaced in Task 7 */}
+          <CredentialsEditor value={credentials} onChange={setCredentials} />
           {!isNew && (
             <div className="mb-5">
               <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-3">
