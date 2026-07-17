@@ -103,6 +103,12 @@ export default async function AdminPage({
           {"// signed in as "}
           <span className="text-dark">{user.email}</span>
         </p>
+        <a
+          href="/admin/hq"
+          className="inline-block mb-6 px-4 py-2 rounded-full text-sm font-sans bg-coral text-white hover:bg-dark transition-colors"
+        >
+          → Client HQ (internal ops)
+        </a>
 
         {/* Top-level view tabs */}
         <div className="flex items-center gap-2 mb-2">
