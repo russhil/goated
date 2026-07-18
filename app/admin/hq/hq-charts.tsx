@@ -4,6 +4,7 @@ import {
   ResponsiveContainer,
   ComposedChart,
   Area,
+  Line,
   Scatter,
   CartesianGrid,
   XAxis,
@@ -15,16 +16,25 @@ import {
 import { formatMoney } from "@/lib/hq";
 import { useHqTheme } from "./theme";
 
-// One point on a monthly timeline: numeric x (drives the axis), a display
-// label ('Mar 26'), and the INR value for that month.
-export type SeriesPoint = {
-  x: number; // month index 0..n-1
-  label: string; // 'Mon YY'
-  value: number; // INR
+// A monthly row: numeric x (drives the axis), a display label ('Mar 26'), and
+// one INR number per series key present on the chart.
+export type ChartRow = { x: number; label: string; [key: string]: number | string };
+
+export type SeriesDef = {
+  key: string; // matches a numeric key on ChartRow
+  name: string; // legend label
+  color: string;
+  area?: boolean; // filled area (revenue) vs plain line (cost series)
 };
 
-// A single scatter dot pinned to a month (x) and an INR value.
-export type DotPoint = { x: number; value: number; name: string };
+// One scatter dot pinned to a month (x) + INR value. `breakdown` powers the
+// hover detail — e.g. a client's sub-projects.
+export type DotPoint = {
+  x: number;
+  value: number;
+  name: string;
+  breakdown?: { label: string; value: number }[];
+};
 
 function compactInr(n: number): string {
   const v = Number(n || 0);
@@ -42,26 +52,20 @@ type TipItem = {
   dataKey?: string | number;
   payload?: Record<string, unknown>;
 };
-type TipProps = {
-  active?: boolean;
-  payload?: TipItem[];
-  label?: number | string;
-};
+type TipProps = { active?: boolean; payload?: TipItem[]; label?: number | string };
 
-// Reusable single-series area + scatter timeline. The dashboard renders it
-// twice (revenue in coral, cost in indigo) from two {x,label,value} arrays.
 export function TimeSeriesChart({
   data,
+  series,
   dots,
-  color,
-  seriesName,
   dotName,
+  dotColor,
 }: {
-  data: SeriesPoint[];
+  data: ChartRow[];
+  series: SeriesDef[];
   dots: DotPoint[];
-  color: string;
-  seriesName: string;
   dotName: string;
+  dotColor: string;
 }) {
   const { theme } = useHqTheme();
   const dark = theme === "dark";
@@ -73,16 +77,14 @@ export function TimeSeriesChart({
   const tipBorder = dark ? "rgba(255,255,255,0.1)" : "rgba(13,13,13,0.1)";
   const dotStroke = dark ? "#17181b" : "#ffffff";
 
-  // Stable, per-series gradient id so two charts on one page don't collide.
-  const gradientId = `ts-grad-${seriesName.replace(/[^a-z0-9]+/gi, "-")}`;
-
-  const hasData = data.some((d) => d.value > 0) || dots.length > 0;
+  const hasData =
+    data.some((d) => series.some((s) => Number(d[s.key]) > 0)) || dots.length > 0;
 
   if (!data.length || !hasData) {
     return (
       <div className="h-[320px] flex items-center justify-center">
         <p className="font-sans text-muted text-sm">
-          No dated {seriesName} yet — add sub-projects, expenses or a client kickoff to plot the timeline.
+          Nothing to plot yet — add clients with a kickoff date, revenue, or expenses.
         </p>
       </div>
     );
@@ -92,6 +94,13 @@ export function TimeSeriesChart({
     if (!active || !payload || payload.length === 0) return null;
     const idx = Math.round(Number(label));
     const monthLabel = data[idx]?.label ?? "";
+
+    // Split into line/area series rows vs scatter dots (dots carry a `name`).
+    const seriesItems = payload.filter((p) => !(p.payload && typeof (p.payload as DotPoint).name === "string"));
+    const dotItems = payload
+      .filter((p) => p.payload && typeof (p.payload as DotPoint).name === "string")
+      .map((p) => p.payload as unknown as DotPoint);
+
     return (
       <div
         style={{
@@ -102,7 +111,8 @@ export function TimeSeriesChart({
           padding: "10px 12px",
           fontFamily: "var(--font-sans)",
           fontSize: 12,
-          minWidth: 150,
+          minWidth: 170,
+          maxWidth: 280,
           boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
         }}
       >
@@ -118,37 +128,34 @@ export function TimeSeriesChart({
         >
           {monthLabel}
         </p>
-        {payload.map((p, i) => {
-          const row = (p.payload ?? {}) as Partial<DotPoint>;
-          const isDot = typeof row.name === "string";
-          const name = isDot ? (row.name as string) : p.name ?? "";
-          return (
-            <div
-              key={`${name}-${i}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                marginTop: i ? 4 : 0,
-              }}
-            >
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 999,
-                  background: p.color,
-                  display: "inline-block",
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ flex: 1, opacity: isDot ? 0.75 : 1 }}>{name}</span>
-              <span style={{ fontVariantNumeric: "tabular-nums" }}>
-                {formatMoney(Number(p.value), "INR")}
-              </span>
+
+        {seriesItems.map((p, i) => (
+          <div key={`s-${i}`} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: i ? 4 : 0 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: p.color, display: "inline-block", flexShrink: 0 }} />
+            <span style={{ flex: 1 }}>{p.name}</span>
+            <span style={{ fontVariantNumeric: "tabular-nums" }}>{formatMoney(Number(p.value), "INR")}</span>
+          </div>
+        ))}
+
+        {dotItems.map((d, i) => (
+          <div key={`d-${i}`} style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${tipBorder}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: dotColor, display: "inline-block", flexShrink: 0 }} />
+              <span style={{ flex: 1, fontWeight: 600 }}>{d.name}</span>
+              <span style={{ fontVariantNumeric: "tabular-nums" }}>{formatMoney(Number(d.value), "INR")}</span>
             </div>
-          );
-        })}
+            {d.breakdown && d.breakdown.length > 0 && (
+              <div style={{ marginTop: 3, paddingLeft: 16 }}>
+                {d.breakdown.map((b, j) => (
+                  <div key={j} style={{ display: "flex", gap: 8, opacity: 0.7, fontSize: 11 }}>
+                    <span style={{ flex: 1 }}>{b.label}</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{formatMoney(Number(b.value), "INR")}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     );
   };
@@ -157,10 +164,14 @@ export function TimeSeriesChart({
     <ResponsiveContainer width="100%" height={320}>
       <ComposedChart data={data} margin={{ top: 12, right: 12, bottom: 0, left: 8 }}>
         <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={dark ? 0.35 : 0.26} />
-            <stop offset="100%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
+          {series
+            .filter((s) => s.area)
+            .map((s) => (
+              <linearGradient key={s.key} id={`grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={s.color} stopOpacity={dark ? 0.35 : 0.26} />
+                <stop offset="100%" stopColor={s.color} stopOpacity={0} />
+              </linearGradient>
+            ))}
         </defs>
 
         <CartesianGrid stroke={grid} strokeDasharray="3 3" vertical={false} />
@@ -184,13 +195,9 @@ export function TimeSeriesChart({
           tickFormatter={compactInr}
           width={56}
         />
-        {/* Fixed, small dot size for the scatter series. */}
-        <ZAxis range={[36, 36]} />
+        <ZAxis range={[42, 42]} />
 
-        <Tooltip
-          content={renderTooltip as never}
-          cursor={{ stroke: grid, strokeWidth: 1 }}
-        />
+        <Tooltip content={renderTooltip as never} cursor={{ stroke: grid, strokeWidth: 1 }} />
         <Legend
           iconType="circle"
           wrapperStyle={{
@@ -203,25 +210,34 @@ export function TimeSeriesChart({
           }}
         />
 
-        <Area
-          type="monotone"
-          dataKey="value"
-          name={seriesName}
-          stroke={color}
-          strokeWidth={2}
-          fill={`url(#${gradientId})`}
-          dot={false}
-          activeDot={{ r: 3, strokeWidth: 0 }}
-        />
+        {series.map((s) =>
+          s.area ? (
+            <Area
+              key={s.key}
+              type="monotone"
+              dataKey={s.key}
+              name={s.name}
+              stroke={s.color}
+              strokeWidth={2}
+              fill={`url(#grad-${s.key})`}
+              dot={false}
+              activeDot={{ r: 3, strokeWidth: 0 }}
+            />
+          ) : (
+            <Line
+              key={s.key}
+              type="monotone"
+              dataKey={s.key}
+              name={s.name}
+              stroke={s.color}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 3, strokeWidth: 0 }}
+            />
+          )
+        )}
 
-        <Scatter
-          name={dotName}
-          data={dots}
-          dataKey="value"
-          fill={color}
-          stroke={dotStroke}
-          strokeWidth={1}
-        />
+        <Scatter name={dotName} data={dots} dataKey="value" fill={dotColor} stroke={dotStroke} strokeWidth={1} />
       </ComposedChart>
     </ResponsiveContainer>
   );

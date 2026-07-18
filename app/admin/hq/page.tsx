@@ -16,7 +16,7 @@ import {
   getPettyCashAll,
   getExpensesAll,
 } from "@/lib/hq-data";
-import { TimeSeriesChart, type SeriesPoint, type DotPoint } from "./hq-charts";
+import { TimeSeriesChart, type ChartRow, type SeriesDef, type DotPoint } from "./hq-charts";
 
 export const dynamic = "force-dynamic";
 
@@ -59,24 +59,15 @@ export default async function DashboardPage() {
     subsByClient.set(s.client_id, arr);
   }
 
-  const clientCurrency = new Map<string, string>();
-  const clientName = new Map<string, string>();
-  const clientKickoff = new Map<string, string | null>();
-  for (const c of clientList) {
-    clientCurrency.set(c.id, c.currency);
-    clientName.set(c.id, c.name);
-    clientKickoff.set(c.id, c.kickoff_date);
-  }
-
   const inr = summarizeInInr(clientList, subsByClient, pettyList, expenseList, rates);
   const expensesTotal = inr.pettyCash + inr.expenses;
   const subprojectCount = subList.length;
 
   // Monthly timelines: buckets run from March 2026 through the current month.
-  // We don't store dated revenue, so revenue is attributed to each client's
-  // kickoff month (falling back to the sub-project's created_at) and cost to
-  // expense/petty/kickoff dates. Out-of-window dates clamp into the first
-  // bucket so nothing is dropped.
+  // No dated revenue is stored, so each client's totals are booked to its
+  // "anchor" month: kickoff date → else its earliest sub-project → else the
+  // client's created_at. Expenses/petty use their own dates. Out-of-window
+  // dates clamp into the first bucket so nothing is dropped.
   const now = new Date();
   const START_YEAR = 2026;
   const START_MONTH = 2; // 0-indexed → March
@@ -85,7 +76,7 @@ export default async function DashboardPage() {
     (now.getFullYear() - START_YEAR) * 12 + (now.getMonth() - START_MONTH) + 1
   );
 
-  type Bucket = { x: number; label: string; revenue: number; cost: number };
+  type Bucket = { x: number; label: string; revenue: number; expenses: number; clientCost: number };
   const buckets: Bucket[] = [];
   const indexByKey = new Map<string, number>();
   for (let i = 0; i < monthCount; i++) {
@@ -96,66 +87,80 @@ export default async function DashboardPage() {
       x: i,
       label: d.toLocaleString("en-US", { month: "short", year: "2-digit" }),
       revenue: 0,
-      cost: 0,
+      expenses: 0,
+      clientCost: 0,
     });
   }
 
-  // Map a 'YYYY-MM' key to a bucket index. A dated-but-out-of-window month
-  // clamps into the first (March 2026) bucket; a missing/unparseable date is
-  // dropped (null).
   const idxOf = (key: string | null): number | null => {
     if (key == null) return null;
     const direct = indexByKey.get(key);
     return direct !== undefined ? direct : 0;
   };
 
-  // Revenue = collected_revenue booked in the client's kickoff month, else the
-  // sub-project's own created_at month.
-  const revenueDots: DotPoint[] = [];
+  // Earliest sub-project created_at per client (anchor fallback).
+  const earliestSub = new Map<string, string>();
   for (const s of subList) {
-    const kickoff = clientKickoff.get(s.client_id) ?? null;
-    const attrKey = kickoff ? monthKey(kickoff) : monthKey(s.created_at);
-    const idx = idxOf(attrKey);
-    if (idx === null) continue;
-    const cur = clientCurrency.get(s.client_id) ?? "INR";
-    const value = toInr(Number(s.collected_revenue || 0), cur, rates);
-    buckets[idx].revenue += value;
-    revenueDots.push({
-      x: idx,
-      value,
-      name: `${clientName.get(s.client_id) ?? "—"} · ${s.name}`,
-    });
+    if (!s.created_at) continue;
+    const prev = earliestSub.get(s.client_id);
+    if (!prev || s.created_at < prev) earliestSub.set(s.client_id, s.created_at);
   }
 
-  // Cost = company expenses (incurred_on) + petty cash (spent_on) + each
-  // client's fixed project cost booked at its kickoff month.
+  // ONE dot per client. Revenue dot value = the client's total collected, with a
+  // hover breakdown of its sub-projects. Cost dot value = the client's cost.
+  const revenueDots: DotPoint[] = [];
+  const costDots: DotPoint[] = [];
+  for (const c of clientList) {
+    const anchor = c.kickoff_date ?? earliestSub.get(c.id) ?? c.created_at;
+    const idx = idxOf(monthKey(anchor));
+    if (idx === null) continue;
+    const subs = subsByClient.get(c.id) ?? [];
+
+    const clientRevenue = subs.reduce(
+      (sum, s) => sum + toInr(Number(s.collected_revenue || 0), c.currency, rates),
+      0
+    );
+    buckets[idx].revenue += clientRevenue;
+    revenueDots.push({
+      x: idx,
+      value: clientRevenue,
+      name: c.name,
+      breakdown: subs.map((s) => ({
+        label: s.name,
+        value: toInr(Number(s.collected_revenue || 0), c.currency, rates),
+      })),
+    });
+
+    const clientCostInr = toInr(Number(c.cost || 0), c.currency, rates);
+    buckets[idx].clientCost += clientCostInr;
+    costDots.push({ x: idx, value: clientCostInr, name: c.name });
+  }
+
+  // Expenses line = company expenses (incurred_on) + petty cash (spent_on).
   for (const e of expenseList) {
     const idx = idxOf(monthKey(e.incurred_on));
-    if (idx !== null) buckets[idx].cost += toInr(Number(e.amount || 0), e.currency, rates);
+    if (idx !== null) buckets[idx].expenses += toInr(Number(e.amount || 0), e.currency, rates);
   }
   for (const p of pettyList) {
     const idx = idxOf(monthKey(p.spent_on));
-    if (idx !== null) buckets[idx].cost += toInr(Number(p.amount || 0), p.currency, rates);
-  }
-  const costDots: DotPoint[] = [];
-  for (const c of clientList) {
-    const idx = idxOf(monthKey(c.kickoff_date));
-    if (idx === null) continue;
-    const value = toInr(Number(c.cost || 0), c.currency, rates);
-    buckets[idx].cost += value;
-    costDots.push({ x: idx, value, name: c.name });
+    if (idx !== null) buckets[idx].expenses += toInr(Number(p.amount || 0), p.currency, rates);
   }
 
-  const revenueSeries: SeriesPoint[] = buckets.map((b) => ({
+  const chartRows: ChartRow[] = buckets.map((b) => ({
     x: b.x,
     label: b.label,
-    value: b.revenue,
+    revenue: b.revenue,
+    expenses: b.expenses,
+    clientCost: b.clientCost,
   }));
-  const costSeries: SeriesPoint[] = buckets.map((b) => ({
-    x: b.x,
-    label: b.label,
-    value: b.cost,
-  }));
+
+  const REVENUE_SERIES: SeriesDef[] = [
+    { key: "revenue", name: "revenue", color: "#E8533A", area: true },
+  ];
+  const COST_SERIES: SeriesDef[] = [
+    { key: "expenses", name: "expenses", color: "#6366f1" },
+    { key: "clientCost", name: "client costs", color: "#f59e0b" },
+  ];
 
   // Health board — worst first (red < amber < green < grey).
   const order = { red: 0, amber: 1, green: 2, grey: 3 } as const;
@@ -188,27 +193,27 @@ export default async function DashboardPage() {
         <Kpi label="Net (cash)" value={formatMoney(inr.net, "INR")} tone={inr.net >= 0 ? "pos" : "neg"} />
       </div>
 
-      {/* Revenue timeline */}
+      {/* Revenue timeline — one dot per client, hover shows its sub-projects */}
       <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-6">
         <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// revenue over time (INR)"}</p>
         <TimeSeriesChart
-          data={revenueSeries}
+          data={chartRows}
+          series={REVENUE_SERIES}
           dots={revenueDots}
-          color="#E8533A"
-          seriesName="revenue"
-          dotName="sub-projects"
+          dotName="clients"
+          dotColor="#E8533A"
         />
       </div>
 
-      {/* Cost timeline */}
+      {/* Cost timeline — expenses line + client-costs line, one dot per client */}
       <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-10">
         <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// cost over time (INR)"}</p>
         <TimeSeriesChart
-          data={costSeries}
+          data={chartRows}
+          series={COST_SERIES}
           dots={costDots}
-          color="#6366f1"
-          seriesName="cost"
-          dotName="client cost"
+          dotName="clients"
+          dotColor="#f59e0b"
         />
       </div>
 
