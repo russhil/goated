@@ -206,3 +206,55 @@ export function summarizeByCurrency(
   }
   return Array.from(map.values()).sort((a, b) => b.contract - a.contract);
 }
+
+// Convert an amount to INR using an inrPerUnit rate map (see lib/fx.ts).
+export function toInr(
+  amount: number,
+  currency: string,
+  rates: Record<string, number>
+): number {
+  return Number(amount || 0) * (rates[currency] ?? 1);
+}
+
+export type InrTotals = {
+  contract: number;
+  collected: number;
+  outstanding: number;
+  cost: number;
+  pettyCash: number;
+  expenses: number;
+  net: number;
+};
+
+// Single INR-unified rollup across every currency, converted at `rates`.
+// Net is cash basis: collected - project cost - petty cash - company expenses.
+export function summarizeInInr(
+  clients: { id: string; currency: string; cost: number }[],
+  subsByClient: Map<string, MoneyProgress[]>,
+  pettyCash: { currency: string; amount: number }[],
+  expenses: { currency: string; amount: number }[],
+  rates: Record<string, number>
+): InrTotals {
+  let contract = 0;
+  let collected = 0;
+  let cost = 0;
+  let pettyCashTotal = 0;
+  let expensesTotal = 0;
+  for (const c of clients) {
+    const r = rollup(subsByClient.get(c.id) ?? []);
+    contract += toInr(r.totalContract, c.currency, rates);
+    collected += toInr(r.collected, c.currency, rates);
+    cost += toInr(Number(c.cost || 0), c.currency, rates);
+  }
+  for (const p of pettyCash) pettyCashTotal += toInr(Number(p.amount || 0), p.currency, rates);
+  for (const e of expenses) expensesTotal += toInr(Number(e.amount || 0), e.currency, rates);
+  return {
+    contract,
+    collected,
+    outstanding: contract - collected,
+    cost,
+    pettyCash: pettyCashTotal,
+    expenses: expensesTotal,
+    net: collected - cost - pettyCashTotal - expensesTotal,
+  };
+}

@@ -28,7 +28,7 @@ export default function PettyCashRow({
   const isNew = !entry;
   const [paidById, setPaidById] = useState(entry?.paid_by_id ?? "");
   const [purpose, setPurpose] = useState(entry?.purpose ?? "");
-  const [amount, setAmount] = useState(entry?.amount ?? 0);
+  const [amount, setAmount] = useState(entry ? String(entry.amount ?? "") : "");
   const [currency, setCurrency] = useState(entry?.currency ?? "INR");
   const [spentOn, setSpentOn] = useState(entry?.spent_on ?? "");
   const [pending, startTransition] = useTransition();
@@ -52,7 +52,7 @@ export default function PettyCashRow({
       else if (isNew) {
         setPaidById("");
         setPurpose("");
-        setAmount(0);
+        setAmount("");
         setCurrency("INR");
         setSpentOn("");
       }
@@ -77,7 +77,7 @@ export default function PettyCashRow({
         ))}
       </select>
       <input className={inputClass} value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="for what" />
-      <input type="number" className={inputClass} value={amount} onChange={(e) => setAmount(Number(e.target.value))} placeholder="amount" />
+      <input type="number" inputMode="decimal" className={inputClass} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="amount" />
       <select className={inputClass} value={currency} onChange={(e) => setCurrency(e.target.value)}>
         {CURRENCIES.map((c) => (
           <option key={c} value={c}>{c}</option>

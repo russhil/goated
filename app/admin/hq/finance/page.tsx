@@ -1,12 +1,14 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   rollup,
+  toInr,
   summarizeByCurrency,
   formatMoney,
   type Client,
   type Subproject,
   type TeamMember,
 } from "@/lib/hq";
+import { getInrRates } from "@/lib/fx";
 import PettyCashRow, { type PettyCash } from "./petty-cash-row";
 import ExpenseRow, { type Expense } from "./expense-row";
 
@@ -14,13 +16,14 @@ export const dynamic = "force-dynamic";
 
 export default async function FinancePage() {
   const admin = createAdminClient();
-  const [{ data: clients }, { data: subs }, { data: petty }, { data: expenses }, { data: team }] =
+  const [{ data: clients }, { data: subs }, { data: petty }, { data: expenses }, { data: team }, rates] =
     await Promise.all([
       admin.from("clients").select("*").eq("archived", false),
       admin.from("client_subprojects").select("*"),
       admin.from("petty_cash").select("*").order("spent_on", { ascending: false }),
       admin.from("company_expenses").select("*").order("incurred_on", { ascending: false }),
       admin.from("team_members").select("*").order("name", { ascending: true }),
+      getInrRates(),
     ]);
 
   const clientList = (clients ?? []) as Client[];
@@ -35,6 +38,16 @@ export default async function FinancePage() {
   const teamList = (team ?? []) as TeamMember[];
 
   const totals = summarizeByCurrency(clientList, subsByClient, pettyList, expenseList);
+
+  // Per-client rows, ordered by contract value descending (INR-equivalent so
+  // clients in different currencies rank consistently).
+  const perClient = clientList
+    .map((c) => ({ client: c, roll: rollup(subsByClient.get(c.id) ?? []) }))
+    .sort(
+      (a, b) =>
+        toInr(b.roll.totalContract, b.client.currency, rates) -
+        toInr(a.roll.totalContract, a.client.currency, rates)
+    );
 
   return (
     <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1200px] mx-auto pt-6">
@@ -76,20 +89,19 @@ export default async function FinancePage() {
             </tr>
           </thead>
           <tbody>
-            {clientList.map((c) => {
-              const r = rollup(subsByClient.get(c.id) ?? []);
-              return (
-                <tr key={c.id} className="border-b border-dark/5 last:border-0">
-                  <td className="p-3 text-dark">{c.name}</td>
-                  <td className="p-3 text-right">{formatMoney(r.totalContract, c.currency)}</td>
-                  <td className="p-3 text-right">{formatMoney(r.collected, c.currency)}</td>
-                  <td className="p-3 text-right text-coral">{formatMoney(r.outstanding, c.currency)}</td>
-                  <td className="p-3 text-right">{formatMoney(c.cost, c.currency)}</td>
-                  <td className="p-3 text-right">{formatMoney(r.collected - Number(c.cost || 0), c.currency)}</td>
-                </tr>
-              );
-            })}
-            {clientList.length === 0 && (
+            {perClient.map(({ client: c, roll: r }) => (
+              <tr key={c.id} className="border-b border-dark/5 last:border-0 hover:bg-dark/[0.02]">
+                <td className="p-3 text-dark">
+                  <a href={`/admin/hq/clients/${c.id}`} className="hover:text-coral">{c.name}</a>
+                </td>
+                <td className="p-3 text-right">{formatMoney(r.totalContract, c.currency)}</td>
+                <td className="p-3 text-right">{formatMoney(r.collected, c.currency)}</td>
+                <td className="p-3 text-right text-coral">{formatMoney(r.outstanding, c.currency)}</td>
+                <td className="p-3 text-right">{formatMoney(c.cost, c.currency)}</td>
+                <td className="p-3 text-right">{formatMoney(r.collected - Number(c.cost || 0), c.currency)}</td>
+              </tr>
+            ))}
+            {perClient.length === 0 && (
               <tr><td className="p-3 text-muted" colSpan={6}>No active clients.</td></tr>
             )}
           </tbody>

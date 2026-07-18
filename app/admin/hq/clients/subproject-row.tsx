@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   inputClass,
   labelClass,
@@ -20,22 +21,32 @@ export default function SubprojectRow({
   subproject,
   team,
   currency,
+  onSaved,
 }: {
   clientId: string;
   subproject?: Subproject;
   team: TeamMember[];
   currency: string;
+  onSaved?: () => void;
 }) {
   const isNew = !subproject;
+  const router = useRouter();
   const [name, setName] = useState(subproject?.name ?? "");
   const [description, setDescription] = useState(subproject?.description ?? "");
-  const [accrued, setAccrued] = useState(subproject?.accrued_revenue ?? 0);
-  const [collected, setCollected] = useState(subproject?.collected_revenue ?? 0);
+  // Money/order kept as strings so the fields can be emptied; coerced on save.
+  const [accrued, setAccrued] = useState(
+    subproject ? String(subproject.accrued_revenue ?? "") : ""
+  );
+  const [collected, setCollected] = useState(
+    subproject ? String(subproject.collected_revenue ?? "") : ""
+  );
   const [progress, setProgress] = useState(subproject?.progress ?? 0);
   const [contributorIds, setContributorIds] = useState<string[]>(
     subproject?.contributor_ids ?? []
   );
-  const [sortOrder, setSortOrder] = useState(subproject?.sort_order ?? 0);
+  const [sortOrder, setSortOrder] = useState(
+    subproject ? String(subproject.sort_order ?? "") : ""
+  );
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
@@ -55,16 +66,21 @@ export default function SubprojectRow({
       const res = isNew
         ? await createSubproject(clientId, build())
         : await updateSubproject(subproject!.id, build());
-      if (!res.ok) setError(res.error || "save failed");
-      else if (isNew) {
+      if (!res.ok) {
+        setError(res.error || "save failed");
+        return;
+      }
+      if (isNew) {
         setName("");
         setDescription("");
-        setAccrued(0);
-        setCollected(0);
+        setAccrued("");
+        setCollected("");
         setProgress(0);
         setContributorIds([]);
-        setSortOrder(0);
+        setSortOrder("");
       }
+      router.refresh();
+      onSaved?.();
     });
   };
 
@@ -74,6 +90,7 @@ export default function SubprojectRow({
     startTransition(async () => {
       const res = await deleteSubproject(subproject.id);
       if (!res.ok) setError(res.error || "delete failed");
+      else router.refresh();
     });
   };
 
@@ -86,7 +103,7 @@ export default function SubprojectRow({
         </div>
         <div>
           <label className={labelClass}>// sort order</label>
-          <input type="number" className={inputClass} value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} />
+          <input type="number" inputMode="numeric" className={inputClass} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} placeholder="0" />
         </div>
       </div>
 
@@ -98,11 +115,11 @@ export default function SubprojectRow({
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
         <div>
           <label className={labelClass}>{`// accrued revenue (${currency})`}</label>
-          <input type="number" className={inputClass} value={accrued} onChange={(e) => setAccrued(Number(e.target.value))} />
+          <input type="number" inputMode="decimal" className={inputClass} value={accrued} onChange={(e) => setAccrued(e.target.value)} placeholder="0" />
         </div>
         <div>
           <label className={labelClass}>{`// collected revenue (${currency})`}</label>
-          <input type="number" className={inputClass} value={collected} onChange={(e) => setCollected(Number(e.target.value))} />
+          <input type="number" inputMode="decimal" className={inputClass} value={collected} onChange={(e) => setCollected(e.target.value)} placeholder="0" />
         </div>
         <div>
           <label className={labelClass}>{`// progress: ${progress}%`}</label>
