@@ -9,7 +9,7 @@ import {
   type TeamMemberInput,
 } from "./team-actions";
 
-function MemberRow({ member }: { member?: TeamMember }) {
+function MemberRow({ member, projectCount = 0 }: { member?: TeamMember; projectCount?: number }) {
   const isNew = !member;
   const [name, setName] = useState(member?.name ?? "");
   const [role, setRole] = useState(member?.role ?? "");
@@ -74,6 +74,14 @@ function MemberRow({ member }: { member?: TeamMember }) {
         />
         active
       </label>
+      {!isNew && (
+        <span
+          className="font-mono text-[11px] text-dark/70 bg-dark/[0.04] rounded-full px-2 py-1 whitespace-nowrap"
+          title="active projects this member contributes to"
+        >
+          {projectCount} {projectCount === 1 ? "project" : "projects"}
+        </span>
+      )}
       <button
         onClick={save}
         disabled={pending || !name.trim()}
@@ -95,7 +103,13 @@ function MemberRow({ member }: { member?: TeamMember }) {
   );
 }
 
-export default function TeamManager({ team }: { team: TeamMember[] }) {
+export default function TeamManager({
+  team,
+  projectCounts = {},
+}: {
+  team: TeamMember[];
+  projectCounts?: Record<string, number>;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <div className="border border-dark/10 rounded-2xl p-6 bg-light/40 mb-8">
@@ -108,7 +122,7 @@ export default function TeamManager({ team }: { team: TeamMember[] }) {
       {open && (
         <div className="mt-4 flex flex-col gap-3">
           {team.map((m) => (
-            <MemberRow key={m.id} member={m} />
+            <MemberRow key={m.id} member={m} projectCount={projectCounts[m.id] ?? 0} />
           ))}
           <div className="pt-2 border-t border-dark/10">
             <MemberRow />

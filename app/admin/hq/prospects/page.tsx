@@ -1,5 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import { formatMoney } from "@/lib/hq";
+import { getProspectsAll } from "@/lib/hq-data";
 import { STAGES, STAGE_LABELS, type Prospect, type Stage } from "./stages";
 import KanbanBoard from "./kanban-board";
 import ProspectList from "./prospect-list";
@@ -43,14 +43,7 @@ export default async function ProspectsPage({
   searchParams: { view?: string };
 }) {
   const view = searchParams.view === "list" ? "list" : "kanban";
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from("prospects")
-    .select("*")
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
-
-  const prospects = (data ?? []) as Prospect[];
+  const prospects = (await getProspectsAll()) as unknown as Prospect[];
   const summaries = summarize(prospects);
 
   return (

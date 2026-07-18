@@ -1,4 +1,3 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import {
   rollup,
   healthColor,
@@ -11,7 +10,13 @@ import {
   type Subproject,
 } from "@/lib/hq";
 import { getInrRates } from "@/lib/fx";
-import { RevenueCostChart, type MonthPoint, type DotPoint } from "./hq-charts";
+import {
+  getClientsAll,
+  getSubprojectsAll,
+  getPettyCashAll,
+  getExpensesAll,
+} from "@/lib/hq-data";
+import { TimeSeriesChart, type SeriesPoint, type DotPoint } from "./hq-charts";
 
 export const dynamic = "force-dynamic";
 
@@ -27,24 +32,21 @@ function monthKey(dateStr: string | null): string | null {
 }
 
 export default async function DashboardPage() {
-  const admin = createAdminClient();
-  const [{ data: clients }, { data: subs }, { data: petty }, { data: expenses }, rates] =
-    await Promise.all([
-      admin.from("clients").select("*").eq("archived", false),
-      admin.from("client_subprojects").select("*"),
-      admin.from("petty_cash").select("amount, currency, spent_on"),
-      admin.from("company_expenses").select("amount, currency, incurred_on"),
-      getInrRates(),
-    ]);
+  const [clientsAll, subList, pettyAll, expensesAll, rates] = await Promise.all([
+    getClientsAll(),
+    getSubprojectsAll(),
+    getPettyCashAll(),
+    getExpensesAll(),
+    getInrRates(),
+  ]);
 
-  const clientList = (clients ?? []) as Client[];
-  const subList = (subs ?? []) as Subproject[];
-  const pettyList = (petty ?? []) as {
+  const clientList: Client[] = clientsAll.filter((c) => !c.archived);
+  const pettyList = pettyAll as unknown as {
     amount: number;
     currency: string;
     spent_on: string | null;
   }[];
-  const expenseList = (expenses ?? []) as {
+  const expenseList = expensesAll as unknown as {
     amount: number;
     currency: string;
     incurred_on: string | null;
@@ -59,45 +61,65 @@ export default async function DashboardPage() {
 
   const clientCurrency = new Map<string, string>();
   const clientName = new Map<string, string>();
+  const clientKickoff = new Map<string, string | null>();
   for (const c of clientList) {
     clientCurrency.set(c.id, c.currency);
     clientName.set(c.id, c.name);
+    clientKickoff.set(c.id, c.kickoff_date);
   }
 
   const inr = summarizeInInr(clientList, subsByClient, pettyList, expenseList, rates);
   const expensesTotal = inr.pettyCash + inr.expenses;
   const subprojectCount = subList.length;
 
-  // Monthly revenue-vs-cost timeline: last 12 months up to the current month.
-  // We don't store dated revenue, so revenue is approximated from each
-  // sub-project's created_at and cost from expense/petty/kickoff dates.
+  // Monthly timelines: buckets run from March 2026 through the current month.
+  // We don't store dated revenue, so revenue is attributed to each client's
+  // kickoff month (falling back to the sub-project's created_at) and cost to
+  // expense/petty/kickoff dates. Out-of-window dates clamp into the first
+  // bucket so nothing is dropped.
   const now = new Date();
-  const months: MonthPoint[] = [];
+  const START_YEAR = 2026;
+  const START_MONTH = 2; // 0-indexed → March
+  const monthCount = Math.max(
+    1,
+    (now.getFullYear() - START_YEAR) * 12 + (now.getMonth() - START_MONTH) + 1
+  );
+
+  type Bucket = { x: number; label: string; revenue: number; cost: number };
+  const buckets: Bucket[] = [];
   const indexByKey = new Map<string, number>();
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  for (let i = 0; i < monthCount; i++) {
+    const d = new Date(START_YEAR, START_MONTH + i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const x = months.length;
-    indexByKey.set(key, x);
-    months.push({
-      x,
-      key,
+    indexByKey.set(key, i);
+    buckets.push({
+      x: i,
       label: d.toLocaleString("en-US", { month: "short", year: "2-digit" }),
       revenue: 0,
       cost: 0,
     });
   }
-  const idxOf = (key: string | null): number | undefined =>
-    key == null ? undefined : indexByKey.get(key);
 
-  // Revenue = collected_revenue booked in the sub-project's created month.
+  // Map a 'YYYY-MM' key to a bucket index. A dated-but-out-of-window month
+  // clamps into the first (March 2026) bucket; a missing/unparseable date is
+  // dropped (null).
+  const idxOf = (key: string | null): number | null => {
+    if (key == null) return null;
+    const direct = indexByKey.get(key);
+    return direct !== undefined ? direct : 0;
+  };
+
+  // Revenue = collected_revenue booked in the client's kickoff month, else the
+  // sub-project's own created_at month.
   const revenueDots: DotPoint[] = [];
   for (const s of subList) {
-    const idx = idxOf(monthKey(s.created_at));
-    if (idx === undefined) continue;
+    const kickoff = clientKickoff.get(s.client_id) ?? null;
+    const attrKey = kickoff ? monthKey(kickoff) : monthKey(s.created_at);
+    const idx = idxOf(attrKey);
+    if (idx === null) continue;
     const cur = clientCurrency.get(s.client_id) ?? "INR";
     const value = toInr(Number(s.collected_revenue || 0), cur, rates);
-    months[idx].revenue += value;
+    buckets[idx].revenue += value;
     revenueDots.push({
       x: idx,
       value,
@@ -109,20 +131,31 @@ export default async function DashboardPage() {
   // client's fixed project cost booked at its kickoff month.
   for (const e of expenseList) {
     const idx = idxOf(monthKey(e.incurred_on));
-    if (idx !== undefined) months[idx].cost += toInr(Number(e.amount || 0), e.currency, rates);
+    if (idx !== null) buckets[idx].cost += toInr(Number(e.amount || 0), e.currency, rates);
   }
   for (const p of pettyList) {
     const idx = idxOf(monthKey(p.spent_on));
-    if (idx !== undefined) months[idx].cost += toInr(Number(p.amount || 0), p.currency, rates);
+    if (idx !== null) buckets[idx].cost += toInr(Number(p.amount || 0), p.currency, rates);
   }
   const costDots: DotPoint[] = [];
   for (const c of clientList) {
     const idx = idxOf(monthKey(c.kickoff_date));
-    if (idx === undefined) continue;
+    if (idx === null) continue;
     const value = toInr(Number(c.cost || 0), c.currency, rates);
-    months[idx].cost += value;
+    buckets[idx].cost += value;
     costDots.push({ x: idx, value, name: c.name });
   }
+
+  const revenueSeries: SeriesPoint[] = buckets.map((b) => ({
+    x: b.x,
+    label: b.label,
+    value: b.revenue,
+  }));
+  const costSeries: SeriesPoint[] = buckets.map((b) => ({
+    x: b.x,
+    label: b.label,
+    value: b.cost,
+  }));
 
   // Health board — worst first (red < amber < green < grey).
   const order = { red: 0, amber: 1, green: 2, grey: 3 } as const;
@@ -155,10 +188,28 @@ export default async function DashboardPage() {
         <Kpi label="Net (cash)" value={formatMoney(inr.net, "INR")} tone={inr.net >= 0 ? "pos" : "neg"} />
       </div>
 
-      {/* Revenue vs cost timeline */}
+      {/* Revenue timeline */}
+      <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-6">
+        <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// revenue over time (INR)"}</p>
+        <TimeSeriesChart
+          data={revenueSeries}
+          dots={revenueDots}
+          color="#E8533A"
+          seriesName="revenue"
+          dotName="sub-projects"
+        />
+      </div>
+
+      {/* Cost timeline */}
       <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-10">
-        <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// revenue vs cost over time (INR)"}</p>
-        <RevenueCostChart data={months} revenueDots={revenueDots} costDots={costDots} />
+        <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// cost over time (INR)"}</p>
+        <TimeSeriesChart
+          data={costSeries}
+          dots={costDots}
+          color="#6366f1"
+          seriesName="cost"
+          dotName="client cost"
+        />
       </div>
 
       {/* Health board */}

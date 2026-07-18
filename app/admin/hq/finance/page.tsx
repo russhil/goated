@@ -1,4 +1,3 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import {
   rollup,
   toInr,
@@ -8,6 +7,13 @@ import {
   type Subproject,
 } from "@/lib/hq";
 import { getInrRates } from "@/lib/fx";
+import {
+  getClientsAll,
+  getSubprojectsAll,
+  getPettyCashAll,
+  getExpensesAll,
+  getSettlementsAll,
+} from "@/lib/hq-data";
 import { type PettyCash } from "./petty-cash-row";
 import ExpenseRow, { type Expense } from "./expense-row";
 import { type Settlement } from "./settlement-row";
@@ -18,36 +24,26 @@ import PettyCashPanel from "./petty-cash-panel";
 export const dynamic = "force-dynamic";
 
 export default async function FinancePage() {
-  const admin = createAdminClient();
-  const [
-    { data: clients },
-    { data: subs },
-    { data: petty },
-    { data: expenses },
-    { data: settlements },
-    rates,
-  ] = await Promise.all([
-    admin.from("clients").select("*").eq("archived", false),
-    admin.from("client_subprojects").select("*"),
-    admin.from("petty_cash").select("*").order("spent_on", { ascending: false }),
-    admin.from("company_expenses").select("*").order("incurred_on", { ascending: false }),
-    admin
-      .from("petty_cash_settlements")
-      .select("*")
-      .order("settled_on", { ascending: false }),
-    getInrRates(),
-  ]);
+  const [clientsAll, subsAll, pettyAll, expensesAll, settlementsAll, rates] =
+    await Promise.all([
+      getClientsAll(),
+      getSubprojectsAll(),
+      getPettyCashAll(),
+      getExpensesAll(),
+      getSettlementsAll(),
+      getInrRates(),
+    ]);
 
-  const clientList = (clients ?? []) as Client[];
+  const clientList: Client[] = clientsAll.filter((c) => !c.archived);
   const subsByClient = new Map<string, Subproject[]>();
-  for (const s of (subs ?? []) as Subproject[]) {
+  for (const s of subsAll) {
     const arr = subsByClient.get(s.client_id) ?? [];
     arr.push(s);
     subsByClient.set(s.client_id, arr);
   }
-  const pettyList = (petty ?? []) as PettyCash[];
-  const expenseList = (expenses ?? []) as Expense[];
-  const settlementList = (settlements ?? []) as Settlement[];
+  const pettyList = pettyAll as unknown as PettyCash[];
+  const expenseList = expensesAll as unknown as Expense[];
+  const settlementList = settlementsAll as unknown as Settlement[];
 
   const totals = summarizeByCurrency(clientList, subsByClient, pettyList, expenseList);
 

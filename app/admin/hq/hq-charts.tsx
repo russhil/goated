@@ -15,20 +15,16 @@ import {
 import { formatMoney } from "@/lib/hq";
 import { useHqTheme } from "./theme";
 
-// The monthly revenue/cost timeline (one row per month, oldest → newest).
-export type MonthPoint = {
-  x: number; // month index 0..n-1, drives the numeric x-axis
-  key: string; // 'YYYY-MM'
+// One point on a monthly timeline: numeric x (drives the axis), a display
+// label ('Mar 26'), and the INR value for that month.
+export type SeriesPoint = {
+  x: number; // month index 0..n-1
   label: string; // 'Mon YY'
-  revenue: number; // INR
-  cost: number; // INR
+  value: number; // INR
 };
 
 // A single scatter dot pinned to a month (x) and an INR value.
 export type DotPoint = { x: number; value: number; name: string };
-
-const CORAL = "#E8533A";
-const INDIGO = "#6366f1";
 
 function compactInr(n: number): string {
   const v = Number(n || 0);
@@ -52,14 +48,20 @@ type TipProps = {
   label?: number | string;
 };
 
-export function RevenueCostChart({
+// Reusable single-series area + scatter timeline. The dashboard renders it
+// twice (revenue in coral, cost in indigo) from two {x,label,value} arrays.
+export function TimeSeriesChart({
   data,
-  revenueDots,
-  costDots,
+  dots,
+  color,
+  seriesName,
+  dotName,
 }: {
-  data: MonthPoint[];
-  revenueDots: DotPoint[];
-  costDots: DotPoint[];
+  data: SeriesPoint[];
+  dots: DotPoint[];
+  color: string;
+  seriesName: string;
+  dotName: string;
 }) {
   const { theme } = useHqTheme();
   const dark = theme === "dark";
@@ -71,16 +73,16 @@ export function RevenueCostChart({
   const tipBorder = dark ? "rgba(255,255,255,0.1)" : "rgba(13,13,13,0.1)";
   const dotStroke = dark ? "#17181b" : "#ffffff";
 
-  const hasData =
-    data.some((d) => d.revenue > 0 || d.cost > 0) ||
-    revenueDots.length > 0 ||
-    costDots.length > 0;
+  // Stable, per-series gradient id so two charts on one page don't collide.
+  const gradientId = `ts-grad-${seriesName.replace(/[^a-z0-9]+/gi, "-")}`;
+
+  const hasData = data.some((d) => d.value > 0) || dots.length > 0;
 
   if (!data.length || !hasData) {
     return (
       <div className="h-[320px] flex items-center justify-center">
         <p className="font-sans text-muted text-sm">
-          No dated revenue or cost yet — add sub-projects, expenses or a client kickoff to plot the timeline.
+          No dated {seriesName} yet — add sub-projects, expenses or a client kickoff to plot the timeline.
         </p>
       </div>
     );
@@ -155,13 +157,9 @@ export function RevenueCostChart({
     <ResponsiveContainer width="100%" height={320}>
       <ComposedChart data={data} margin={{ top: 12, right: 12, bottom: 0, left: 8 }}>
         <defs>
-          <linearGradient id="rc-revenue" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={CORAL} stopOpacity={dark ? 0.35 : 0.26} />
-            <stop offset="100%" stopColor={CORAL} stopOpacity={0} />
-          </linearGradient>
-          <linearGradient id="rc-cost" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={INDIGO} stopOpacity={dark ? 0.3 : 0.2} />
-            <stop offset="100%" stopColor={INDIGO} stopOpacity={0} />
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={dark ? 0.35 : 0.26} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
           </linearGradient>
         </defs>
 
@@ -186,7 +184,7 @@ export function RevenueCostChart({
           tickFormatter={compactInr}
           width={56}
         />
-        {/* Fixed, small dot size for both scatter series. */}
+        {/* Fixed, small dot size for the scatter series. */}
         <ZAxis range={[36, 36]} />
 
         <Tooltip
@@ -207,38 +205,20 @@ export function RevenueCostChart({
 
         <Area
           type="monotone"
-          dataKey="revenue"
-          name="revenue"
-          stroke={CORAL}
+          dataKey="value"
+          name={seriesName}
+          stroke={color}
           strokeWidth={2}
-          fill="url(#rc-revenue)"
-          dot={false}
-          activeDot={{ r: 3, strokeWidth: 0 }}
-        />
-        <Area
-          type="monotone"
-          dataKey="cost"
-          name="cost"
-          stroke={INDIGO}
-          strokeWidth={2}
-          fill="url(#rc-cost)"
+          fill={`url(#${gradientId})`}
           dot={false}
           activeDot={{ r: 3, strokeWidth: 0 }}
         />
 
         <Scatter
-          name="sub-projects"
-          data={revenueDots}
+          name={dotName}
+          data={dots}
           dataKey="value"
-          fill={CORAL}
-          stroke={dotStroke}
-          strokeWidth={1}
-        />
-        <Scatter
-          name="client cost"
-          data={costDots}
-          dataKey="value"
-          fill={INDIGO}
+          fill={color}
           stroke={dotStroke}
           strokeWidth={1}
         />

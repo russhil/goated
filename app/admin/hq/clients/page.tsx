@@ -1,14 +1,12 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import {
   rollup,
   healthColor,
   HEALTH_DOT,
   HEALTH_LABEL,
   formatMoney,
-  type Client,
   type Subproject,
-  type TeamMember,
 } from "@/lib/hq";
+import { getClientsAll, getSubprojectsAll, getTeamAll } from "@/lib/hq-data";
 import TeamManager from "./team-manager";
 import NewClientDrawer from "./new-client-drawer";
 import ClientsFilterBar from "./clients-filter-bar";
@@ -27,6 +25,8 @@ export default async function ClientsPage({
     currency?: string;
     health?: string;
     contributor?: string;
+    sort?: string;
+    dir?: string;
   };
 }) {
   const showArchived = searchParams.archived === "1";
@@ -34,40 +34,44 @@ export default async function ClientsPage({
   const currencyFilter = searchParams.currency ?? "";
   const healthFilter = searchParams.health ?? "";
   const contributorFilter = searchParams.contributor ?? "";
-  const admin = createAdminClient();
+  const sortKey = searchParams.sort ?? "created";
+  const sortDir = searchParams.dir === "asc" ? "asc" : "desc";
 
-  const [{ data: team }, { data: clients }, { data: subs }] = await Promise.all([
-    admin.from("team_members").select("*").order("name", { ascending: true }),
-    admin
-      .from("clients")
-      .select("*")
-      .eq("archived", showArchived)
-      .order("created_at", { ascending: false }),
-    admin
-      .from("client_subprojects")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true }),
+  const [teamList, clientsAll, subsAll] = await Promise.all([
+    getTeamAll(),
+    getClientsAll(),
+    getSubprojectsAll(),
   ]);
 
   const subsByClient = new Map<string, Subproject[]>();
-  for (const s of (subs ?? []) as Subproject[]) {
+  for (const s of subsAll) {
     const arr = subsByClient.get(s.client_id) ?? [];
     arr.push(s);
     subsByClient.set(s.client_id, arr);
   }
 
-  const teamList = (team ?? []) as TeamMember[];
-  const clientList = (clients ?? []) as Client[];
+  const clientList = clientsAll.filter((c) => Boolean(c.archived) === showArchived);
 
-  // Distinct industries for the filter dropdown, computed from the full set
-  // (before applying filters) so options never vanish under an active filter.
+  // Per-member active-project count for the roster (over non-archived clients;
+  // a member counts once per client they touch at the client or sub-project level).
+  const projectCounts: Record<string, number> = {};
+  for (const c of clientsAll) {
+    if (c.archived) continue;
+    const ids = new Set<string>(c.contributor_ids ?? []);
+    for (const sp of subsByClient.get(c.id) ?? []) {
+      for (const id of sp.contributor_ids ?? []) ids.add(id);
+    }
+    ids.forEach((id) => {
+      projectCounts[id] = (projectCounts[id] ?? 0) + 1;
+    });
+  }
+
+  // Distinct industries for the filter dropdown, from the full set so options
+  // never vanish under an active filter.
   const industries = Array.from(
     new Set(clientList.map((c) => c.industry).filter((x): x is string => Boolean(x)))
   ).sort();
 
-  // Roll up each client once (health uses kickoff for off-track detection),
-  // then slice by the query filters.
   const rows = clientList.map((c) => {
     const r = rollup(subsByClient.get(c.id) ?? [], c.kickoff_date);
     return { c, r, health: healthColor(r.progress, r.count, r.offTrack) };
@@ -81,13 +85,33 @@ export default async function ClientsPage({
     return true;
   });
 
+  const dirMul = sortDir === "asc" ? 1 : -1;
+  const sortedRows = [...filteredRows].sort((a, b) => {
+    switch (sortKey) {
+      case "name":
+        return dirMul * a.c.name.localeCompare(b.c.name);
+      case "contract":
+        return dirMul * (a.r.totalContract - b.r.totalContract);
+      case "collected":
+        return dirMul * (a.r.collected - b.r.collected);
+      case "outstanding":
+        return dirMul * (a.r.outstanding - b.r.outstanding);
+      case "progress":
+        return dirMul * (a.r.progress - b.r.progress);
+      case "kickoff":
+        return dirMul * (a.c.kickoff_date || "").localeCompare(b.c.kickoff_date || "");
+      default:
+        return dirMul * (a.c.created_at || "").localeCompare(b.c.created_at || "");
+    }
+  });
+
   const hasFilters = Boolean(
     industryFilter || currencyFilter || healthFilter || contributorFilter
   );
 
   return (
     <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1200px] mx-auto pt-6">
-      <TeamManager team={teamList} />
+      <TeamManager team={teamList} projectCounts={projectCounts} />
 
       <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
         <div className="flex items-center gap-2">
@@ -114,13 +138,12 @@ export default async function ClientsPage({
       <ClientsFilterBar
         industries={industries}
         team={teamList}
-        resultCount={filteredRows.length}
+        resultCount={sortedRows.length}
       />
 
-      {filteredRows.length > 0 ? (
+      {sortedRows.length > 0 ? (
         <div className="overflow-x-auto border border-dark/10 rounded-2xl bg-white">
           <div className="min-w-[860px]">
-            {/* Header */}
             <div
               className="grid gap-4 items-center px-5 py-3 font-mono text-[10px] text-muted uppercase tracking-widest"
               style={{ gridTemplateColumns: COLS }}
@@ -134,35 +157,32 @@ export default async function ClientsPage({
               <span className="text-right">Progress</span>
               <span className="text-right">Kickoff</span>
             </div>
-            {/* Rows */}
-            {filteredRows.map(({ c, r, health }) => {
-              return (
-                <a
-                  key={c.id}
-                  href={`/admin/hq/clients/${c.id}`}
-                  className="grid gap-4 items-center px-5 py-4 border-t border-dark/10 hover:bg-dark/[0.02] transition-colors"
-                  style={{ gridTemplateColumns: COLS }}
-                >
-                  <span className={`w-2.5 h-2.5 rounded-full ${HEALTH_DOT[health]}`} title={HEALTH_LABEL[health]} />
-                  <span className="flex items-center gap-2 min-w-0">
-                    <span className="font-serif text-base text-dark truncate">{c.name}</span>
-                    {r.offTrack && (
-                      <span className="shrink-0 inline-flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest text-red-600 bg-red-500/10 border border-red-500/20 rounded-full px-1.5 py-0.5">
-                        ⚑ off track
-                      </span>
-                    )}
-                  </span>
-                  <span className="font-mono text-[11px] text-muted uppercase tracking-widest truncate">
-                    {c.industry || "—"}
-                  </span>
-                  <span className="text-right font-sans text-sm text-dark">{formatMoney(r.totalContract, c.currency)}</span>
-                  <span className="text-right font-sans text-sm text-dark">{formatMoney(r.collected, c.currency)}</span>
-                  <span className="text-right font-sans text-sm text-coral">{formatMoney(r.outstanding, c.currency)}</span>
-                  <span className="text-right font-mono text-xs text-dark">{r.progress}%</span>
-                  <span className="text-right font-mono text-[11px] text-muted">{c.kickoff_date || "—"}</span>
-                </a>
-              );
-            })}
+            {sortedRows.map(({ c, r, health }) => (
+              <a
+                key={c.id}
+                href={`/admin/hq/clients/${c.id}`}
+                className="grid gap-4 items-center px-5 py-4 border-t border-dark/10 hover:bg-dark/[0.02] transition-colors"
+                style={{ gridTemplateColumns: COLS }}
+              >
+                <span className={`w-2.5 h-2.5 rounded-full ${HEALTH_DOT[health]}`} title={HEALTH_LABEL[health]} />
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className="font-serif text-base text-dark truncate">{c.name}</span>
+                  {r.offTrack && (
+                    <span className="shrink-0 inline-flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest text-red-600 bg-red-500/10 border border-red-500/20 rounded-full px-1.5 py-0.5">
+                      ⚑ off track
+                    </span>
+                  )}
+                </span>
+                <span className="font-mono text-[11px] text-muted uppercase tracking-widest truncate">
+                  {c.industry || "—"}
+                </span>
+                <span className="text-right font-sans text-sm text-dark">{formatMoney(r.totalContract, c.currency)}</span>
+                <span className="text-right font-sans text-sm text-dark">{formatMoney(r.collected, c.currency)}</span>
+                <span className="text-right font-sans text-sm text-coral">{formatMoney(r.outstanding, c.currency)}</span>
+                <span className="text-right font-mono text-xs text-dark">{r.progress}%</span>
+                <span className="text-right font-mono text-[11px] text-muted">{c.kickoff_date || "—"}</span>
+              </a>
+            ))}
           </div>
         </div>
       ) : (

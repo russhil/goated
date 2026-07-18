@@ -1,15 +1,13 @@
 import { notFound } from "next/navigation";
-import { createAdminClient } from "@/lib/supabase/admin";
 import {
   rollup,
   healthColor,
   HEALTH_DOT,
   HEALTH_LABEL,
   formatMoney,
-  type Client,
   type Subproject,
-  type TeamMember,
 } from "@/lib/hq";
+import { getClientsAll, getSubprojectsAll, getTeamAll } from "@/lib/hq-data";
 import ClientEditor from "../client-editor";
 import SubprojectRow from "../subproject-row";
 import SubprojectDrawer from "../subproject-drawer";
@@ -21,23 +19,16 @@ export default async function ClientDetailPage({
 }: {
   params: { id: string };
 }) {
-  const admin = createAdminClient();
-  const [{ data: client }, { data: subs }, { data: team }] = await Promise.all([
-    admin.from("clients").select("*").eq("id", params.id).maybeSingle(),
-    admin
-      .from("client_subprojects")
-      .select("*")
-      .eq("client_id", params.id)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true }),
-    admin.from("team_members").select("*").order("name", { ascending: true }),
+  const [clientsAll, subsAll, teamList] = await Promise.all([
+    getClientsAll(),
+    getSubprojectsAll(),
+    getTeamAll(),
   ]);
 
-  if (!client) notFound();
+  const c = clientsAll.find((x) => x.id === params.id);
+  if (!c) notFound();
 
-  const c = client as Client;
-  const subprojects = (subs ?? []) as Subproject[];
-  const teamList = (team ?? []) as TeamMember[];
+  const subprojects: Subproject[] = subsAll.filter((s) => s.client_id === params.id);
   const roll = rollup(subprojects, c.kickoff_date);
   const health = healthColor(roll.progress, roll.count, roll.offTrack);
 
