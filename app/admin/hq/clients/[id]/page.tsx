@@ -38,8 +38,8 @@ export default async function ClientDetailPage({
   const c = client as Client;
   const subprojects = (subs ?? []) as Subproject[];
   const teamList = (team ?? []) as TeamMember[];
-  const roll = rollup(subprojects);
-  const health = healthColor(roll.progress, roll.count);
+  const roll = rollup(subprojects, c.kickoff_date);
+  const health = healthColor(roll.progress, roll.count, roll.offTrack);
 
   return (
     <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1000px] mx-auto pt-6">
@@ -56,6 +56,11 @@ export default async function ClientDetailPage({
         {c.archived && (
           <span className="font-mono text-[10px] text-dark/60 uppercase tracking-widest border border-dark/15 rounded-full px-2 py-0.5">
             archived
+          </span>
+        )}
+        {roll.offTrack && (
+          <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-red-600 bg-red-500/10 border border-red-500/20 rounded-full px-2 py-0.5">
+            ⚑ {roll.offTrackCount} off track
           </span>
         )}
       </div>
@@ -78,13 +83,13 @@ export default async function ClientDetailPage({
         <p className="font-mono text-[11px] text-coral uppercase tracking-widest">
           {`// sub-projects (${roll.count})`}
         </p>
-        <SubprojectDrawer clientId={c.id} team={teamList} currency={c.currency} />
+        <SubprojectDrawer clientId={c.id} team={teamList} currency={c.currency} kickoffDate={c.kickoff_date} />
       </div>
 
       {subprojects.length > 0 ? (
         <div className="flex flex-col gap-3">
           {subprojects.map((sp) => (
-            <SubprojectRow key={sp.id} clientId={c.id} subproject={sp} team={teamList} currency={c.currency} />
+            <SubprojectRow key={sp.id} clientId={c.id} subproject={sp} team={teamList} currency={c.currency} kickoffDate={c.kickoff_date} />
           ))}
         </div>
       ) : (

@@ -2,7 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, revalidateHq, type Result } from "../guard";
-import { CURRENCIES, type Credential } from "@/lib/hq";
+import { CURRENCIES, subProgress, type Credential } from "@/lib/hq";
 
 export type ClientInput = {
   name: string;
@@ -123,18 +123,22 @@ export type SubprojectInput = {
   description: string;
   accrued_revenue: number;
   collected_revenue: number;
-  progress: number;
+  due_date: string; // "yyyy-mm-dd" or ""
   contributor_ids: string[];
   sort_order: number;
 };
 
 function subprojectPayload(input: SubprojectInput) {
+  // Progress is derived, never entered: how much of the contract is collected.
+  const accrued_revenue = Number.isFinite(input.accrued_revenue) ? input.accrued_revenue : 0;
+  const collected_revenue = Number.isFinite(input.collected_revenue) ? input.collected_revenue : 0;
   return {
     name: input.name.trim(),
     description: (input.description || "").trim() || null,
-    accrued_revenue: Number.isFinite(input.accrued_revenue) ? input.accrued_revenue : 0,
-    collected_revenue: Number.isFinite(input.collected_revenue) ? input.collected_revenue : 0,
-    progress: Math.min(100, Math.max(0, Math.round(Number(input.progress) || 0))),
+    accrued_revenue,
+    collected_revenue,
+    progress: subProgress({ accrued_revenue, collected_revenue }),
+    due_date: input.due_date || null,
     contributor_ids: Array.isArray(input.contributor_ids)
       ? input.contributor_ids.filter(Boolean)
       : [],

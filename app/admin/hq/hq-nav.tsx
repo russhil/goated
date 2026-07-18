@@ -1,10 +1,12 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "./theme";
 
 const TABS = [
   { href: "/admin/hq", label: "Dashboard" },
   { href: "/admin/hq/clients", label: "Clients" },
+  { href: "/admin/hq/prospects", label: "Prospects" },
   { href: "/admin/hq/finance", label: "Finance" },
 ];
 
@@ -31,6 +33,7 @@ export default function HqNav() {
           </a>
         );
       })}
+      <ThemeToggle />
     </div>
   );
 }

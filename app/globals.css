@@ -257,3 +257,50 @@ video::cue {
     font-size: 0.95rem;
   }
 }
+
+/* ============================================================================
+   Admin HQ dark mode
+   Scoped to .hq-dark (set on the HQ wrapper by HqThemeProvider). Overrides the
+   standard utilities used across /admin/hq so components theme automatically
+   without per-element dark: variants. Descendant specificity beats the base
+   utility, so no !important needed.
+   ============================================================================ */
+.hq-root {
+  min-height: 100vh;
+}
+.hq-dark {
+  background-color: #0d0d0d;
+  color: #f0f0f0;
+}
+.hq-dark .bg-white { background-color: #17181b; }
+.hq-dark .bg-light,
+.hq-dark .bg-light\/95 { background-color: #17181b; }
+.hq-dark .bg-light\/40,
+.hq-dark .bg-light\/30 { background-color: rgba(255, 255, 255, 0.03); }
+
+.hq-dark .text-dark { color: #f0f0f0; }
+.hq-dark .text-dark\/70 { color: rgba(240, 240, 240, 0.7); }
+.hq-dark .text-dark\/60 { color: rgba(240, 240, 240, 0.55); }
+.hq-dark .text-muted { color: #9ca3af; }
+.hq-dark .text-muted\/70 { color: rgba(156, 163, 175, 0.7); }
+
+.hq-dark .border-dark\/10 { border-color: rgba(255, 255, 255, 0.1); }
+.hq-dark .border-dark\/15 { border-color: rgba(255, 255, 255, 0.14); }
+.hq-dark .border-dark\/5 { border-color: rgba(255, 255, 255, 0.06); }
+
+/* bg-dark is used for primary buttons + active pills — elevate so they read
+   against the dark cards; their text-white stays legible. */
+.hq-dark .bg-dark { background-color: #2a2b30; }
+.hq-dark .bg-dark\/\[0\.04\] { background-color: rgba(255, 255, 255, 0.05); }
+.hq-dark .hover\:bg-dark\/10:hover { background-color: rgba(255, 255, 255, 0.1); }
+.hq-dark .hover\:bg-dark\/\[0\.02\]:hover { background-color: rgba(255, 255, 255, 0.04); }
+
+/* Form controls inherit the dark surface + light text */
+.hq-dark input,
+.hq-dark textarea,
+.hq-dark select {
+  color: #f0f0f0;
+  color-scheme: dark;
+}
+.hq-dark input::placeholder,
+.hq-dark textarea::placeholder { color: #6b7280; }

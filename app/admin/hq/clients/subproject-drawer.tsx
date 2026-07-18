@@ -9,10 +9,12 @@ export default function SubprojectDrawer({
   clientId,
   team,
   currency,
+  kickoffDate,
 }: {
   clientId: string;
   team: TeamMember[];
   currency: string;
+  kickoffDate: string | null;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -28,6 +30,7 @@ export default function SubprojectDrawer({
           clientId={clientId}
           team={team}
           currency={currency}
+          kickoffDate={kickoffDate}
           onSaved={() => setOpen(false)}
         />
       </Drawer>

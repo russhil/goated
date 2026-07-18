@@ -5,6 +5,10 @@
 export const CURRENCIES = ["INR", "USD", "EUR", "GBP", "AED"] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
+// The two partners for the Splitwise-style petty cash ledger.
+export const PEOPLE = ["Vansh", "Russhil"] as const;
+export type Person = (typeof PEOPLE)[number];
+
 export const EXPENSE_CATEGORIES = [
   "rent",
   "salaries",
@@ -44,7 +48,8 @@ export type Subproject = {
   description: string | null;
   accrued_revenue: number;
   collected_revenue: number;
-  progress: number;
+  progress: number; // stored, but derived from collected/accrued (see subProgress)
+  due_date: string | null;
   contributor_ids: string[];
   sort_order: number;
   created_at: string;
@@ -75,16 +80,56 @@ export type Rollup = {
   totalContract: number;
   collected: number;
   outstanding: number;
-  progress: number; // 0-100, revenue-weighted
+  progress: number; // 0-100, revenue-weighted, auto (collected/accrued)
   count: number;
+  offTrackCount: number;
+  offTrack: boolean;
 };
 
 type MoneyProgress = Pick<
   Subproject,
-  "accrued_revenue" | "collected_revenue" | "progress"
+  "accrued_revenue" | "collected_revenue" | "due_date"
 >;
 
-export function rollup(subprojects: MoneyProgress[]): Rollup {
+// Progress is AUTO: how much of a sub-project's contract value is collected.
+export function subProgress(sp: {
+  accrued_revenue: number;
+  collected_revenue: number;
+}): number {
+  const accrued = Number(sp.accrued_revenue || 0);
+  if (accrued <= 0) return 0;
+  return Math.min(100, Math.round((Number(sp.collected_revenue || 0) / accrued) * 100));
+}
+
+// A sub-project is off-track when it's past its due date and not fully
+// collected, OR its collection is lagging >25 points behind the time elapsed
+// from kickoff to due date.
+export function subOffTrack(
+  sp: { accrued_revenue: number; collected_revenue: number; due_date: string | null },
+  kickoffDate: string | null
+): boolean {
+  const prog = subProgress(sp);
+  if (prog >= 100) return false;
+  if (!sp.due_date) return false;
+  const now = new Date();
+  const due = new Date(sp.due_date);
+  if (Number.isNaN(due.getTime())) return false;
+  if (now > due) return true;
+  if (kickoffDate) {
+    const start = new Date(kickoffDate);
+    const total = due.getTime() - start.getTime();
+    if (!Number.isNaN(start.getTime()) && total > 0) {
+      const elapsedPct = Math.min(100, Math.max(0, ((now.getTime() - start.getTime()) / total) * 100));
+      if (prog < elapsedPct - 25) return true;
+    }
+  }
+  return false;
+}
+
+export function rollup(
+  subprojects: MoneyProgress[],
+  kickoffDate: string | null = null
+): Rollup {
   const totalContract = subprojects.reduce(
     (s, p) => s + Number(p.accrued_revenue || 0),
     0
@@ -96,32 +141,32 @@ export function rollup(subprojects: MoneyProgress[]): Rollup {
   let progress = 0;
   if (subprojects.length > 0) {
     if (totalContract > 0) {
-      // revenue-weighted
+      // revenue-weighted auto progress
       progress =
-        subprojects.reduce(
-          (s, p) => s + Number(p.progress || 0) * Number(p.accrued_revenue || 0),
-          0
-        ) / totalContract;
+        subprojects.reduce((s, p) => s + subProgress(p) * Number(p.accrued_revenue || 0), 0) /
+        totalContract;
     } else {
-      // fall back to simple average when all accrued = 0
       progress =
-        subprojects.reduce((s, p) => s + Number(p.progress || 0), 0) /
-        subprojects.length;
+        subprojects.reduce((s, p) => s + subProgress(p), 0) / subprojects.length;
     }
   }
+  const offTrackCount = subprojects.filter((p) => subOffTrack(p, kickoffDate)).length;
   return {
     totalContract,
     collected,
     outstanding: totalContract - collected,
     progress: Math.round(progress),
     count: subprojects.length,
+    offTrackCount,
+    offTrack: offTrackCount > 0,
   };
 }
 
 export type Health = "green" | "amber" | "red" | "grey";
 
-export function healthColor(progress: number, count: number): Health {
+export function healthColor(progress: number, count: number, offTrack = false): Health {
   if (count === 0) return "grey";
+  if (offTrack) return "red";
   if (progress >= 80) return "green";
   if (progress >= 40) return "amber";
   return "red";

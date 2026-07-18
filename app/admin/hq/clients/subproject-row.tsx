@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   inputClass,
   labelClass,
+  subProgress,
+  subOffTrack,
   type Subproject,
   type TeamMember,
 } from "@/lib/hq";
@@ -21,12 +23,14 @@ export default function SubprojectRow({
   subproject,
   team,
   currency,
+  kickoffDate,
   onSaved,
 }: {
   clientId: string;
   subproject?: Subproject;
   team: TeamMember[];
   currency: string;
+  kickoffDate: string | null;
   onSaved?: () => void;
 }) {
   const isNew = !subproject;
@@ -40,7 +44,7 @@ export default function SubprojectRow({
   const [collected, setCollected] = useState(
     subproject ? String(subproject.collected_revenue ?? "") : ""
   );
-  const [progress, setProgress] = useState(subproject?.progress ?? 0);
+  const [dueDate, setDueDate] = useState(subproject?.due_date ?? "");
   const [contributorIds, setContributorIds] = useState<string[]>(
     subproject?.contributor_ids ?? []
   );
@@ -50,12 +54,30 @@ export default function SubprojectRow({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
+  // Progress is auto: collected ÷ accrued, live from the editable state.
+  const autoProgress = subProgress({
+    accrued_revenue: Number(accrued) || 0,
+    collected_revenue: Number(collected) || 0,
+  });
+
+  // Off-track badge reflects the SAVED state, not the in-progress edits.
+  const offTrack =
+    !isNew &&
+    subOffTrack(
+      {
+        accrued_revenue: subproject!.accrued_revenue,
+        collected_revenue: subproject!.collected_revenue,
+        due_date: subproject!.due_date,
+      },
+      kickoffDate
+    );
+
   const build = (): SubprojectInput => ({
     name,
     description,
     accrued_revenue: Number(accrued) || 0,
     collected_revenue: Number(collected) || 0,
-    progress: Number(progress) || 0,
+    due_date: dueDate,
     contributor_ids: contributorIds,
     sort_order: Number(sortOrder) || 0,
   });
@@ -75,7 +97,7 @@ export default function SubprojectRow({
         setDescription("");
         setAccrued("");
         setCollected("");
-        setProgress(0);
+        setDueDate("");
         setContributorIds([]);
         setSortOrder("");
       }
@@ -96,6 +118,14 @@ export default function SubprojectRow({
 
   return (
     <div className="border border-dark/10 rounded-xl p-4 bg-light/30">
+      {offTrack && (
+        <div className="mb-3">
+          <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-red-600 bg-red-500/10 border border-red-500/20 rounded-full px-2 py-0.5">
+            ⚑ off track
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
         <div>
           <label className={labelClass}>// sub-project name</label>
@@ -122,8 +152,16 @@ export default function SubprojectRow({
           <input type="number" inputMode="decimal" className={inputClass} value={collected} onChange={(e) => setCollected(e.target.value)} placeholder="0" />
         </div>
         <div>
-          <label className={labelClass}>{`// progress: ${progress}%`}</label>
-          <input type="range" min={0} max={100} value={progress} onChange={(e) => setProgress(Number(e.target.value))} className="w-full accent-coral" />
+          <label className={labelClass}>// due date</label>
+          <input type="date" className={inputClass} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+        </div>
+      </div>
+
+      {/* Progress is auto (collected ÷ accrued) — read-only. */}
+      <div className="mb-3">
+        <label className={labelClass}>{`// progress: ${autoProgress}%`}</label>
+        <div className="h-2 w-full rounded-full bg-dark/10 overflow-hidden">
+          <div className="h-full bg-coral rounded-full transition-all" style={{ width: `${autoProgress}%` }} />
         </div>
       </div>
 

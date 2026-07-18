@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CURRENCIES, inputClass, type TeamMember } from "@/lib/hq";
+import { useRouter } from "next/navigation";
+import { CURRENCIES, PEOPLE, inputClass } from "@/lib/hq";
 import {
   createPettyCash,
   updatePettyCash,
@@ -11,6 +12,7 @@ import {
 
 export type PettyCash = {
   id: string;
+  payer: string | null;
   paid_by_id: string | null;
   purpose: string;
   amount: number;
@@ -18,15 +20,10 @@ export type PettyCash = {
   spent_on: string;
 };
 
-export default function PettyCashRow({
-  entry,
-  team,
-}: {
-  entry?: PettyCash;
-  team: TeamMember[];
-}) {
+export default function PettyCashRow({ entry }: { entry?: PettyCash }) {
   const isNew = !entry;
-  const [paidById, setPaidById] = useState(entry?.paid_by_id ?? "");
+  const router = useRouter();
+  const [payer, setPayer] = useState(entry?.payer ?? PEOPLE[0]);
   const [purpose, setPurpose] = useState(entry?.purpose ?? "");
   const [amount, setAmount] = useState(entry ? String(entry.amount ?? "") : "");
   const [currency, setCurrency] = useState(entry?.currency ?? "INR");
@@ -35,7 +32,7 @@ export default function PettyCashRow({
   const [error, setError] = useState("");
 
   const build = (): PettyCashInput => ({
-    paid_by_id: paidById,
+    payer,
     purpose,
     amount: Number(amount) || 0,
     currency,
@@ -49,12 +46,15 @@ export default function PettyCashRow({
         ? await createPettyCash(build())
         : await updatePettyCash(entry!.id, build());
       if (!res.ok) setError(res.error || "save failed");
-      else if (isNew) {
-        setPaidById("");
-        setPurpose("");
-        setAmount("");
-        setCurrency("INR");
-        setSpentOn("");
+      else {
+        if (isNew) {
+          setPayer(PEOPLE[0]);
+          setPurpose("");
+          setAmount("");
+          setCurrency("INR");
+          setSpentOn("");
+        }
+        router.refresh();
       }
     });
   };
@@ -65,15 +65,15 @@ export default function PettyCashRow({
     startTransition(async () => {
       const res = await deletePettyCash(entry.id);
       if (!res.ok) setError(res.error || "delete failed");
+      else router.refresh();
     });
   };
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.5fr_1fr_0.8fr_1fr_auto] gap-2 items-center">
-      <select className={inputClass} value={paidById} onChange={(e) => setPaidById(e.target.value)}>
-        <option value="">who paid…</option>
-        {team.map((m) => (
-          <option key={m.id} value={m.id}>{m.name}</option>
+      <select className={inputClass} value={payer} onChange={(e) => setPayer(e.target.value)}>
+        {PEOPLE.map((p) => (
+          <option key={p} value={p}>{p}</option>
         ))}
       </select>
       <input className={inputClass} value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="for what" />

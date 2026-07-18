@@ -513,3 +513,65 @@ insert into storage.buckets (id, name, public)
 values ('client-docs', 'client-docs', false)
 on conflict (id) do nothing;
 
+
+
+-- ============================================================================
+-- 11. Internal Ops — round 3 additions
+--   - sub-project due dates (auto progress + off-track flagging)
+--   - prospects pipeline (kanban / list)
+--   - Splitwise-style petty cash (payer + settlements)
+-- Idempotent; re-running is safe.
+-- ============================================================================
+
+-- 11.1 Sub-project due date (drives off-track flag)
+alter table public.client_subprojects
+  add column if not exists due_date date;
+
+-- 11.2 Prospects pipeline
+create table if not exists public.prospects (
+  id            uuid primary key default gen_random_uuid(),
+  name          text not null,
+  company       text,
+  email         text,
+  phone         text,
+  source        text,
+  stage         text not null default 'new'
+                check (stage in ('new','contacted','qualified','proposal','won','lost')),
+  est_value     numeric(14,2) not null default 0,
+  currency      text not null default 'INR',
+  notes         text,
+  sort_order    int not null default 0,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create index if not exists prospects_stage_idx on public.prospects (stage, sort_order asc, created_at desc);
+
+drop trigger if exists prospects_set_updated_at on public.prospects;
+create trigger prospects_set_updated_at
+  before update on public.prospects
+  for each row execute function public.set_updated_at();
+
+alter table public.prospects enable row level security;
+-- No policies — service role only.
+
+-- 11.3 Splitwise-style petty cash: which partner paid (Vansh / Russhil).
+-- Every expense is split 50/50 between the two; balance derives from who paid.
+alter table public.petty_cash
+  add column if not exists payer text;
+
+-- 11.4 Settlements (one partner paying the other to zero the balance)
+create table if not exists public.petty_cash_settlements (
+  id            uuid primary key default gen_random_uuid(),
+  from_person   text not null,   -- who paid
+  to_person     text not null,   -- who received
+  amount        numeric(14,2) not null,
+  currency      text not null default 'INR',
+  settled_on    date not null,
+  created_at    timestamptz not null default now()
+);
+
+create index if not exists petty_cash_settlements_date_idx on public.petty_cash_settlements (settled_on desc);
+
+alter table public.petty_cash_settlements enable row level security;
+-- No policies — service role only.

@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
 import HqNav from "./hq-nav";
+import { HqThemeProvider } from "./theme";
 
 export const metadata: Metadata = {
   title: "Client HQ",
@@ -61,22 +62,24 @@ export default async function HqLayout({
 
   return (
     <main>
-      <Navbar />
-      <section className="pt-32 pb-6 md:pt-40 md:pb-8 px-6 md:px-12 max-w-[1200px] mx-auto">
-        <div className="section-label">{"// internal ops"}</div>
-        <h1
-          className="font-serif text-dark leading-[1.1] mb-3"
-          style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)" }}
-        >
-          Client HQ.
-        </h1>
-        <p className="font-mono text-xs text-muted/70 mb-6">
-          {"// signed in as "}
-          <span className="text-dark">{user.email}</span>
-        </p>
-        <HqNav />
-      </section>
-      {children}
+      <HqThemeProvider>
+        <Navbar />
+        <section className="pt-32 pb-6 md:pt-40 md:pb-8 px-6 md:px-12 max-w-[1200px] mx-auto">
+          <div className="section-label">{"// internal ops"}</div>
+          <h1
+            className="font-serif text-dark leading-[1.1] mb-3"
+            style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)" }}
+          >
+            Client HQ.
+          </h1>
+          <p className="font-mono text-xs text-muted/70 mb-6">
+            {"// signed in as "}
+            <span className="text-dark">{user.email}</span>
+          </p>
+          <HqNav />
+        </section>
+        {children}
+      </HqThemeProvider>
     </main>
   );
 }

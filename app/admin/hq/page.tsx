@@ -11,9 +11,20 @@ import {
   type Subproject,
 } from "@/lib/hq";
 import { getInrRates } from "@/lib/fx";
-import { MoneyBar, CategoryPie } from "./hq-charts";
+import { RevenueCostChart, type MonthPoint, type DotPoint } from "./hq-charts";
 
 export const dynamic = "force-dynamic";
+
+// 'YYYY-MM' bucket for a date/timestamp string (leading YYYY-MM wins so
+// timezone offsets on day-1 dates can't shove the value into a neighbour month).
+function monthKey(dateStr: string | null): string | null {
+  if (!dateStr) return null;
+  const m = /^(\d{4})-(\d{2})/.exec(dateStr);
+  if (m) return `${m[1]}-${m[2]}`;
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
 
 export default async function DashboardPage() {
   const admin = createAdminClient();
@@ -21,56 +32,104 @@ export default async function DashboardPage() {
     await Promise.all([
       admin.from("clients").select("*").eq("archived", false),
       admin.from("client_subprojects").select("*"),
-      admin.from("petty_cash").select("amount, currency"),
-      admin.from("company_expenses").select("category, amount, currency"),
+      admin.from("petty_cash").select("amount, currency, spent_on"),
+      admin.from("company_expenses").select("amount, currency, incurred_on"),
       getInrRates(),
     ]);
 
   const clientList = (clients ?? []) as Client[];
-  const pettyList = (petty ?? []) as { amount: number; currency: string }[];
-  const expenseList = (expenses ?? []) as {
-    category: string;
+  const subList = (subs ?? []) as Subproject[];
+  const pettyList = (petty ?? []) as {
     amount: number;
     currency: string;
+    spent_on: string | null;
+  }[];
+  const expenseList = (expenses ?? []) as {
+    amount: number;
+    currency: string;
+    incurred_on: string | null;
   }[];
 
   const subsByClient = new Map<string, Subproject[]>();
-  for (const s of (subs ?? []) as Subproject[]) {
+  for (const s of subList) {
     const arr = subsByClient.get(s.client_id) ?? [];
     arr.push(s);
     subsByClient.set(s.client_id, arr);
   }
 
+  const clientCurrency = new Map<string, string>();
+  const clientName = new Map<string, string>();
+  for (const c of clientList) {
+    clientCurrency.set(c.id, c.currency);
+    clientName.set(c.id, c.name);
+  }
+
   const inr = summarizeInInr(clientList, subsByClient, pettyList, expenseList, rates);
   const expensesTotal = inr.pettyCash + inr.expenses;
-  const subprojectCount = (subs ?? []).length;
+  const subprojectCount = subList.length;
 
-  // Chart data (INR).
-  const barData = [
-    { name: "Collected", value: inr.collected, fill: "#10b981" },
-    { name: "Project cost", value: inr.cost, fill: "#0D0D0D" },
-    { name: "Petty cash", value: inr.pettyCash, fill: "#f59e0b" },
-    { name: "Company exp.", value: inr.expenses, fill: "#E8533A" },
-  ];
-
-  const catMap = new Map<string, number>();
-  for (const e of expenseList) {
-    catMap.set(e.category, (catMap.get(e.category) ?? 0) + toInr(e.amount, e.currency, rates));
+  // Monthly revenue-vs-cost timeline: last 12 months up to the current month.
+  // We don't store dated revenue, so revenue is approximated from each
+  // sub-project's created_at and cost from expense/petty/kickoff dates.
+  const now = new Date();
+  const months: MonthPoint[] = [];
+  const indexByKey = new Map<string, number>();
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const x = months.length;
+    indexByKey.set(key, x);
+    months.push({
+      x,
+      key,
+      label: d.toLocaleString("en-US", { month: "short", year: "2-digit" }),
+      revenue: 0,
+      cost: 0,
+    });
   }
-  const pieData = [
-    ...(inr.cost > 0 ? [{ name: "project cost", value: inr.cost }] : []),
-    ...(inr.pettyCash > 0 ? [{ name: "petty cash", value: inr.pettyCash }] : []),
-    ...Array.from(catMap.entries())
-      .filter(([, v]) => v > 0)
-      .map(([name, value]) => ({ name, value })),
-  ];
+  const idxOf = (key: string | null): number | undefined =>
+    key == null ? undefined : indexByKey.get(key);
+
+  // Revenue = collected_revenue booked in the sub-project's created month.
+  const revenueDots: DotPoint[] = [];
+  for (const s of subList) {
+    const idx = idxOf(monthKey(s.created_at));
+    if (idx === undefined) continue;
+    const cur = clientCurrency.get(s.client_id) ?? "INR";
+    const value = toInr(Number(s.collected_revenue || 0), cur, rates);
+    months[idx].revenue += value;
+    revenueDots.push({
+      x: idx,
+      value,
+      name: `${clientName.get(s.client_id) ?? "—"} · ${s.name}`,
+    });
+  }
+
+  // Cost = company expenses (incurred_on) + petty cash (spent_on) + each
+  // client's fixed project cost booked at its kickoff month.
+  for (const e of expenseList) {
+    const idx = idxOf(monthKey(e.incurred_on));
+    if (idx !== undefined) months[idx].cost += toInr(Number(e.amount || 0), e.currency, rates);
+  }
+  for (const p of pettyList) {
+    const idx = idxOf(monthKey(p.spent_on));
+    if (idx !== undefined) months[idx].cost += toInr(Number(p.amount || 0), p.currency, rates);
+  }
+  const costDots: DotPoint[] = [];
+  for (const c of clientList) {
+    const idx = idxOf(monthKey(c.kickoff_date));
+    if (idx === undefined) continue;
+    const value = toInr(Number(c.cost || 0), c.currency, rates);
+    months[idx].cost += value;
+    costDots.push({ x: idx, value, name: c.name });
+  }
 
   // Health board — worst first (red < amber < green < grey).
   const order = { red: 0, amber: 1, green: 2, grey: 3 } as const;
   const board = clientList
     .map((c) => {
-      const r = rollup(subsByClient.get(c.id) ?? []);
-      return { client: c, roll: r, health: healthColor(r.progress, r.count) };
+      const r = rollup(subsByClient.get(c.id) ?? [], c.kickoff_date);
+      return { client: c, roll: r, health: healthColor(r.progress, r.count, r.offTrack) };
     })
     .sort((a, b) => order[a.health] - order[b.health] || b.roll.outstanding - a.roll.outstanding);
   const offTrack = board.filter((b) => b.health === "red").length;
@@ -96,22 +155,10 @@ export default async function DashboardPage() {
         <Kpi label="Net (cash)" value={formatMoney(inr.net, "INR")} tone={inr.net >= 0 ? "pos" : "neg"} />
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-10">
-        <div className="border border-dark/10 rounded-2xl bg-white p-5">
-          <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// money overview (INR)"}</p>
-          <MoneyBar data={barData} />
-        </div>
-        <div className="border border-dark/10 rounded-2xl bg-white p-5">
-          <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// cost & expense breakdown (INR)"}</p>
-          {pieData.length > 0 ? (
-            <CategoryPie data={pieData} />
-          ) : (
-            <div className="h-[280px] flex items-center justify-center">
-              <p className="font-sans text-muted text-sm">No costs or expenses logged yet.</p>
-            </div>
-          )}
-        </div>
+      {/* Revenue vs cost timeline */}
+      <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-10">
+        <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// revenue vs cost over time (INR)"}</p>
+        <RevenueCostChart data={months} revenueDots={revenueDots} costDots={costDots} />
       </div>
 
       {/* Health board */}
