@@ -77,7 +77,7 @@ export default function PettyCashRow({ entry }: { entry?: PettyCash }) {
         ))}
       </select>
       <input className={inputClass} value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="for what" />
-      <input type="number" inputMode="decimal" className={inputClass} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="amount" />
+      <input type="number" min={0} inputMode="decimal" className={inputClass} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="amount" />
       <select className={inputClass} value={currency} onChange={(e) => setCurrency(e.target.value)}>
         {CURRENCIES.map((c) => (
           <option key={c} value={c}>{c}</option>

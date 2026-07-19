@@ -602,3 +602,50 @@ set payments = jsonb_build_array(
 )
 where collected_revenue > 0
   and (payments is null or jsonb_array_length(payments) = 0);
+
+
+-- ============================================================================
+-- 13. Phases now carry the payment amount (phase = milestone + its payment).
+--   phases: [{name, date, amount}]; collected_revenue = sum(phase amounts).
+--   Migrate: zip each existing phase[i] (name/date) with payment[i] (amount) by
+--   index so a phase gets its matching payment's amount; extra payments become
+--   new phases. Guarded to run once (skips rows whose phases already have an
+--   'amount' key). The legacy `payments` column is left in place, unused.
+-- ============================================================================
+update public.client_subprojects sp
+set phases = coalesce((
+  select jsonb_agg(
+    jsonb_build_object(
+      'name', coalesce(sp.phases -> i ->> 'name', 'Phase ' || (i + 1)),
+      'date', coalesce(sp.phases -> i ->> 'date', sp.payments -> i ->> 'date', ''),
+      'amount', greatest(0, coalesce((sp.payments -> i ->> 'amount')::numeric, 0))
+    )
+    order by i
+  )
+  from generate_series(
+    0,
+    greatest(
+      coalesce(jsonb_array_length(sp.phases), 0),
+      coalesce(jsonb_array_length(sp.payments), 0)
+    ) - 1
+  ) as i
+), '[]'::jsonb)
+where (
+    coalesce(jsonb_array_length(sp.phases), 0) > 0
+    or coalesce(jsonb_array_length(sp.payments), 0) > 0
+  )
+  and not exists (
+    select 1 from jsonb_array_elements(coalesce(sp.phases, '[]'::jsonb)) e
+    where e ? 'amount'
+  );
+
+-- Keep collected_revenue in sync with the migrated phase amounts.
+update public.client_subprojects
+set collected_revenue = coalesce((
+  select sum(greatest(0, coalesce((e ->> 'amount')::numeric, 0)))
+  from jsonb_array_elements(coalesce(phases, '[]'::jsonb)) e
+), 0)
+where exists (
+  select 1 from jsonb_array_elements(coalesce(phases, '[]'::jsonb)) e
+  where e ? 'amount'
+);

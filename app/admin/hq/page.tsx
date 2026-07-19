@@ -118,29 +118,31 @@ export default async function DashboardPage() {
     costDots.push({ x: idx, value: clientCostInr, name: c.name });
   }
 
-  // Revenue is driven by actual payment dates: every payment lands in the bucket
-  // for its own month. One revenue dot per (client, month-with-payments) — value
-  // is the client's total paid that month, breakdown the per-sub-project split.
-  // Unparseable/empty dates are skipped; out-of-window dates clamp into bucket 0.
+  // Revenue is driven by phase payment dates: every phase amount lands in the
+  // bucket for its own month. One revenue dot per (client, month-with-phases) —
+  // value is the client's total phase amount that month, breakdown the per-phase
+  // split (labelled "<sub> : <phase>"). Unparseable/empty dates are skipped;
+  // out-of-window dates clamp into bucket 0.
   const revenueDots: DotPoint[] = [];
   for (const c of clientList) {
     const subs = subsByClient.get(c.id) ?? [];
-    const byMonth = new Map<number, { total: number; subs: Map<string, number> }>();
+    const byMonth = new Map<number, { total: number; phases: Map<string, number> }>();
     for (const s of subs) {
-      for (const p of s.payments ?? []) {
-        const key = monthKey(p.date);
+      for (const ph of s.phases ?? []) {
+        const key = monthKey(ph.date);
         if (key == null) continue;
         const idx = idxOf(key);
         if (idx === null) continue;
-        const amountInr = toInr(Number(p.amount || 0), c.currency, rates);
+        const amountInr = toInr(Math.max(0, Number(ph.amount || 0)), c.currency, rates);
         buckets[idx].revenue += amountInr;
         let entry = byMonth.get(idx);
         if (!entry) {
-          entry = { total: 0, subs: new Map() };
+          entry = { total: 0, phases: new Map() };
           byMonth.set(idx, entry);
         }
         entry.total += amountInr;
-        entry.subs.set(s.name, (entry.subs.get(s.name) ?? 0) + amountInr);
+        const label = `${s.name}: ${ph.name}`;
+        entry.phases.set(label, (entry.phases.get(label) ?? 0) + amountInr);
       }
     }
     for (const [idx, entry] of Array.from(byMonth.entries())) {
@@ -148,7 +150,7 @@ export default async function DashboardPage() {
         x: idx,
         value: entry.total,
         name: c.name,
-        breakdown: Array.from(entry.subs.entries()).map(([label, value]) => ({ label, value })),
+        breakdown: Array.from(entry.phases.entries()).map(([label, value]) => ({ label, value })),
       });
     }
   }
@@ -161,21 +163,6 @@ export default async function DashboardPage() {
   for (const p of pettyList) {
     const idx = idxOf(monthKey(p.spent_on));
     if (idx !== null) buckets[idx].expenses += toInr(Number(p.amount || 0), p.currency, rates);
-  }
-
-  // Phase markers — every parseable, in-window milestone across all sub-projects,
-  // pinned to the revenue timeline so kickoff/launch dates read against payments.
-  const phaseMarkers: { x: number; name: string }[] = [];
-  for (const c of clientList) {
-    for (const s of subsByClient.get(c.id) ?? []) {
-      for (const ph of s.phases ?? []) {
-        const key = monthKey(ph.date);
-        if (key == null) continue;
-        const idx = indexByKey.get(key);
-        if (idx === undefined) continue; // only render phases that fall in-window
-        phaseMarkers.push({ x: idx, name: `${c.name} · ${s.name}: ${ph.name}` });
-      }
-    }
   }
 
   const chartRows: ChartRow[] = buckets.map((b) => ({
@@ -234,7 +221,6 @@ export default async function DashboardPage() {
           dots={revenueDots}
           dotName="clients"
           dotColor="#E8533A"
-          markers={phaseMarkers}
         />
       </div>
 

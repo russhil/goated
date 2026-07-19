@@ -5,9 +5,8 @@ import { requireAdmin, revalidateHq, type Result } from "../guard";
 import {
   CURRENCIES,
   subProgress,
-  paymentsTotal,
+  phasesTotal,
   type Credential,
-  type Payment,
   type Phase,
 } from "@/lib/hq";
 
@@ -50,7 +49,7 @@ function clientPayload(input: ClientInput) {
     live_url: (input.live_url || "").trim() || null,
     description: (input.description || "").trim() || null,
     story: (input.story || "").trim() || null,
-    cost: Number.isFinite(input.cost) ? input.cost : 0,
+    cost: Math.max(0, Number(input.cost) || 0),
     kickoff_date: input.kickoff_date ? input.kickoff_date : null,
     credentials: sanitizeCredentials(input.credentials),
     contributor_ids: Array.isArray(input.contributor_ids)
@@ -129,42 +128,36 @@ export type SubprojectInput = {
   name: string;
   description: string;
   accrued_revenue: number;
-  payments: Payment[];
   phases: Phase[];
   due_date: string; // "yyyy-mm-dd" or ""
   contributor_ids: string[];
   sort_order: number;
 };
 
-function sanitizePayments(payments: Payment[]): Payment[] {
-  if (!Array.isArray(payments)) return [];
-  // A payment is meaningful only if it's dated; a truthy date also drops
-  // fully-empty rows. Amount is coerced so bad input can't poison the total.
-  return payments
-    .map((p) => ({ date: (p.date || "").trim(), amount: Number(p.amount) || 0 }))
-    .filter((p) => Boolean(p.date));
-}
-
 function sanitizePhases(phases: Phase[]): Phase[] {
   if (!Array.isArray(phases)) return [];
+  // A phase is meaningful if it's named or dated; that drops fully-empty rows.
+  // Amount is coerced (and clamped non-negative) so bad input can't poison the total.
   return phases
-    .map((p) => ({ name: (p.name || "").trim(), date: (p.date || "").trim() }))
-    .filter((p) => p.name !== "");
+    .map((p) => ({
+      name: (p.name || "").trim(),
+      date: (p.date || "").trim(),
+      amount: Math.max(0, Number(p.amount) || 0),
+    }))
+    .filter((p) => p.name !== "" || p.date !== "");
 }
 
 function subprojectPayload(input: SubprojectInput) {
   // Progress is derived, never entered: how much of the contract is collected.
-  const accrued_revenue = Number.isFinite(input.accrued_revenue) ? input.accrued_revenue : 0;
-  const payments = sanitizePayments(input.payments);
+  const accrued_revenue = Math.max(0, Number(input.accrued_revenue) || 0);
   const phases = sanitizePhases(input.phases);
-  // collected_revenue is no longer entered — it's the sum of the payments.
-  const collected_revenue = paymentsTotal(payments);
+  // collected_revenue is no longer entered — it's the sum of the phase amounts.
+  const collected_revenue = phasesTotal(phases);
   return {
     name: input.name.trim(),
     description: (input.description || "").trim() || null,
     accrued_revenue,
     collected_revenue,
-    payments,
     phases,
     progress: subProgress({ accrued_revenue, collected_revenue }),
     due_date: input.due_date || null,

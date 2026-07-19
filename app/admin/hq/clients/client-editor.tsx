@@ -174,6 +174,7 @@ export default function ClientEditor({
           <input
             type="number"
             inputMode="decimal"
+            min={0}
             className={inputClass}
             value={cost}
             onChange={(e) => setCost(e.target.value)}

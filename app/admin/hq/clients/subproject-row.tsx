@@ -7,15 +7,13 @@ import {
   labelClass,
   subProgress,
   subOffTrack,
-  paymentsTotal,
+  phasesTotal,
   formatMoney,
-  type Payment,
   type Phase,
   type Subproject,
   type TeamMember,
 } from "@/lib/hq";
 import ContributorPicker from "./contributor-picker";
-import PaymentsEditor from "./payments-editor";
 import PhasesEditor from "./phases-editor";
 import {
   createSubproject,
@@ -47,16 +45,15 @@ export default function SubprojectRow({
   const [accrued, setAccrued] = useState(
     subproject ? String(subproject.accrued_revenue ?? "") : ""
   );
-  // collected_revenue is no longer entered — it's the sum of dated payments.
+  // collected_revenue is no longer entered — it's the sum of the phase amounts.
   // Seed legacy sub-projects that only have a collected total so editing them
   // doesn't silently zero their collection.
-  const [payments, setPayments] = useState<Payment[]>(() => {
-    if (subproject?.payments && subproject.payments.length > 0) return subproject.payments;
+  const [phases, setPhases] = useState<Phase[]>(() => {
+    if (subproject?.phases && subproject.phases.length > 0) return subproject.phases;
     if (subproject && subproject.collected_revenue > 0)
-      return [{ date: subproject.due_date ?? "", amount: subproject.collected_revenue }];
+      return [{ name: "Phase 1", date: subproject.due_date ?? "", amount: subproject.collected_revenue }];
     return [];
   });
-  const [phases, setPhases] = useState<Phase[]>(() => subproject?.phases ?? []);
   const [dueDate, setDueDate] = useState(subproject?.due_date ?? "");
   const [contributorIds, setContributorIds] = useState<string[]>(
     subproject?.contributor_ids ?? []
@@ -68,8 +65,8 @@ export default function SubprojectRow({
   const [error, setError] = useState("");
 
   // Progress is auto: collected ÷ accrued, live from the editable state.
-  // Collected is the running sum of the dated payments.
-  const collectedTotal = paymentsTotal(payments);
+  // Collected is the running sum of the phase amounts.
+  const collectedTotal = phasesTotal(phases);
   const autoProgress = subProgress({
     accrued_revenue: Number(accrued) || 0,
     collected_revenue: collectedTotal,
@@ -91,7 +88,6 @@ export default function SubprojectRow({
     name,
     description,
     accrued_revenue: Number(accrued) || 0,
-    payments,
     phases,
     due_date: dueDate,
     contributor_ids: contributorIds,
@@ -112,7 +108,6 @@ export default function SubprojectRow({
         setName("");
         setDescription("");
         setAccrued("");
-        setPayments([]);
         setPhases([]);
         setDueDate("");
         setContributorIds([]);
@@ -162,7 +157,7 @@ export default function SubprojectRow({
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div>
           <label className={labelClass}>{`// accrued revenue (${currency})`}</label>
-          <input type="number" inputMode="decimal" className={inputClass} value={accrued} onChange={(e) => setAccrued(e.target.value)} placeholder="0" />
+          <input type="number" inputMode="decimal" min={0} className={inputClass} value={accrued} onChange={(e) => setAccrued(e.target.value)} placeholder="0" />
         </div>
         <div>
           <label className={labelClass}>// due date</label>
@@ -170,9 +165,7 @@ export default function SubprojectRow({
         </div>
       </div>
 
-      {/* Collected is the sum of dated payments — entered below, not typed. */}
-      <PaymentsEditor value={payments} onChange={setPayments} />
-
+      {/* Collected is the sum of the phase amounts — entered below, not typed. */}
       <PhasesEditor value={phases} onChange={setPhases} />
 
       {/* Progress is auto (collected ÷ accrued) — read-only. */}

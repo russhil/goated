@@ -41,10 +41,9 @@ export type TeamMember = {
   created_at: string;
 };
 
-// A dated collection against a sub-project. collected_revenue = sum of these.
-export type Payment = { date: string; amount: number };
-// A dated milestone on a sub-project.
-export type Phase = { name: string; date: string };
+// A dated milestone on a sub-project that carries its own payment amount.
+// A sub-project's collected_revenue is the sum of its phase amounts.
+export type Phase = { name: string; date: string; amount: number };
 
 export type Subproject = {
   id: string;
@@ -52,19 +51,18 @@ export type Subproject = {
   name: string;
   description: string | null;
   accrued_revenue: number;
-  collected_revenue: number; // stored, kept = sum(payments)
+  collected_revenue: number; // stored, kept = sum(phase amounts)
   progress: number; // stored, but derived from collected/accrued (see subProgress)
   due_date: string | null;
-  payments: Payment[];
   phases: Phase[];
   contributor_ids: string[];
   sort_order: number;
   created_at: string;
 };
 
-export function paymentsTotal(payments: Payment[]): number {
-  if (!Array.isArray(payments)) return 0;
-  return payments.reduce((s, p) => s + Number(p.amount || 0), 0);
+export function phasesTotal(phases: Phase[]): number {
+  if (!Array.isArray(phases)) return 0;
+  return phases.reduce((s, p) => s + Math.max(0, Number(p.amount || 0)), 0);
 }
 
 export type Client = {

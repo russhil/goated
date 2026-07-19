@@ -83,7 +83,7 @@ export default function ExpenseRow({ expense }: { expense?: Expense }) {
       </select>
       <input className={inputClass} value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder="vendor" />
       <input className={inputClass} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="description" />
-      <input type="number" inputMode="decimal" className={inputClass} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="amount" />
+      <input type="number" min={0} inputMode="decimal" className={inputClass} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="amount" />
       <select className={inputClass} value={currency} onChange={(e) => setCurrency(e.target.value)}>
         {CURRENCIES.map((c) => (
           <option key={c} value={c}>{c}</option>

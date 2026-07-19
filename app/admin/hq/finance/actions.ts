@@ -28,7 +28,7 @@ function pettyPayload(input: PettyCashInput) {
     // Splitwise ledger keys on `payer`; the legacy team-member link is retired.
     paid_by_id: null,
     purpose: input.purpose.trim(),
-    amount: Number.isFinite(input.amount) ? input.amount : 0,
+    amount: Math.max(0, Number(input.amount) || 0),
     currency: safeCurrency(input.currency),
     spent_on: input.spent_on,
   };
@@ -133,7 +133,7 @@ function expensePayload(input: ExpenseInput) {
       : "misc",
     vendor: (input.vendor || "").trim() || null,
     description: (input.description || "").trim() || null,
-    amount: Number.isFinite(input.amount) ? input.amount : 0,
+    amount: Math.max(0, Number(input.amount) || 0),
     currency: safeCurrency(input.currency),
     incurred_on: input.incurred_on,
     recurring: Boolean(input.recurring),
