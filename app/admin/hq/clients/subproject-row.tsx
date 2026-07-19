@@ -29,6 +29,7 @@ export default function SubprojectRow({
   team,
   currency,
   kickoffDate,
+  invoiceByPhase,
   onSaved,
 }: {
   clientId: string;
@@ -36,6 +37,7 @@ export default function SubprojectRow({
   team: TeamMember[];
   currency: string;
   kickoffDate: string | null;
+  invoiceByPhase: Record<string, string>;
   onSaved?: () => void;
 }) {
   const isNew = !subproject;
@@ -178,6 +180,7 @@ export default function SubprojectRow({
         clientId={clientId}
         subprojectId={subproject?.id ?? null}
         currency={currency}
+        invoiceByPhase={invoiceByPhase}
       />
 
       {/* Progress is auto (collected ÷ accrued) — read-only. */}

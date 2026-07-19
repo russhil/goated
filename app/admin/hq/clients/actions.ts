@@ -144,6 +144,9 @@ function sanitizePhases(phases: Phase[]): Phase[] {
   // poison the totals. Stored date-ordered so downstream reads never re-sort.
   const cleaned = phases
     .map((p) => ({
+      // Keep the stable id (assign one when a phase first gets saved) so an
+      // invoice can be tied to this phase for its lifetime.
+      id: p.id || crypto.randomUUID(),
       name: (p.name || "").trim(),
       date: (p.date || "").trim(),
       amount: Math.max(0, Number(p.amount) || 0),

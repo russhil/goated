@@ -102,3 +102,16 @@ export const getProspectsAll = unstable_cache(
   ["hq:prospects"],
   { tags: [HQ_TAG] }
 );
+
+export const getInvoicesAll = unstable_cache(
+  async (): Promise<Record<string, unknown>[]> => {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("invoices")
+      .select("*")
+      .order("seq", { ascending: true });
+    return (data ?? []) as Record<string, unknown>[];
+  },
+  ["hq:invoices"],
+  { tags: [HQ_TAG] }
+);

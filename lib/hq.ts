@@ -43,7 +43,8 @@ export type TeamMember = {
 
 // A dated milestone on a sub-project carrying its own payment (amount) and cost.
 // collected_revenue = sum of phase amounts; project cost = sum of phase costs.
-export type Phase = { name: string; date: string; amount: number; cost: number };
+// `id` is a stable key so an invoice can be tied to a phase (assigned on save).
+export type Phase = { id?: string; name: string; date: string; amount: number; cost: number };
 
 // Sort phases ascending by date (empty dates sink to the end).
 export function sortPhases(phases: Phase[]): Phase[] {

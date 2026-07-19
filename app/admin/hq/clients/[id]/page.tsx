@@ -7,7 +7,7 @@ import {
   formatMoney,
   type Subproject,
 } from "@/lib/hq";
-import { getClientsAll, getSubprojectsAll, getTeamAll } from "@/lib/hq-data";
+import { getClientsAll, getSubprojectsAll, getTeamAll, getInvoicesAll } from "@/lib/hq-data";
 import ClientEditor from "../client-editor";
 import SubprojectRow from "../subproject-row";
 import SubprojectDrawer from "../subproject-drawer";
@@ -19,16 +19,23 @@ export default async function ClientDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [clientsAll, subsAll, teamList] = await Promise.all([
+  const [clientsAll, subsAll, teamList, invoicesAll] = await Promise.all([
     getClientsAll(),
     getSubprojectsAll(),
     getTeamAll(),
+    getInvoicesAll(),
   ]);
 
   const c = clientsAll.find((x) => x.id === params.id);
   if (!c) notFound();
 
   const subprojects: Subproject[] = subsAll.filter((s) => s.client_id === params.id);
+
+  // phase id → invoice number, so each phase row can show its stable number.
+  const invoiceByPhase: Record<string, string> = {};
+  for (const row of invoicesAll as { phase_id: string | null; invoice_no: string }[]) {
+    if (row.phase_id) invoiceByPhase[row.phase_id] = row.invoice_no;
+  }
   const roll = rollup(subprojects, c.kickoff_date);
   const health = healthColor(roll.progress, roll.count, roll.offTrack);
 
@@ -80,7 +87,7 @@ export default async function ClientDetailPage({
       {subprojects.length > 0 ? (
         <div className="flex flex-col gap-3">
           {subprojects.map((sp) => (
-            <SubprojectRow key={sp.id} clientId={c.id} subproject={sp} team={teamList} currency={c.currency} kickoffDate={c.kickoff_date} />
+            <SubprojectRow key={sp.id} clientId={c.id} subproject={sp} team={teamList} currency={c.currency} kickoffDate={c.kickoff_date} invoiceByPhase={invoiceByPhase} />
           ))}
         </div>
       ) : (

@@ -682,3 +682,13 @@ create index if not exists invoices_seq_idx on public.invoices (seq desc);
 
 alter table public.invoices enable row level security;
 -- No policies — service role only.
+
+
+-- ============================================================================
+-- 16. Invoices keyed to a stable phase id (one maintained number per phase).
+--   Numbers are assigned in chronological phase-date order (GT001, GT002, ...);
+--   re-generating a phase's invoice reuses its number.
+-- ============================================================================
+alter table public.invoices add column if not exists phase_id text;
+create unique index if not exists invoices_phase_id_idx
+  on public.invoices (phase_id) where phase_id is not null;

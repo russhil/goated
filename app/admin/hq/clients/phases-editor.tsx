@@ -8,7 +8,7 @@ import {
   phasesCostTotal,
   type Phase,
 } from "@/lib/hq";
-import { createInvoice } from "./invoice-actions";
+import { ensureInvoiceForPhase } from "./invoice-actions";
 
 const empty: Phase = { name: "", date: "", amount: 0, cost: 0 };
 
@@ -18,12 +18,14 @@ export default function PhasesEditor({
   clientId,
   subprojectId,
   currency,
+  invoiceByPhase,
 }: {
   value: Phase[];
   onChange: (phases: Phase[]) => void;
   clientId: string;
   subprojectId: string | null;
   currency: string;
+  invoiceByPhase: Record<string, string>;
 }) {
   // Amounts and costs are string-backed so a field can be emptied (and decimals
   // typed) while the parent keeps the canonical numeric Phase[]. Rebuilt from
@@ -77,7 +79,9 @@ export default function PhasesEditor({
     setRawCost((r) => order.map((idx) => r[idx] ?? ""));
   };
 
-  const add = () => onChange([...value, { ...empty }]);
+  // Every phase carries a stable id (survives edits/sorting/save) so its invoice
+  // number stays pinned to it. Secure-context browser API — fine in a client component.
+  const add = () => onChange([...value, { ...empty, id: crypto.randomUUID() }]);
   const remove = (i: number) => onChange(value.filter((_, idx) => idx !== i));
 
   // Generating an invoice is an explicit, per-row action — awaiting the server
@@ -87,15 +91,17 @@ export default function PhasesEditor({
   const [invoiceError, setInvoiceError] = useState<Record<number, string>>({});
   const generateInvoice = async (i: number) => {
     const phase = value[i];
+    if (!phase.id) return;
     setInvoiceError((e) => ({ ...e, [i]: "" }));
     setInvoiceBusy(i);
-    const res = await createInvoice({
+    const res = await ensureInvoiceForPhase({
+      phaseId: phase.id,
       clientId,
       subprojectId,
-      description: phase.name || "Professional services",
+      name: phase.name || "Professional services",
       amount: Number(phase.amount) || 0,
       currency,
-      issueDate: phase.date || "",
+      date: phase.date || "",
     });
     setInvoiceBusy(null);
     if (res.ok && res.id) window.open("/admin/hq/invoice/" + res.id, "_blank");
@@ -143,13 +149,20 @@ export default function PhasesEditor({
                 placeholder="cost"
               />
               <div className="flex items-center gap-2">
+                {p.id && invoiceByPhase[p.id] && (
+                  <span className="font-mono text-[11px] text-muted">{invoiceByPhase[p.id]}</span>
+                )}
                 <button
                   type="button"
                   onClick={() => generateInvoice(i)}
-                  disabled={!clientId || (Number(p.amount) || 0) <= 0 || invoiceBusy !== null}
+                  disabled={!clientId || !p.id || (Number(p.amount) || 0) <= 0 || invoiceBusy !== null}
                   className="font-mono text-coral hover:underline text-[11px] disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed whitespace-nowrap"
                 >
-                  {invoiceBusy === i ? "…" : "⤓ invoice"}
+                  {invoiceBusy === i
+                    ? "…"
+                    : p.id && invoiceByPhase[p.id]
+                    ? "⤓ re-generate"
+                    : "⤓ invoice"}
                 </button>
                 <button
                   type="button"

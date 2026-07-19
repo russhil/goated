@@ -10,6 +10,7 @@ import { getClientsAll, getSubprojectsAll, getTeamAll } from "@/lib/hq-data";
 import TeamManager from "./team-manager";
 import NewClientDrawer from "./new-client-drawer";
 import ClientsFilterBar from "./clients-filter-bar";
+import RegenerateInvoicesButton from "./regenerate-invoices-button";
 
 export const dynamic = "force-dynamic";
 
@@ -132,7 +133,10 @@ export default async function ClientsPage({
             archived
           </a>
         </div>
-        {!showArchived && <NewClientDrawer team={teamList} />}
+        <div className="flex items-center gap-2 flex-wrap">
+          <RegenerateInvoicesButton />
+          {!showArchived && <NewClientDrawer team={teamList} />}
+        </div>
       </div>
 
       <ClientsFilterBar

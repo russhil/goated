@@ -31,6 +31,7 @@ export default function SubprojectDrawer({
           team={team}
           currency={currency}
           kickoffDate={kickoffDate}
+          invoiceByPhase={{}}
           onSaved={() => setOpen(false)}
         />
       </Drawer>
