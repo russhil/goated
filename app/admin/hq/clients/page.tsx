@@ -35,7 +35,7 @@ export default async function ClientsPage({
   const currencyFilter = searchParams.currency ?? "";
   const healthFilter = searchParams.health ?? "";
   const contributorFilter = searchParams.contributor ?? "";
-  const sortKey = searchParams.sort ?? "created";
+  const sortKey = searchParams.sort ?? "kickoff";
   const sortDir = searchParams.dir === "asc" ? "asc" : "desc";
 
   const [teamList, clientsAll, subsAll] = await Promise.all([

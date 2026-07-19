@@ -43,7 +43,7 @@ export default function ClientsFilterBar({
   const currency = params.get("currency") ?? "";
   const health = params.get("health") ?? "";
   const contributor = params.get("contributor") ?? "";
-  const sort = params.get("sort") ?? "created";
+  const sort = params.get("sort") ?? "kickoff";
   const dir = params.get("dir") ?? "desc";
   const hasFilters = Boolean(
     industry || currency || health || contributor || params.get("sort") || params.get("dir")
@@ -120,7 +120,7 @@ export default function ClientsFilterBar({
       <select
         className={selectClass}
         value={sort}
-        onChange={(e) => setParam("sort", e.target.value === "created" ? "" : e.target.value)}
+        onChange={(e) => setParam("sort", e.target.value === "kickoff" ? "" : e.target.value)}
         title="Sort by"
       >
         {SORT_OPTIONS.map((s) => (

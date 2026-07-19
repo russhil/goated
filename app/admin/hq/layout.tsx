@@ -4,11 +4,11 @@ import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
-import { getClientsAll, getSubprojectsAll } from "@/lib/hq-data";
+import { getClientsAll, getSubprojectsAll, getProspectsAll } from "@/lib/hq-data";
 import { subOffTrack } from "@/lib/hq";
 import HqNav from "./hq-nav";
 import { HqThemeProvider } from "./theme";
-import Notifications, { type OffTrackItem } from "./notifications";
+import Notifications, { type OffTrackItem, type ReachOutItem } from "./notifications";
 
 export const metadata: Metadata = {
   title: "Client HQ",
@@ -67,9 +67,10 @@ export default async function HqLayout({
   const initialTheme =
     cookies().get("hq-theme")?.value === "dark" ? "dark" : "light";
 
-  const [clients, subprojects] = await Promise.all([
+  const [clients, subprojects, prospects] = await Promise.all([
     getClientsAll(),
     getSubprojectsAll(),
+    getProspectsAll(),
   ]);
 
   const offTrackItems: OffTrackItem[] = clients
@@ -95,6 +96,21 @@ export default async function HqLayout({
         }))
     );
 
+  // Weekly reach-out flag: prospects still in the "New" stage after ≥ 1 week.
+  const now = Date.now();
+  const reachOut: ReachOutItem[] = (
+    prospects as { id: string; name: string; company: string | null; stage: string; created_at: string }[]
+  )
+    .filter((p) => p.stage === "new")
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      company: p.company,
+      ageDays: Math.floor((now - new Date(p.created_at).getTime()) / 86_400_000),
+    }))
+    .filter((p) => Number.isFinite(p.ageDays) && p.ageDays >= 7)
+    .sort((a, b) => b.ageDays - a.ageDays);
+
   return (
     <main>
       {/* Pre-paint: adopt the dark root class before React hydrates so the
@@ -116,7 +132,7 @@ export default async function HqLayout({
             >
               Client HQ.
             </h1>
-            <Notifications items={offTrackItems} />
+            <Notifications items={offTrackItems} prospects={reachOut} />
           </div>
           <p className="font-mono text-xs text-muted/70 mb-6">
             {"// signed in as "}
