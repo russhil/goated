@@ -81,10 +81,29 @@ export type Client = {
   nda_path: string | null;
   contract_path: string | null;
   contributor_ids: string[];
+  color: string | null; // chart color; null → palette fallback by index
   archived: boolean;
   created_at: string;
   updated_at: string;
 };
+
+// Fallback palette for clients without an assigned color (distinct, theme-safe).
+export const CLIENT_COLORS = [
+  "#E8533A",
+  "#6366f1",
+  "#f59e0b",
+  "#10b981",
+  "#ec4899",
+  "#14b8a6",
+  "#8b5cf6",
+  "#eab308",
+  "#3b82f6",
+  "#ef4444",
+];
+
+export function clientColor(client: { color: string | null }, index: number): string {
+  return client.color || CLIENT_COLORS[index % CLIENT_COLORS.length];
+}
 
 export type Rollup = {
   totalContract: number;

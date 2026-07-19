@@ -6,6 +6,7 @@ import {
   Area,
   Line,
   Scatter,
+  Cell,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -13,6 +14,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { useState } from "react";
 import { formatMoney } from "@/lib/hq";
 import { useHqTheme } from "./theme";
 
@@ -293,5 +295,240 @@ export function TimeSeriesChart({
         )}
       </ComposedChart>
     </ResponsiveContainer>
+  );
+}
+
+// One stacked band + one legend entry per client.
+export type RevSeries = { key: string; name: string; color: string };
+// A clickable dot sitting on a client's stacked-band top for a given month.
+// `amount` is that client's month revenue; `phases` its per-phase line-items.
+export type RevDot = {
+  x: number;
+  y: number;
+  name: string;
+  color: string;
+  amount: number;
+  monthLabel: string;
+  phases: { label: string; date: string; amount: number }[];
+};
+
+// Revenue as a stacked area — one curve per client in its assigned color.
+// Hover shows the month's TOTAL revenue + per-client split; clicking a dot
+// reveals that client's phase payments for the month below the chart.
+export function RevenueByClientChart({
+  data,
+  series,
+  dots,
+}: {
+  data: ChartRow[];
+  series: RevSeries[];
+  dots: RevDot[];
+}) {
+  const { theme } = useHqTheme();
+  const dark = theme === "dark";
+  const [selected, setSelected] = useState<RevDot | null>(null);
+
+  const axis = dark ? "#9ca3af" : "#999999";
+  const grid = dark ? "rgba(255,255,255,0.08)" : "#e5e5e5";
+  const tipBg = dark ? "#17181b" : "#ffffff";
+  const tipText = dark ? "#e5e7eb" : "#0D0D0D";
+  const tipBorder = dark ? "rgba(255,255,255,0.1)" : "rgba(13,13,13,0.1)";
+  const dotStroke = dark ? "#17181b" : "#ffffff";
+
+  // Y-axis headroom so the topmost band + its dot aren't clipped.
+  const maxTotal = Math.max(
+    0,
+    ...data.map((row) => series.reduce((s, sd) => s + Number(row[sd.key] || 0), 0))
+  );
+
+  const hasData = maxTotal > 0 || dots.length > 0;
+  if (!data.length || !hasData) {
+    return (
+      <div className="h-[320px] flex items-center justify-center">
+        <p className="font-sans text-muted text-sm">
+          Nothing to plot yet — add clients with dated phase payments.
+        </p>
+      </div>
+    );
+  }
+
+  // recharts hands the Scatter onClick the active point props; `.payload` is
+  // the RevDot we fed in.
+  const handleDotClick = (next: unknown) => {
+    const payload = (next as { payload?: RevDot } | null)?.payload;
+    if (payload) setSelected(payload);
+  };
+
+  // Tooltip = the hovered month's revenue: bold Total + each client's share.
+  const renderTooltip = ({ active, label }: TipProps) => {
+    if (!active || label == null) return null;
+    const idx = Math.round(Number(label));
+    const row = data[idx];
+    if (!row) return null;
+    const total = series.reduce((s, sd) => s + Number(row[sd.key] || 0), 0);
+    if (total <= 0) return null;
+    const parts = series
+      .map((sd) => ({ name: sd.name, color: sd.color, value: Number(row[sd.key] || 0) }))
+      .filter((p) => p.value > 0);
+
+    return (
+      <div
+        style={{
+          background: tipBg,
+          color: tipText,
+          border: `1px solid ${tipBorder}`,
+          borderRadius: 12,
+          padding: "10px 12px",
+          fontFamily: "var(--font-sans)",
+          fontSize: 12,
+          minWidth: 190,
+          maxWidth: 300,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+        }}
+      >
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: axis,
+            marginBottom: 6,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+          }}
+        >
+          {row.label}
+        </p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontWeight: 600,
+            marginBottom: parts.length ? 6 : 0,
+          }}
+        >
+          <span style={{ flex: 1 }}>Total</span>
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>{formatMoney(total, "INR")}</span>
+        </div>
+        {parts.map((p, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: i ? 4 : 0 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: p.color, display: "inline-block", flexShrink: 0 }} />
+            <span style={{ flex: 1 }}>{p.name}</span>
+            <span style={{ fontVariantNumeric: "tabular-nums" }}>{formatMoney(p.value, "INR")}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div style={{ cursor: "pointer" }}>
+        <ResponsiveContainer width="100%" height={320}>
+          <ComposedChart data={data} margin={{ top: 12, right: 12, bottom: 0, left: 8 }}>
+            <CartesianGrid stroke={grid} strokeDasharray="3 3" vertical={false} />
+            <XAxis
+              type="number"
+              dataKey="x"
+              domain={[-0.5, data.length - 0.5]}
+              ticks={data.map((d) => d.x)}
+              tickFormatter={(v: number) => data[v]?.label ?? ""}
+              tick={{ fontSize: 11, fill: axis, fontFamily: "var(--font-mono)" }}
+              axisLine={{ stroke: grid }}
+              tickLine={false}
+              minTickGap={10}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              type="number"
+              domain={[0, maxTotal > 0 ? Math.ceil(maxTotal * 1.2) : 1]}
+              allowDataOverflow={false}
+              tick={{ fontSize: 11, fill: axis, fontFamily: "var(--font-mono)" }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={compactInr}
+              width={56}
+            />
+            <ZAxis range={[46, 46]} />
+
+            <Tooltip content={renderTooltip as never} cursor={{ stroke: grid, strokeWidth: 1 }} />
+            <Legend
+              iconType="circle"
+              wrapperStyle={{
+                fontSize: 11,
+                fontFamily: "var(--font-mono)",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: axis,
+                paddingTop: 8,
+              }}
+            />
+
+            {series.map((s) => (
+              <Area
+                key={s.key}
+                type="monotone"
+                dataKey={s.key}
+                name={s.name}
+                stackId="rev"
+                stroke={s.color}
+                strokeWidth={1.5}
+                fill={s.color}
+                fillOpacity={0.35}
+                dot={false}
+                activeDot={false}
+              />
+            ))}
+
+            <Scatter
+              data={dots}
+              dataKey="y"
+              onClick={handleDotClick}
+              stroke={dotStroke}
+              strokeWidth={1}
+              legendType="none"
+            >
+              {dots.map((d, i) => (
+                <Cell key={i} fill={d.color} />
+              ))}
+            </Scatter>
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      {selected && (
+        <div className="border border-dark/10 rounded-xl bg-white p-4 mt-3">
+          <div className="flex items-center gap-3 mb-3">
+            <p className="font-serif text-base text-dark">
+              {selected.name} · {selected.monthLabel}
+            </p>
+            <button
+              onClick={() => setSelected(null)}
+              className="ml-auto text-muted hover:text-dark text-sm"
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {selected.phases.map((p, i) => (
+              <li key={i} className="flex items-baseline gap-3">
+                <div className="min-w-0 flex-1">
+                  <span className="font-sans text-sm text-dark">{p.label}</span>
+                  <span className="font-mono text-[10px] text-muted uppercase tracking-widest ml-2">{p.date}</span>
+                </div>
+                <span className="font-sans text-sm text-dark tabular-nums">{formatMoney(p.amount, "INR")}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="flex items-baseline gap-3 mt-3 pt-3 border-t border-dark/10">
+            <span className="font-mono text-[10px] text-muted uppercase tracking-widest flex-1">total</span>
+            <span className="font-sans text-sm text-dark font-semibold tabular-nums">
+              {formatMoney(selected.amount, "INR")}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

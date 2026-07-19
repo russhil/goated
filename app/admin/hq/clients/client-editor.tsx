@@ -50,6 +50,7 @@ export default function ClientEditor({
   const [liveUrl, setLiveUrl] = useState(client?.live_url ?? "");
   const [description, setDescription] = useState(client?.description ?? "");
   const [story, setStory] = useState(client?.story ?? "");
+  const [color, setColor] = useState(client?.color ?? "#E8533A");
   // Money kept as a string so the field can be emptied (fixes the "can't
   // delete the leading 0" glitch); coerced to a number only on save.
   const [cost, setCost] = useState(client ? String(client.cost ?? "") : "");
@@ -76,6 +77,7 @@ export default function ClientEditor({
     live_url: liveUrl,
     description,
     story,
+    color,
     cost: Number(cost) || 0,
     kickoff_date: kickoffDate,
     credentials,
@@ -91,6 +93,7 @@ export default function ClientEditor({
     setLiveUrl("");
     setDescription("");
     setStory("");
+    setColor("#E8533A");
     setCost("");
     setKickoffDate("");
     setCredentials([]);
@@ -180,6 +183,18 @@ export default function ClientEditor({
             onChange={(e) => setCost(e.target.value)}
             placeholder="0"
           />
+        </div>
+        <div>
+          <label className={labelClass}>// chart color</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="h-9 w-16 rounded-lg border border-dark/10 bg-white cursor-pointer"
+            />
+            <span className="font-mono text-[11px] text-muted">{color}</span>
+          </div>
         </div>
         <div>
           <label className={labelClass}>// kickoff date</label>

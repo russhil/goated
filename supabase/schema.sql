@@ -649,3 +649,10 @@ where exists (
   select 1 from jsonb_array_elements(coalesce(phases, '[]'::jsonb)) e
   where e ? 'amount'
 );
+
+
+-- ============================================================================
+-- 14. Per-client chart color (assignable in the client editor; the revenue
+--   chart draws one stacked curve per client in this color).
+-- ============================================================================
+alter table public.clients add column if not exists color text;

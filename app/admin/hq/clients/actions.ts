@@ -19,6 +19,7 @@ export type ClientInput = {
   live_url: string;
   description: string;
   story: string;
+  color: string;
   cost: number;
   kickoff_date: string; // "yyyy-mm-dd" or ""
   credentials: Credential[];
@@ -49,6 +50,7 @@ function clientPayload(input: ClientInput) {
     live_url: (input.live_url || "").trim() || null,
     description: (input.description || "").trim() || null,
     story: (input.story || "").trim() || null,
+    color: /^#[0-9a-fA-F]{6}$/.test((input.color || "").trim()) ? input.color.trim() : null,
     cost: Math.max(0, Number(input.cost) || 0),
     kickoff_date: input.kickoff_date ? input.kickoff_date : null,
     credentials: sanitizeCredentials(input.credentials),

@@ -3,6 +3,7 @@ import {
   healthColor,
   toInr,
   summarizeInInr,
+  clientColor,
   HEALTH_DOT,
   HEALTH_LABEL,
   formatMoney,
@@ -16,7 +17,14 @@ import {
   getPettyCashAll,
   getExpensesAll,
 } from "@/lib/hq-data";
-import { TimeSeriesChart, type ChartRow, type SeriesDef, type DotPoint } from "./hq-charts";
+import {
+  TimeSeriesChart,
+  RevenueByClientChart,
+  type ChartRow,
+  type SeriesDef,
+  type DotPoint,
+  type RevDot,
+} from "./hq-charts";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +84,7 @@ export default async function DashboardPage() {
     (now.getFullYear() - START_YEAR) * 12 + (now.getMonth() - START_MONTH) + 1
   );
 
-  type Bucket = { x: number; label: string; revenue: number; expenses: number; clientCost: number };
+  type Bucket = { x: number; label: string; expenses: number; clientCost: number };
   const buckets: Bucket[] = [];
   const indexByKey = new Map<string, number>();
   for (let i = 0; i < monthCount; i++) {
@@ -86,7 +94,6 @@ export default async function DashboardPage() {
     buckets.push({
       x: i,
       label: d.toLocaleString("en-US", { month: "short", year: "2-digit" }),
-      revenue: 0,
       expenses: 0,
       clientCost: 0,
     });
@@ -118,40 +125,63 @@ export default async function DashboardPage() {
     costDots.push({ x: idx, value: clientCostInr, name: c.name });
   }
 
-  // Revenue is driven by phase payment dates: every phase amount lands in the
-  // bucket for its own month. One revenue dot per (client, month-with-phases) —
-  // value is the client's total phase amount that month, breakdown the per-phase
-  // split (labelled "<sub> : <phase>"). Unparseable/empty dates are skipped;
-  // out-of-window dates clamp into bucket 0.
-  const revenueDots: DotPoint[] = [];
-  for (const c of clientList) {
-    const subs = subsByClient.get(c.id) ?? [];
-    const byMonth = new Map<number, { total: number; phases: Map<string, number> }>();
-    for (const s of subs) {
+  // Revenue is per-client and driven by phase payment dates: every phase amount
+  // lands in the bucket for its own month, tracked per (client, month) with the
+  // per-phase line-items powering the click-through detail. Unparseable/empty
+  // dates are skipped; out-of-window dates clamp into bucket 0.
+  const revClients = clientList.map((c, i) => ({ id: c.id, name: c.name, color: clientColor(c, i) }));
+
+  type PhaseItem = { label: string; date: string; amount: number };
+  const revByClientMonth = new Map<string, Map<number, { total: number; phases: PhaseItem[] }>>();
+  clientList.forEach((c) => {
+    const perMonth = new Map<number, { total: number; phases: PhaseItem[] }>();
+    for (const s of subsByClient.get(c.id) ?? []) {
       for (const ph of s.phases ?? []) {
-        const key = monthKey(ph.date);
-        if (key == null) continue;
-        const idx = idxOf(key);
+        const idx = idxOf(monthKey(ph.date));
         if (idx === null) continue;
         const amountInr = toInr(Math.max(0, Number(ph.amount || 0)), c.currency, rates);
-        buckets[idx].revenue += amountInr;
-        let entry = byMonth.get(idx);
+        let entry = perMonth.get(idx);
         if (!entry) {
-          entry = { total: 0, phases: new Map() };
-          byMonth.set(idx, entry);
+          entry = { total: 0, phases: [] };
+          perMonth.set(idx, entry);
         }
         entry.total += amountInr;
-        const label = `${s.name}: ${ph.name}`;
-        entry.phases.set(label, (entry.phases.get(label) ?? 0) + amountInr);
+        entry.phases.push({ label: `${s.name}: ${ph.name}`, date: ph.date, amount: amountInr });
       }
     }
-    for (const [idx, entry] of Array.from(byMonth.entries())) {
-      revenueDots.push({
-        x: idx,
-        value: entry.total,
-        name: c.name,
-        breakdown: Array.from(entry.phases.entries()).map(([label, value]) => ({ label, value })),
-      });
+    revByClientMonth.set(c.id, perMonth);
+  });
+
+  // One row per month: numeric x/label + one INR total per client ("c_<id>").
+  const revData: ChartRow[] = buckets.map((b) => {
+    const row: ChartRow = { x: b.x, label: b.label };
+    for (const c of clientList) {
+      row[`c_${c.id}`] = revByClientMonth.get(c.id)?.get(b.x)?.total ?? 0;
+    }
+    return row;
+  });
+
+  // Dots sit on each client's stacked-band top: walk clients in stacking order,
+  // accumulating every client's month revenue (even 0), and drop a dot at the
+  // running total whenever a client actually collected that month.
+  const revDots: RevDot[] = [];
+  for (const b of buckets) {
+    let cumulative = 0;
+    for (const rc of revClients) {
+      const entry = revByClientMonth.get(rc.id)?.get(b.x);
+      const monthRev = entry?.total ?? 0;
+      cumulative += monthRev;
+      if (monthRev > 0) {
+        revDots.push({
+          x: b.x,
+          y: cumulative,
+          name: rc.name,
+          color: rc.color,
+          amount: monthRev,
+          monthLabel: b.label,
+          phases: entry?.phases ?? [],
+        });
+      }
     }
   }
 
@@ -168,14 +198,10 @@ export default async function DashboardPage() {
   const chartRows: ChartRow[] = buckets.map((b) => ({
     x: b.x,
     label: b.label,
-    revenue: b.revenue,
     expenses: b.expenses,
     clientCost: b.clientCost,
   }));
 
-  const REVENUE_SERIES: SeriesDef[] = [
-    { key: "revenue", name: "revenue", color: "#E8533A", area: true },
-  ];
   const COST_SERIES: SeriesDef[] = [
     { key: "expenses", name: "expenses", color: "#6366f1", area: true },
     { key: "clientCost", name: "client costs", color: "#f59e0b", area: true },
@@ -212,15 +238,14 @@ export default async function DashboardPage() {
         <Kpi label="Net (cash)" value={formatMoney(inr.net, "INR")} tone={inr.net >= 0 ? "pos" : "neg"} />
       </div>
 
-      {/* Revenue timeline — one dot per client, hover shows its sub-projects */}
+      {/* Revenue timeline — a stacked band per client; hover shows the month
+          total + per-client split, clicking a dot reveals that client's phases */}
       <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-6">
         <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// revenue over time (INR)"}</p>
-        <TimeSeriesChart
-          data={chartRows}
-          series={REVENUE_SERIES}
-          dots={revenueDots}
-          dotName="clients"
-          dotColor="#E8533A"
+        <RevenueByClientChart
+          data={revData}
+          series={revClients.map((c) => ({ key: `c_${c.id}`, name: c.name, color: c.color }))}
+          dots={revDots}
         />
       </div>
 
