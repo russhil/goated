@@ -39,7 +39,9 @@ const nextConfig = {
         source: "/(.*)",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "DENY" },
+          // SAMEORIGIN (not DENY) so the admin invoice preview can iframe our
+          // own /admin/hq/invoice route; still blocks cross-origin clickjacking.
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",

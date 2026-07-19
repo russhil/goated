@@ -71,17 +71,25 @@ function isAllowed(fromId: number): boolean {
 const HELP = [
   "<b>Goated ops bot</b>",
   "",
-  "Commands:",
+  "<b>Commands</b>",
   "/summary — INR P&amp;L snapshot",
   "/balance — petty-cash who-owes-who",
   "/offtrack — sub-projects behind schedule",
+  "/invoice &lt;client&gt; [phase] — fetch an invoice PDF",
   "/whoami — your Telegram id",
+  "/help — this message",
   "",
-  "Or just type, e.g.:",
-  "• Vansh paid 500 for coffee",
-  "• add expense software 999 Vercel",
-  "• add prospect Acme Corp",
-  "• invoice for Azadi Records",
+  "<b>Log things (just type)</b>",
+  "• Vansh paid 500 for coffee — petty cash",
+  "• add expense software 999 Vercel — company expense",
+  "• add prospect Acme Corp in proposal — sales lead",
+  "• invoice for Azadi Records — or: fetch phase 1 invoice for zenspace",
+  "",
+  "<b>Ask anything (ad-hoc lookups)</b>",
+  "• which clients are off track",
+  "• total collected from Azadi",
+  "• prospects in proposal stage",
+  "• how many invoices this month",
 ].join("\n");
 
 // ---- shared command handlers ----------------------------------------------
@@ -328,12 +336,107 @@ async function handleGetInvoice(
   await sendDocument(chatId, `INV_${row.invoice_no}.pdf`, bytes, `Invoice ${esc(row.invoice_no)} — ${esc(client.name)}`);
 }
 
+// Split "/invoice <client> [phase words]" args into a client and optional phase.
+// If the word "phase" appears (not at the very start), everything before it is
+// the client and "phase …" is the phase filter; otherwise it's all the client.
+function parseInvoiceArgs(args: string): { client: string; phase?: string } {
+  const trimmed = args.trim();
+  const m = trimmed.match(/\bphase\b/i);
+  if (m && typeof m.index === "number" && m.index > 0) {
+    const client = trimmed.slice(0, m.index).trim();
+    const phase = trimmed.slice(m.index).trim();
+    if (client) return { client, phase: phase || undefined };
+  }
+  return { client: trimmed };
+}
+
+// ---- read-only query intent ------------------------------------------------
+
+// Second guard (the Gemini prompt + the exec_sql_readonly DB function are the
+// other two): never trust model-authored SQL — re-check it here before running.
+const FORBIDDEN_SQL = /\b(insert|update|delete|drop|alter|truncate|grant|revoke|copy|call|merge|vacuum)\b/i;
+
+function isReadOnlySql(sql: string): boolean {
+  return /^\s*(select|with)\b/i.test(sql) && !sql.includes(";") && !FORBIDDEN_SQL.test(sql);
+}
+
+function formatValue(v: unknown): string {
+  if (v === null || v === undefined) return "—";
+  let s = typeof v === "object" ? JSON.stringify(v) : String(v);
+  if (s.length > 300) s = s.slice(0, 300) + "…";
+  return s;
+}
+
+function formatRow(row: unknown): string {
+  if (!row || typeof row !== "object") return esc(formatValue(row));
+  const o = row as Record<string, unknown>;
+  const keys = Object.keys(o);
+  if (keys.length === 0) return "—";
+  if (keys.length === 1) return esc(formatValue(o[keys[0]]));
+  return keys.map((k) => `<b>${esc(k)}</b>: ${esc(formatValue(o[k]))}`).join(", ");
+}
+
+function toRows(data: unknown): unknown[] {
+  if (Array.isArray(data)) return data;
+  if (data === null || data === undefined) return [];
+  return [data];
+}
+
+async function handleQuery(
+  chatId: number,
+  intent: Extract<BotIntent, { intent: "query" }>
+): Promise<void> {
+  // Drop trailing semicolons the model may have added, then re-validate.
+  const sql = intent.sql.replace(/;+\s*$/, "").trim();
+  if (!sql || !isReadOnlySql(sql)) {
+    await sendMessage(chatId, "I can only run read-only lookups.");
+    return;
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("exec_sql_readonly", { q: sql });
+  if (error) {
+    await sendMessage(chatId, "⚠️ couldn't run that lookup — try rephrasing.");
+    return;
+  }
+
+  const rows = toRows(data);
+  const header = intent.explain ? esc(intent.explain) : "Results";
+  if (rows.length === 0) {
+    await sendMessage(chatId, `${header}\n\nNo results.`);
+    return;
+  }
+
+  // Append whole lines only so an HTML tag is never split by the length cap.
+  const CAP = 4000;
+  let msg = header;
+  let shown = 0;
+  let truncated = false;
+  for (const r of rows) {
+    if (shown >= 15) {
+      truncated = true;
+      break;
+    }
+    const line = "\n• " + formatRow(r);
+    if (msg.length + line.length > CAP) {
+      truncated = true;
+      break;
+    }
+    msg += line;
+    shown++;
+  }
+  if (truncated) msg += "\n…";
+  await sendMessage(chatId, msg);
+}
+
 // ---- router ----------------------------------------------------------------
 
 async function handle(text: string, fromId: number, chatId: number): Promise<void> {
   const trimmed = text.trim();
   const isCommand = trimmed.startsWith("/");
   const cmd = isCommand ? trimmed.slice(1).split(/\s+/)[0].split("@")[0].toLowerCase() : "";
+  // Everything after the command word, e.g. "/invoice Azadi phase 1" -> "Azadi phase 1".
+  const args = isCommand ? trimmed.slice(1).replace(/^\S+\s*/, "").trim() : "";
 
   // Always answer identity probes, even for non-allowlisted users.
   if (cmd === "whoami" || cmd === "start") {
@@ -363,15 +466,32 @@ async function handle(text: string, fromId: number, chatId: number): Promise<voi
       case "offtrack":
         await handleOfftrack(chatId);
         return;
+      case "invoice": {
+        const { client, phase } = parseInvoiceArgs(args);
+        if (!client) {
+          await sendMessage(chatId, "Usage: <code>/invoice &lt;client&gt; [phase]</code>");
+          return;
+        }
+        await handleGetInvoice(chatId, { intent: "get_invoice", client, phase });
+        return;
+      }
       default:
         await sendMessage(chatId, "Unknown command — try /help");
         return;
     }
   }
 
-  const intent = await parseIntent(trimmed);
-  if (!intent || intent.intent === "unknown") {
-    await sendMessage(chatId, "Didn't get that — try /help");
+  const intent = await parseIntent(trimmed, today());
+  if (!intent) {
+    // Gemini is down or GEMINI_API_KEY is unset — no free-text parsing available.
+    await sendMessage(
+      chatId,
+      "Couldn't read that right now. Try /help, or the slash commands: /summary /balance /offtrack /invoice /whoami."
+    );
+    return;
+  }
+  if (intent.intent === "unknown") {
+    await sendMessage(chatId, "Didn't get that — try /help for commands and examples.");
     return;
   }
 
@@ -387,6 +507,9 @@ async function handle(text: string, fromId: number, chatId: number): Promise<voi
       return;
     case "get_invoice":
       await handleGetInvoice(chatId, intent);
+      return;
+    case "query":
+      await handleQuery(chatId, intent);
       return;
     case "summary":
       await handleSummary(chatId);

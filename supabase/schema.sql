@@ -706,3 +706,41 @@ alter table public.clients add column if not exists completed_on date;
 -- 18. Client email (invoice recipient + bot).
 -- ============================================================================
 alter table public.clients add column if not exists email text;
+
+
+-- ============================================================================
+-- 19. Read-only SQL for the AI bot (schema-aware natural-language queries).
+--   Hard guards: single statement, must start with SELECT/WITH, any write/DDL
+--   keyword is rejected, results capped at 200 rows with a 5s timeout. Called
+--   only from the admin-only bot via the service-role client. SECURITY DEFINER
+--   so it can read across tables (RLS bypass) — reads only, never writes.
+-- ============================================================================
+create or replace function public.exec_sql_readonly(q text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  cleaned text := btrim(regexp_replace(q, ';\s*$', ''));
+  result jsonb;
+begin
+  if cleaned !~* '^\s*(select|with)\b' then
+    raise exception 'only SELECT queries are allowed';
+  end if;
+  if position(';' in cleaned) > 0 then
+    raise exception 'multiple statements are not allowed';
+  end if;
+  if cleaned ~* '\b(insert|update|delete|drop|alter|truncate|grant|revoke|copy|call|merge|vacuum)\b' then
+    raise exception 'write/DDL keywords are not allowed';
+  end if;
+  perform set_config('statement_timeout', '5000', true);
+  execute format(
+    'select coalesce(jsonb_agg(t), ''[]''::jsonb) from (select * from (%s) sub limit 200) t',
+    cleaned
+  ) into result;
+  return result;
+end;
+$$;
+
+revoke all on function public.exec_sql_readonly(text) from public, anon, authenticated;

@@ -163,8 +163,8 @@ export default function PhasesEditor({
                   {invoiceBusy === i
                     ? "…"
                     : p.id && invoiceByPhase[p.id]
-                    ? "⤓ re-generate"
-                    : "⤓ invoice"}
+                    ? "⤓ view invoice"
+                    : "⤓ generate invoice"}
                 </button>
                 <button
                   type="button"
