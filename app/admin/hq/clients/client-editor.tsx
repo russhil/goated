@@ -50,6 +50,7 @@ export default function ClientEditor({
   const [dbUrl, setDbUrl] = useState(client?.db_url ?? "");
   const [liveUrl, setLiveUrl] = useState(client?.live_url ?? "");
   const [description, setDescription] = useState(client?.description ?? "");
+  const [address, setAddress] = useState(client?.address ?? "");
   const [story, setStory] = useState(client?.story ?? "");
   // Default the picker to the client's stable fallback color so an unset color
   // isn't silently rewritten to coral on the next save.
@@ -78,6 +79,7 @@ export default function ClientEditor({
     db_url: dbUrl,
     live_url: liveUrl,
     description,
+    address,
     story,
     color,
     kickoff_date: kickoffDate,
@@ -93,6 +95,7 @@ export default function ClientEditor({
     setDbUrl("");
     setLiveUrl("");
     setDescription("");
+    setAddress("");
     setStory("");
     setColor("#E8533A");
     setKickoffDate("");
@@ -214,6 +217,10 @@ export default function ClientEditor({
       <div className="mb-4">
         <label className={labelClass}>// description</label>
         <textarea className={`${inputClass} resize-none`} rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+      </div>
+      <div className="mb-4">
+        <label className={labelClass}>// billing address</label>
+        <textarea className={`${inputClass} resize-none`} rows={2} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Used in the invoice BILL-TO block" />
       </div>
       <div className="mb-4">
         <label className={labelClass}>// story / progress notes</label>

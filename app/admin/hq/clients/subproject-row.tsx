@@ -172,7 +172,13 @@ export default function SubprojectRow({
       </div>
 
       {/* Collected is the sum of the phase amounts — entered below, not typed. */}
-      <PhasesEditor value={phases} onChange={setPhases} />
+      <PhasesEditor
+        value={phases}
+        onChange={setPhases}
+        clientId={clientId}
+        subprojectId={subproject?.id ?? null}
+        currency={currency}
+      />
 
       {/* Progress is auto (collected ÷ accrued) — read-only. */}
       <div className="mb-3">

@@ -656,3 +656,29 @@ where exists (
 --   chart draws one stacked curve per client in this color).
 -- ============================================================================
 alter table public.clients add column if not exists color text;
+
+
+-- ============================================================================
+-- 15. Invoices (per-phase invoice generator) + client billing address
+-- ============================================================================
+alter table public.clients add column if not exists address text;
+
+create table if not exists public.invoices (
+  id             uuid primary key default gen_random_uuid(),
+  seq            int not null,
+  invoice_no     text not null,
+  client_id      uuid references public.clients(id) on delete set null,
+  client_name    text not null,
+  client_address text,
+  subproject_id  uuid,
+  description    text not null,
+  amount         numeric(14,2) not null,
+  currency       text not null default 'INR',
+  issue_date     date not null,
+  created_at     timestamptz not null default now()
+);
+
+create index if not exists invoices_seq_idx on public.invoices (seq desc);
+
+alter table public.invoices enable row level security;
+-- No policies — service role only.
