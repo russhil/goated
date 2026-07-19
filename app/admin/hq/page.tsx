@@ -18,12 +18,10 @@ import {
   getExpensesAll,
 } from "@/lib/hq-data";
 import {
-  TimeSeriesChart,
-  RevenueByClientChart,
+  StackedChart,
   type ChartRow,
-  type SeriesDef,
-  type DotPoint,
-  type RevDot,
+  type StackSeries,
+  type StackDetail,
 } from "./hq-charts";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +56,8 @@ export default async function DashboardPage() {
     amount: number;
     currency: string;
     incurred_on: string | null;
+    vendor: string | null;
+    category: string | null;
   }[];
 
   const subsByClient = new Map<string, Subproject[]>();
@@ -84,7 +84,7 @@ export default async function DashboardPage() {
     (now.getFullYear() - START_YEAR) * 12 + (now.getMonth() - START_MONTH) + 1
   );
 
-  type Bucket = { x: number; label: string; expenses: number; clientCost: number };
+  type Bucket = { x: number; label: string; expenses: number };
   const buckets: Bucket[] = [];
   const indexByKey = new Map<string, number>();
   for (let i = 0; i < monthCount; i++) {
@@ -95,7 +95,6 @@ export default async function DashboardPage() {
       x: i,
       label: d.toLocaleString("en-US", { month: "short", year: "2-digit" }),
       expenses: 0,
-      clientCost: 0,
     });
   }
 
@@ -111,18 +110,6 @@ export default async function DashboardPage() {
     if (!s.created_at) continue;
     const prev = earliestSub.get(s.client_id);
     if (!prev || s.created_at < prev) earliestSub.set(s.client_id, s.created_at);
-  }
-
-  // Cost stays anchored: each client's cost is booked to its anchor month
-  // (kickoff → earliest sub-project → created_at). One cost dot per client.
-  const costDots: DotPoint[] = [];
-  for (const c of clientList) {
-    const anchor = c.kickoff_date ?? earliestSub.get(c.id) ?? c.created_at;
-    const idx = idxOf(monthKey(anchor));
-    if (idx === null) continue;
-    const clientCostInr = toInr(Number(c.cost || 0), c.currency, rates);
-    buckets[idx].clientCost += clientCostInr;
-    costDots.push({ x: idx, value: clientCostInr, name: c.name });
   }
 
   // Revenue is per-client and driven by phase payment dates: every phase amount
@@ -161,51 +148,72 @@ export default async function DashboardPage() {
     return row;
   });
 
-  // Dots sit on each client's stacked-band top: walk clients in stacking order,
-  // accumulating every client's month revenue (even 0), and drop a dot at the
-  // running total whenever a client actually collected that month.
-  const revDots: RevDot[] = [];
-  for (const b of buckets) {
-    let cumulative = 0;
-    for (const rc of revClients) {
-      const entry = revByClientMonth.get(rc.id)?.get(b.x);
-      const monthRev = entry?.total ?? 0;
-      cumulative += monthRev;
-      if (monthRev > 0) {
-        revDots.push({
-          x: b.x,
-          y: cumulative,
-          name: rc.name,
-          color: rc.color,
-          amount: monthRev,
-          monthLabel: b.label,
-          phases: entry?.phases ?? [],
-        });
-      }
-    }
+  // One stacked band + legend chip per client; the detail panel lists that
+  // client's phase payments for the clicked month.
+  const revSeries: StackSeries[] = revClients.map((c) => ({ key: `c_${c.id}`, name: c.name, color: c.color }));
+  const revDetails: Record<string, StackDetail[]> = {};
+  for (const c of clientList) {
+    const perMonth = revByClientMonth.get(c.id);
+    if (!perMonth) continue;
+    perMonth.forEach((entry, monthIdx) => {
+      revDetails[`c_${c.id}|${monthIdx}`] = entry.phases;
+    });
   }
 
-  // Expenses line = company expenses (incurred_on) + petty cash (spent_on).
+  // Cost timeline mirrors revenue: company expenses booked to their own month
+  // (with per-vendor / petty-cash line-items), plus each client's project cost
+  // booked to its anchor month (kickoff → earliest sub-project → created_at),
+  // each rendered as its own stacked band.
+  const expenseDetailByMonth = new Map<number, StackDetail[]>();
   for (const e of expenseList) {
     const idx = idxOf(monthKey(e.incurred_on));
-    if (idx !== null) buckets[idx].expenses += toInr(Number(e.amount || 0), e.currency, rates);
+    if (idx === null) continue;
+    const amountInr = toInr(Number(e.amount || 0), e.currency, rates);
+    buckets[idx].expenses += amountInr;
+    const arr = expenseDetailByMonth.get(idx) ?? [];
+    arr.push({ label: e.vendor || e.category || "expense", amount: amountInr });
+    expenseDetailByMonth.set(idx, arr);
   }
   for (const p of pettyList) {
     const idx = idxOf(monthKey(p.spent_on));
-    if (idx !== null) buckets[idx].expenses += toInr(Number(p.amount || 0), p.currency, rates);
+    if (idx === null) continue;
+    const amountInr = toInr(Number(p.amount || 0), p.currency, rates);
+    buckets[idx].expenses += amountInr;
+    const arr = expenseDetailByMonth.get(idx) ?? [];
+    arr.push({ label: "petty cash", amount: amountInr });
+    expenseDetailByMonth.set(idx, arr);
   }
 
-  const chartRows: ChartRow[] = buckets.map((b) => ({
-    x: b.x,
-    label: b.label,
-    expenses: b.expenses,
-    clientCost: b.clientCost,
-  }));
+  const costAnchor = new Map<string, number>();
+  for (const c of clientList) {
+    const idx = idxOf(monthKey(c.kickoff_date ?? earliestSub.get(c.id) ?? c.created_at));
+    if (idx !== null) costAnchor.set(c.id, idx);
+  }
 
-  const COST_SERIES: SeriesDef[] = [
-    { key: "expenses", name: "expenses", color: "#6366f1", area: true },
-    { key: "clientCost", name: "client costs", color: "#f59e0b", area: true },
+  const costSeries: StackSeries[] = [
+    { key: "expenses", name: "company expenses", color: "#9ca3af" },
+    ...clientList.map((c, i) => ({ key: `cost_${c.id}`, name: c.name, color: clientColor(c, i) })),
   ];
+
+  const costData: ChartRow[] = buckets.map((b) => {
+    const row: ChartRow = { x: b.x, label: b.label, expenses: b.expenses };
+    for (const c of clientList) {
+      row[`cost_${c.id}`] = costAnchor.get(c.id) === b.x ? toInr(Number(c.cost || 0), c.currency, rates) : 0;
+    }
+    return row;
+  });
+
+  const costDetails: Record<string, StackDetail[]> = {};
+  expenseDetailByMonth.forEach((items, idx) => {
+    costDetails[`expenses|${idx}`] = items;
+  });
+  for (const c of clientList) {
+    const idx = costAnchor.get(c.id);
+    if (idx === undefined) continue;
+    costDetails[`cost_${c.id}|${idx}`] = [
+      { label: "project cost", amount: toInr(Number(c.cost || 0), c.currency, rates) },
+    ];
+  }
 
   // Health board — worst first (red < amber < green < grey).
   const order = { red: 0, amber: 1, green: 2, grey: 3 } as const;
@@ -242,23 +250,15 @@ export default async function DashboardPage() {
           total + per-client split, clicking a dot reveals that client's phases */}
       <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-6">
         <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// revenue over time (INR)"}</p>
-        <RevenueByClientChart
-          data={revData}
-          series={revClients.map((c) => ({ key: `c_${c.id}`, name: c.name, color: c.color }))}
-          dots={revDots}
-        />
+        <StackedChart data={revData} series={revSeries} details={revDetails} />
       </div>
 
-      {/* Cost timeline — expenses line + client-costs line, one dot per client */}
+      {/* Cost timeline — company expenses + each client's project cost as its
+          own stacked band; hover shows the month total + split, clicking a dot
+          reveals that band's line-items */}
       <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-10">
         <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// cost over time (INR)"}</p>
-        <TimeSeriesChart
-          data={chartRows}
-          series={COST_SERIES}
-          dots={costDots}
-          dotName="clients"
-          dotColor="#f59e0b"
-        />
+        <StackedChart data={costData} series={costSeries} details={costDetails} />
       </div>
 
       {/* Health board */}
