@@ -26,7 +26,6 @@ import {
   type Phase,
 } from "@/lib/hq";
 import { computeBalances, primaryBalance } from "@/app/admin/hq/finance/splitwise";
-import { isStage } from "@/app/admin/hq/prospects/stages";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -79,10 +78,11 @@ const HELP = [
   "/whoami — your Telegram id",
   "/help — this message",
   "",
-  "<b>Log things (just type)</b>",
+  "<b>Log things (just type)</b> — only these two write",
   "• Vansh paid 500 for coffee — petty cash",
   "• add expense software 999 Vercel — company expense",
-  "• add prospect Acme Corp in proposal — sales lead",
+  "",
+  "<b>Pull invoices</b>",
   "• invoice for Azadi Records — or: fetch phase 1 invoice for zenspace",
   "",
   "<b>Ask anything (ad-hoc lookups)</b>",
@@ -251,29 +251,6 @@ async function handleAddExpense(
   await sendMessage(
     chatId,
     `✅ Added expense: <b>${esc(category)}</b> ${formatMoney(amount, "INR")}${vendor ? ` — ${esc(vendor)}` : ""}`
-  );
-}
-
-async function handleAddProspect(
-  chatId: number,
-  intent: Extract<BotIntent, { intent: "add_prospect" }>
-): Promise<void> {
-  const name = intent.name.trim();
-  if (!name) {
-    await sendMessage(chatId, "A prospect needs a name.");
-    return;
-  }
-  const stage = intent.stage && isStage(intent.stage) ? intent.stage : "new";
-  const company = (intent.company || "").trim() || null;
-  const admin = createAdminClient();
-  const { error } = await admin.from("prospects").insert({ name, company, stage });
-  if (error) {
-    await sendMessage(chatId, "⚠️ couldn't save that prospect");
-    return;
-  }
-  await sendMessage(
-    chatId,
-    `✅ Added prospect: <b>${esc(name)}</b>${company ? ` (${esc(company)})` : ""} — ${esc(stage)}`
   );
 }
 
@@ -501,9 +478,6 @@ async function handle(text: string, fromId: number, chatId: number): Promise<voi
       return;
     case "add_expense":
       await handleAddExpense(chatId, intent);
-      return;
-    case "add_prospect":
-      await handleAddProspect(chatId, intent);
       return;
     case "get_invoice":
       await handleGetInvoice(chatId, intent);

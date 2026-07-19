@@ -9,7 +9,6 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GE
 export type BotIntent =
   | { intent: "add_petty_cash"; payer: string; amount: number; purpose: string; date?: string }
   | { intent: "add_expense"; category: string; vendor?: string; amount: number; date?: string }
-  | { intent: "add_prospect"; name: string; company?: string; stage?: string }
   | { intent: "get_invoice"; client: string; phase?: string }
   | { intent: "query"; sql: string; explain: string }
   | { intent: "summary" }
@@ -22,6 +21,8 @@ function systemInstruction(today: string): string {
 
 TODAY'S DATE is ${today} (ISO YYYY-MM-DD). Resolve every natural date the user gives ("13th july 2026", "yesterday", "last friday", "next month") to an absolute YYYY-MM-DD relative to today. Include "date" only when the message states one. Money defaults to INR. Never invent values the user did not state.
 
+WRITES ARE STRICTLY LIMITED. The ONLY two operations that may change data are add_petty_cash and add_expense. Any request to create, add, update, edit, or delete ANYTHING else (a prospect/lead, client, sub-project, invoice, team member, settlement) is NOT supported — return {"intent":"unknown"}. Never invent a write intent for those.
+
 Pick exactly ONE shape:
 
 1) add_petty_cash — a PERSONAL out-of-pocket spend by one of the two partners (Vansh or Russhil). Reimbursable, split 50/50. Use ONLY when a partner (Vansh/Russhil) is named as the payer.
@@ -32,18 +33,15 @@ Pick exactly ONE shape:
    {"intent":"add_expense","category":"<rent|salaries|subscriptions|software|marketing|travel|misc>","vendor":"<optional>","amount":<number>,"date":"YYYY-MM-DD"?}
    e.g. "add expense software 999 vercel on 13th july 2026" -> {"intent":"add_expense","category":"software","vendor":"Vercel","amount":999,"date":"2026-07-13"}
 
-3) add_prospect — a new sales lead.
-   {"intent":"add_prospect","name":"<person>","company":"<optional>","stage":"<new|contacted|qualified|proposal|won|lost>"?}
-
-4) get_invoice — fetch a client's invoice PDF. Maps "invoice for X", "fetch phase N invoice for X", "get X's invoice", "X phase 2 invoice".
+3) get_invoice — fetch a client's invoice PDF. Maps "invoice for X", "fetch phase N invoice for X", "get X's invoice", "X phase 2 invoice".
    {"intent":"get_invoice","client":"<client name>","phase":"<optional phase/milestone name, e.g. 'phase 1'>"}
    e.g. "fetch phase 1 invoice for zenspace" -> {"intent":"get_invoice","client":"zenspace","phase":"phase 1"}
 
-5) summary — financial summary / totals / P&L:  {"intent":"summary"}
-6) balance — petty-cash who-owes-who:  {"intent":"balance"}
-7) offtrack — which sub-projects are behind schedule:  {"intent":"offtrack"}
+4) summary — financial summary / totals / P&L:  {"intent":"summary"}
+5) balance — petty-cash who-owes-who:  {"intent":"balance"}
+6) offtrack — which sub-projects are behind schedule:  {"intent":"offtrack"}
 
-8) query — ANY other data question the fixed intents above do not cover (e.g. "which clients are off track", "total collected from Azadi", "list prospects in proposal stage", "how many invoices this month", "top 5 expenses this year"). Return a SINGLE read-only SELECT.
+7) query — ANY other READ-ONLY data question the fixed intents above do not cover (e.g. "which clients are off track", "total collected from Azadi", "list prospects in proposal stage", "how many invoices this month", "top 5 expenses this year"). Return a SINGLE read-only SELECT.
    {"intent":"query","sql":"<one SELECT statement>","explain":"<one-line human summary of what it fetches>"}
    sql rules: exactly ONE statement; must start with SELECT (or WITH ... SELECT); NO semicolons; NO INSERT/UPDATE/DELETE/DROP/ALTER/TRUNCATE/GRANT/REVOKE/COPY/CALL/MERGE/VACUUM or any write/DDL; ALWAYS add a LIMIT (<=200); use ILIKE '%name%' for fuzzy name matching. Money is per-row in each row's own currency column (mostly INR) — do NOT convert currencies. A client's collected revenue = SUM of that client's client_subprojects.collected_revenue.
 
@@ -57,8 +55,8 @@ DATABASE SCHEMA (Postgres):
 - team_members(id uuid, name text, role text, email text, active bool)
 - petty_cash_settlements(id uuid, from_person text, to_person text, amount numeric, currency text, settled_on date)
 
-9) unknown — only if the message is not one of the actions above AND cannot be answered by a SELECT:  {"intent":"unknown"}
-Prefer "query" over "unknown" for anything that reads data.`;
+8) unknown — an unsupported write (see above), or a message that is neither an action nor answerable by a SELECT:  {"intent":"unknown"}
+Prefer "query" over "unknown" for anything that READS data; use "unknown" for any write that is not petty cash or expense.`;
 }
 
 type GeminiResponse = {
@@ -102,11 +100,6 @@ function toIntent(raw: unknown): BotIntent | null {
         amount,
         date: str(o.date),
       };
-    }
-    case "add_prospect": {
-      const name = str(o.name);
-      if (!name) return { intent: "unknown" };
-      return { intent: "add_prospect", name, company: str(o.company), stage: str(o.stage) };
     }
     case "get_invoice": {
       const client = str(o.client);
