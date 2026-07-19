@@ -58,6 +58,8 @@ export default function ClientEditor({
     client?.color ?? (client?.id ? clientColor({ id: client.id, color: null }) : "#E8533A")
   );
   const [kickoffDate, setKickoffDate] = useState(client?.kickoff_date ?? "");
+  const [completed, setCompleted] = useState(client?.completed ?? false);
+  const [completedOn, setCompletedOn] = useState(client?.completed_on ?? "");
   const [credentials, setCredentials] = useState<Credential[]>(
     client?.credentials ?? []
   );
@@ -83,6 +85,8 @@ export default function ClientEditor({
     story,
     color,
     kickoff_date: kickoffDate,
+    completed,
+    completed_on: completedOn,
     credentials,
     contributor_ids: contributorIds,
   });
@@ -99,6 +103,8 @@ export default function ClientEditor({
     setStory("");
     setColor("#E8533A");
     setKickoffDate("");
+    setCompleted(false);
+    setCompletedOn("");
     setCredentials([]);
     setContributorIds([]);
   };
@@ -155,6 +161,29 @@ export default function ClientEditor({
 
   return (
     <div>
+      <div className="flex flex-wrap items-end gap-4 mb-4">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={completed}
+            onChange={(e) => setCompleted(e.target.checked)}
+            className="accent-coral h-4 w-4 cursor-pointer"
+          />
+          <span className={`${labelClass} !mb-0`}>// completed</span>
+        </label>
+        {completed && (
+          <div>
+            <label className={labelClass}>// completed on</label>
+            <input
+              type="date"
+              className={inputClass}
+              value={completedOn}
+              onChange={(e) => setCompletedOn(e.target.value)}
+            />
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div>
           <label className={labelClass}>// client name</label>

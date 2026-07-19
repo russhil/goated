@@ -75,7 +75,7 @@ export default async function ClientsPage({
 
   const rows = clientList.map((c) => {
     const r = rollup(subsByClient.get(c.id) ?? [], c.kickoff_date);
-    return { c, r, health: healthColor(r.progress, r.count, r.offTrack) };
+    return { c, r, health: healthColor(r.progress, r.count, r.offTrack, c.completed) };
   });
 
   const filteredRows = rows.filter(({ c, health }) => {
@@ -171,7 +171,7 @@ export default async function ClientsPage({
                 <span className={`w-2.5 h-2.5 rounded-full ${HEALTH_DOT[health]}`} title={HEALTH_LABEL[health]} />
                 <span className="flex items-center gap-2 min-w-0">
                   <span className="font-serif text-base text-dark truncate">{c.name}</span>
-                  {r.offTrack && (
+                  {!c.completed && r.offTrack && (
                     <span className="shrink-0 inline-flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest text-red-600 bg-red-500/10 border border-red-500/20 rounded-full px-1.5 py-0.5">
                       ⚑ off track
                     </span>

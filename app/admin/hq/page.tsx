@@ -222,12 +222,12 @@ export default async function DashboardPage() {
     });
   }
 
-  // Health board — worst first (red < amber < green < grey).
-  const order = { red: 0, amber: 1, green: 2, grey: 3 } as const;
+  // Health board — worst first (red < amber < green < grey < completed).
+  const order = { red: 0, amber: 1, green: 2, grey: 3, completed: 4 } as const;
   const board = clientList
     .map((c) => {
       const r = rollup(subsByClient.get(c.id) ?? [], c.kickoff_date);
-      return { client: c, roll: r, health: healthColor(r.progress, r.count, r.offTrack) };
+      return { client: c, roll: r, health: healthColor(r.progress, r.count, r.offTrack, c.completed) };
     })
     .sort((a, b) => order[a.health] - order[b.health] || b.roll.outstanding - a.roll.outstanding);
   const offTrack = board.filter((b) => b.health === "red").length;

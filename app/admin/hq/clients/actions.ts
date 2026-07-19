@@ -23,6 +23,8 @@ export type ClientInput = {
   story: string;
   color: string;
   kickoff_date: string; // "yyyy-mm-dd" or ""
+  completed: boolean;
+  completed_on: string; // "yyyy-mm-dd" or ""
   credentials: Credential[];
   contributor_ids: string[];
 };
@@ -54,6 +56,8 @@ function clientPayload(input: ClientInput) {
     story: (input.story || "").trim() || null,
     color: /^#[0-9a-fA-F]{6}$/.test((input.color || "").trim()) ? input.color.trim() : null,
     kickoff_date: input.kickoff_date ? input.kickoff_date : null,
+    completed: Boolean(input.completed),
+    completed_on: input.completed && input.completed_on ? input.completed_on : null,
     credentials: sanitizeCredentials(input.credentials),
     contributor_ids: Array.isArray(input.contributor_ids)
       ? input.contributor_ids.filter(Boolean)

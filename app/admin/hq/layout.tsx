@@ -73,7 +73,7 @@ export default async function HqLayout({
   ]);
 
   const offTrackItems: OffTrackItem[] = clients
-    .filter((c) => !c.archived)
+    .filter((c) => !c.archived && !c.completed)
     .flatMap((c) =>
       subprojects
         .filter((s) => s.client_id === c.id)

@@ -37,7 +37,7 @@ export default async function ClientDetailPage({
     if (row.phase_id) invoiceByPhase[row.phase_id] = row.invoice_no;
   }
   const roll = rollup(subprojects, c.kickoff_date);
-  const health = healthColor(roll.progress, roll.count, roll.offTrack);
+  const health = healthColor(roll.progress, roll.count, roll.offTrack, c.completed);
 
   return (
     <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1000px] mx-auto pt-6">
@@ -56,7 +56,7 @@ export default async function ClientDetailPage({
             archived
           </span>
         )}
-        {roll.offTrack && (
+        {!c.completed && roll.offTrack && (
           <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-red-600 bg-red-500/10 border border-red-500/20 rounded-full px-2 py-0.5">
             ⚑ {roll.offTrackCount} off track
           </span>

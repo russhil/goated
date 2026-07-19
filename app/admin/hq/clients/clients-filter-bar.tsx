@@ -10,6 +10,7 @@ const HEALTH_OPTIONS: { value: Health; label: string }[] = [
   { value: "amber", label: "At risk" },
   { value: "red", label: "Off track" },
   { value: "grey", label: "No data" },
+  { value: "completed", label: "Completed" },
 ];
 
 const selectClass =

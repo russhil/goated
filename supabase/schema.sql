@@ -692,3 +692,11 @@ alter table public.invoices enable row level security;
 alter table public.invoices add column if not exists phase_id text;
 create unique index if not exists invoices_phase_id_idx
   on public.invoices (phase_id) where phase_id is not null;
+
+
+-- ============================================================================
+-- 17. Manual "completed" flag on a client (reflected on the dashboard health
+--   board; a completed client drops out of off-track alerts).
+-- ============================================================================
+alter table public.clients add column if not exists completed boolean not null default false;
+alter table public.clients add column if not exists completed_on date;

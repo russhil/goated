@@ -100,6 +100,8 @@ export type Client = {
   contract_path: string | null;
   contributor_ids: string[];
   color: string | null; // chart color; null → palette fallback by index
+  completed: boolean;
+  completed_on: string | null;
   archived: boolean;
   created_at: string;
   updated_at: string;
@@ -223,9 +225,15 @@ export function rollup(
   };
 }
 
-export type Health = "green" | "amber" | "red" | "grey";
+export type Health = "completed" | "green" | "amber" | "red" | "grey";
 
-export function healthColor(progress: number, count: number, offTrack = false): Health {
+export function healthColor(
+  progress: number,
+  count: number,
+  offTrack = false,
+  completed = false
+): Health {
+  if (completed) return "completed";
   if (count === 0) return "grey";
   if (offTrack) return "red";
   if (progress >= 80) return "green";
@@ -234,6 +242,7 @@ export function healthColor(progress: number, count: number, offTrack = false): 
 }
 
 export const HEALTH_DOT: Record<Health, string> = {
+  completed: "bg-teal-500",
   green: "bg-emerald-500",
   amber: "bg-amber-500",
   red: "bg-red-500",
@@ -241,6 +250,7 @@ export const HEALTH_DOT: Record<Health, string> = {
 };
 
 export const HEALTH_LABEL: Record<Health, string> = {
+  completed: "completed",
   green: "on track",
   amber: "at risk",
   red: "off track",
