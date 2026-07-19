@@ -20,6 +20,7 @@ export type ClientInput = {
   live_url: string;
   description: string;
   address: string;
+  email: string;
   story: string;
   color: string;
   kickoff_date: string; // "yyyy-mm-dd" or ""
@@ -53,6 +54,7 @@ function clientPayload(input: ClientInput) {
     live_url: (input.live_url || "").trim() || null,
     description: (input.description || "").trim() || null,
     address: (input.address || "").trim() || null,
+    email: (input.email || "").trim() || null,
     story: (input.story || "").trim() || null,
     color: /^#[0-9a-fA-F]{6}$/.test((input.color || "").trim()) ? input.color.trim() : null,
     kickoff_date: input.kickoff_date ? input.kickoff_date : null,

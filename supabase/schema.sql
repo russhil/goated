@@ -700,3 +700,9 @@ create unique index if not exists invoices_phase_id_idx
 -- ============================================================================
 alter table public.clients add column if not exists completed boolean not null default false;
 alter table public.clients add column if not exists completed_on date;
+
+
+-- ============================================================================
+-- 18. Client email (invoice recipient + bot).
+-- ============================================================================
+alter table public.clients add column if not exists email text;

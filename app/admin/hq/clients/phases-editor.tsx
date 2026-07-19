@@ -9,6 +9,7 @@ import {
   type Phase,
 } from "@/lib/hq";
 import { ensureInvoiceForPhase } from "./invoice-actions";
+import InvoiceCard from "./invoice-card";
 
 const empty: Phase = { name: "", date: "", amount: 0, cost: 0 };
 
@@ -89,6 +90,7 @@ export default function PhasesEditor({
   // button shows "…" and errors surface next to that specific row.
   const [invoiceBusy, setInvoiceBusy] = useState<number | null>(null);
   const [invoiceError, setInvoiceError] = useState<Record<number, string>>({});
+  const [card, setCard] = useState<{ id: string; no: string } | null>(null);
   const generateInvoice = async (i: number) => {
     const phase = value[i];
     if (!phase.id) return;
@@ -104,7 +106,7 @@ export default function PhasesEditor({
       date: phase.date || "",
     });
     setInvoiceBusy(null);
-    if (res.ok && res.id) window.open("/admin/hq/invoice/" + res.id, "_blank");
+    if (res.ok && res.id) setCard({ id: res.id, no: res.invoiceNo ?? "" });
     else setInvoiceError((e) => ({ ...e, [i]: res.error || "invoice failed" }));
   };
 
@@ -192,6 +194,10 @@ export default function PhasesEditor({
           </span>
         </div>
       </div>
+
+      {card && (
+        <InvoiceCard invoiceId={card.id} invoiceNo={card.no} onClose={() => setCard(null)} />
+      )}
     </div>
   );
 }

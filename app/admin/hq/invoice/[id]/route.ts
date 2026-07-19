@@ -175,7 +175,7 @@ async function buildInvoicePdf(inv: InvoiceRow): Promise<Uint8Array> {
   return doc.save();
 }
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   const gate = await requireAdmin();
   if (!gate.admin) return new Response("forbidden", { status: 403 });
 
@@ -190,10 +190,13 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const row = inv as InvoiceRow;
   const bytes = await buildInvoicePdf(row);
 
+  // Inline by default (so the preview card can render it); ?download=1 forces
+  // the save-file dialog.
+  const download = new URL(req.url).searchParams.has("download");
   return new Response(Buffer.from(bytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="INV_${row.invoice_no}.pdf"`,
+      "Content-Disposition": `${download ? "attachment" : "inline"}; filename="INV_${row.invoice_no}.pdf"`,
     },
   });
 }

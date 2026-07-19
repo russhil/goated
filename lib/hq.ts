@@ -87,6 +87,7 @@ export type Client = {
   name: string;
   industry: string | null;
   address: string | null;
+  email: string | null;
   currency: string;
   github_url: string | null;
   db_url: string | null;
