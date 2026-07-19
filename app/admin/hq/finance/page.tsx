@@ -126,8 +126,8 @@ export default async function FinancePage() {
                     <td className="p-3 text-right">{formatMoney(r.totalContract, c.currency)}</td>
                     <td className="p-3 text-right">{formatMoney(r.collected, c.currency)}</td>
                     <td className="p-3 text-right text-coral">{formatMoney(r.outstanding, c.currency)}</td>
-                    <td className="p-3 text-right">{formatMoney(c.cost, c.currency)}</td>
-                    <td className="p-3 text-right">{formatMoney(r.collected - Number(c.cost || 0), c.currency)}</td>
+                    <td className="p-3 text-right">{formatMoney(r.cost, c.currency)}</td>
+                    <td className="p-3 text-right">{formatMoney(r.collected - r.cost, c.currency)}</td>
                   </tr>
                 ))}
                 {perClient.length === 0 && (

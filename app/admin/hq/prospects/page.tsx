@@ -46,6 +46,11 @@ export default async function ProspectsPage({
   const prospects = (await getProspectsAll()) as unknown as Prospect[];
   const summaries = summarize(prospects);
 
+  // The kanban owns its own "+ New prospect" (so a create can paint an optimistic
+  // card into the board's state). Keep the header trigger for the list view, and
+  // for the empty state where the board isn't rendered yet.
+  const showHeaderNew = view === "list" || prospects.length === 0;
+
   return (
     <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1200px] mx-auto pt-6">
       <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
@@ -57,7 +62,7 @@ export default async function ProspectsPage({
             list
           </a>
         </div>
-        <NewProspectDrawer />
+        {showHeaderNew && <NewProspectDrawer />}
       </div>
 
       {prospects.length > 0 && (

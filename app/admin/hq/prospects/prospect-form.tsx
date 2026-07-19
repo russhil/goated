@@ -14,12 +14,19 @@ import {
 // Create/edit form shared by the "new prospect" drawer and the edit drawers on
 // the board + list. est_value is string-backed so the field can be emptied
 // (the "can't delete the leading 0" glitch), coerced to a number only on save.
+//
+// `onCreate` (kanban only) opts the new-prospect path into optimistic mode: the
+// board paints a temp card and persists in the background, so Save returns
+// instantly with no pending/loading state. Without it, create awaits the server
+// action + router.refresh() like edits do.
 export default function ProspectForm({
   prospect,
   onSaved,
+  onCreate,
 }: {
   prospect?: Prospect;
   onSaved?: () => void;
+  onCreate?: (input: ProspectInput) => void;
 }) {
   const isNew = !prospect;
   const router = useRouter();
@@ -65,6 +72,15 @@ export default function ProspectForm({
 
   const save = () => {
     setError("");
+    // Optimistic create: hand the input to the board and return immediately.
+    // The board paints a temp card and saves in the background, so there's no
+    // await and no pending state — Save feels instant.
+    if (isNew && onCreate) {
+      onCreate(build());
+      reset();
+      onSaved?.();
+      return;
+    }
     startTransition(async () => {
       const res = isNew
         ? await createProspect(build())

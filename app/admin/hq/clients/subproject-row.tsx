@@ -8,6 +8,7 @@ import {
   subProgress,
   subOffTrack,
   phasesTotal,
+  phasesCostTotal,
   formatMoney,
   type Phase,
   type Subproject,
@@ -49,9 +50,13 @@ export default function SubprojectRow({
   // Seed legacy sub-projects that only have a collected total so editing them
   // doesn't silently zero their collection.
   const [phases, setPhases] = useState<Phase[]>(() => {
-    if (subproject?.phases && subproject.phases.length > 0) return subproject.phases;
+    // Legacy phases predate the per-phase cost, so default it to 0 when seeding.
+    if (subproject?.phases && subproject.phases.length > 0)
+      return subproject.phases.map((p) => ({ ...p, cost: Number(p.cost) || 0 }));
     if (subproject && subproject.collected_revenue > 0)
-      return [{ name: "Phase 1", date: subproject.due_date ?? "", amount: subproject.collected_revenue }];
+      return [
+        { name: "Phase 1", date: subproject.due_date ?? "", amount: subproject.collected_revenue, cost: 0 },
+      ];
     return [];
   });
   const [dueDate, setDueDate] = useState(subproject?.due_date ?? "");
@@ -67,6 +72,7 @@ export default function SubprojectRow({
   // Progress is auto: collected ÷ accrued, live from the editable state.
   // Collected is the running sum of the phase amounts.
   const collectedTotal = phasesTotal(phases);
+  const costTotal = phasesCostTotal(phases);
   const autoProgress = subProgress({
     accrued_revenue: Number(accrued) || 0,
     collected_revenue: collectedTotal,
@@ -172,9 +178,14 @@ export default function SubprojectRow({
       <div className="mb-3">
         <div className="flex items-center justify-between">
           <label className={labelClass}>{`// progress: ${autoProgress}%`}</label>
-          <span className="font-mono text-[10px] text-muted uppercase tracking-widest">
-            {`collected ${formatMoney(collectedTotal, currency)}`}
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="font-mono text-[10px] text-muted uppercase tracking-widest">
+              {`collected ${formatMoney(collectedTotal, currency)}`}
+            </span>
+            <span className="font-mono text-[10px] text-muted uppercase tracking-widest">
+              {`cost ${formatMoney(costTotal, currency)}`}
+            </span>
+          </div>
         </div>
         <div className="h-2 w-full rounded-full bg-dark/10 overflow-hidden">
           <div className="h-full bg-coral rounded-full transition-all" style={{ width: `${autoProgress}%` }} />

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { formatMoney } from "@/lib/hq";
-import { STAGES, STAGE_LABELS, type Prospect, type Stage } from "./stages";
-import { updateProspectStage } from "./actions";
+import { STAGES, STAGE_LABELS, isStage, type Prospect, type Stage } from "./stages";
+import { updateProspectStage, createProspect, type ProspectInput } from "./actions";
 import Drawer from "../components/drawer";
 import ProspectForm from "./prospect-form";
+import NewProspectDrawer from "./new-prospect-drawer";
 
 const arrowBtn =
   "w-7 h-7 flex items-center justify-center rounded-full text-[11px] bg-dark/[0.04] text-dark/70 hover:bg-dark/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors";
@@ -14,9 +16,14 @@ const arrowBtn =
 // the server write happens in the background (no router.refresh, so no loading
 // flash) and only touches state again if it fails, to revert.
 export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
+  const router = useRouter();
   const [editing, setEditing] = useState<Prospect | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  // Stable temp ids for optimistic cards — an in-render counter, never
+  // Math.random/Date.now (those would break render purity / SSR hydration).
+  const tempCounter = useRef(0);
 
   // Optimistic copy of the pipeline. Re-seed only when the parent hands us a
   // *new* array (a router.refresh after edit/create, or navigation) — client-
@@ -34,6 +41,9 @@ export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
   // Optimistically drop a card into `next`, then persist. On failure, roll the
   // card back to where it was and surface an inline error.
   const moveTo = (id: string, next: Stage) => {
+    // A temp card isn't in the DB yet — skip the doomed stage write until the
+    // background create + refresh has swapped it for the real row.
+    if (id.startsWith("temp-")) return;
     const current = items.find((p) => p.id === id);
     if (!current || current.stage === next) return;
     const prevStage = current.stage;
@@ -55,11 +65,49 @@ export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
     if (next) moveTo(p.id, next);
   };
 
+  // Optimistic create: paint a temp card immediately, then persist in the
+  // background. On success a quiet router.refresh() replaces the temp with the
+  // real server row (see the seed reconciliation above); on failure we drop the
+  // temp and surface an inline error. No await before paint, so it's instant.
+  const add = (input: ProspectInput) => {
+    const tempId = `temp-${(tempCounter.current += 1)}`;
+    const now = new Date().toISOString();
+    const temp: Prospect = {
+      id: tempId,
+      name: input.name.trim() || "Untitled",
+      company: input.company.trim() || null,
+      email: input.email.trim() || null,
+      phone: input.phone.trim() || null,
+      source: input.source.trim() || null,
+      stage: isStage(input.stage) ? input.stage : "new",
+      est_value: Number(input.est_value) || 0,
+      currency: input.currency || "INR",
+      notes: input.notes.trim() || null,
+      sort_order: 0,
+      created_at: now,
+      updated_at: now,
+    };
+    setError(null);
+    setItems((list) => [temp, ...list]);
+    startTransition(async () => {
+      const res = await createProspect(input);
+      if (res.ok) {
+        router.refresh();
+      } else {
+        setItems((list) => list.filter((p) => p.id !== tempId));
+        setError(res.error || "create failed");
+      }
+    });
+  };
+
   return (
     <>
-      {error && (
-        <p className="font-mono text-[11px] text-red-600 mb-3">{`// ${error}`}</p>
-      )}
+      <div className="flex items-center justify-end gap-3 mb-3">
+        {error && (
+          <p className="font-mono text-[11px] text-red-600 mr-auto">{`// ${error}`}</p>
+        )}
+        <NewProspectDrawer onCreate={add} />
+      </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
         {STAGES.map((stage) => {

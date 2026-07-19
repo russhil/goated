@@ -42,11 +42,12 @@ type TipProps = { active?: boolean; label?: number | string };
 const STEP_BTN =
   "w-6 h-6 flex items-center justify-center rounded-full text-sm bg-dark/[0.04] text-dark/70 hover:bg-dark/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors";
 
-// A stacked-area timeline shared by the revenue and cost charts: one band per
-// series in its own color (straight segments, so a gap month returns to zero
-// instead of a monotone curve bridging it), a total top line, hover splits, a
-// click-a-dot line-item detail panel, per-series muting via legend chips, and
-// an adjustable y-axis tick count. `details` is keyed "<series.key>|<x>".
+// A multi-line timeline shared by the revenue and cost charts: one line per
+// series at its OWN (un-stacked) value in its own color (straight segments, so a
+// gap month returns to zero instead of a monotone curve bridging it), a filled
+// total area on top, hover splits, a click-a-dot line-item detail panel,
+// per-series muting via legend chips, and an adjustable y-axis tick count.
+// `details` is keyed "<series.key>|<x>".
 export function StackedChart({
   data,
   series,
@@ -77,8 +78,8 @@ export function StackedChart({
   const maxTotal = Math.max(0, ...rows.map((r) => r._total));
   const yMax = maxTotal > 0 ? maxTotal * 1.1 : 1;
 
-  // Dots sit on each visible band's running-total top, recomputed here so muting
-  // a series drops every dot stacked above it back down and off the axis.
+  // Dots sit at each visible series' OWN value for the month (un-stacked), so a
+  // small client reads near its true figure rather than the cumulative top.
   type Dot = {
     x: number;
     y: number;
@@ -90,14 +91,12 @@ export function StackedChart({
   };
   const dots: Dot[] = [];
   for (const row of data) {
-    let cumulative = 0;
     for (const s of visible) {
       const v = Number(row[s.key] || 0);
-      cumulative += v;
       if (v > 0) {
         dots.push({
           x: row.x,
-          y: cumulative,
+          y: v,
           key: s.key,
           name: s.name,
           color: s.color,
@@ -263,27 +262,26 @@ export function StackedChart({
               <Tooltip content={renderTooltip as never} cursor={{ stroke: grid, strokeWidth: 1 }} />
 
               {visible.map((s) => (
-                <Area
+                <Line
                   key={s.key}
                   type="linear"
                   dataKey={s.key}
                   name={s.name}
-                  stackId="stack"
                   stroke={s.color}
-                  strokeWidth={1.5}
-                  fill={s.color}
-                  fillOpacity={0.3}
+                  strokeWidth={2}
                   dot={false}
                   activeDot={false}
                 />
               ))}
 
-              <Line
+              <Area
                 type="linear"
                 dataKey="_total"
                 name="total"
                 stroke={totalColor}
                 strokeWidth={2}
+                fill={totalColor}
+                fillOpacity={0.06}
                 dot={false}
                 legendType="none"
               />

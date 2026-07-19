@@ -12,28 +12,39 @@ const ThemeCtx = createContext<{ theme: Theme; toggle: () => void }>({
 // Charts and other client components read the current HQ theme from here.
 export const useHqTheme = () => useContext(ThemeCtx);
 
-export function HqThemeProvider({ children }: { children: React.ReactNode }) {
-  // Start light on both server and first client render (avoids hydration
-  // mismatch), then adopt the saved preference on mount.
-  const [theme, setTheme] = useState<Theme>("light");
+export function HqThemeProvider({
+  children,
+  initialTheme,
+}: {
+  children: React.ReactNode;
+  initialTheme: "light" | "dark";
+}) {
+  // Seed from the server-read cookie so SSR and the first client render agree on
+  // the wrapper class — no light→dark flash on navigation.
+  const [theme, setTheme] = useState<Theme>(initialTheme);
 
+  // Mirror the theme onto <html> so the root/body (and the overscroll gutter)
+  // stay dark behind the wrapper. Drop the class on unmount so non-HQ pages
+  // don't inherit a dark background.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("hq-theme");
-      if (saved === "dark" || saved === "light") setTheme(saved);
-    } catch {
-      /* ignore */
-    }
-  }, []);
+    const root = document.documentElement;
+    if (theme === "dark") root.classList.add("hq-dark-root");
+    else root.classList.remove("hq-dark-root");
+    return () => {
+      root.classList.remove("hq-dark-root");
+    };
+  }, [theme]);
 
   const toggle = () =>
     setTheme((t) => {
       const next: Theme = t === "dark" ? "light" : "dark";
       try {
-        localStorage.setItem("hq-theme", next);
+        document.cookie =
+          "hq-theme=" + next + ";path=/;max-age=31536000;samesite=lax";
       } catch {
         /* ignore */
       }
+      document.documentElement.classList.toggle("hq-dark-root", next === "dark");
       return next;
     });
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   CURRENCIES,
   rollup,
+  clientColor,
   formatMoney,
   inputClass,
   labelClass,
@@ -50,10 +51,11 @@ export default function ClientEditor({
   const [liveUrl, setLiveUrl] = useState(client?.live_url ?? "");
   const [description, setDescription] = useState(client?.description ?? "");
   const [story, setStory] = useState(client?.story ?? "");
-  const [color, setColor] = useState(client?.color ?? "#E8533A");
-  // Money kept as a string so the field can be emptied (fixes the "can't
-  // delete the leading 0" glitch); coerced to a number only on save.
-  const [cost, setCost] = useState(client ? String(client.cost ?? "") : "");
+  // Default the picker to the client's stable fallback color so an unset color
+  // isn't silently rewritten to coral on the next save.
+  const [color, setColor] = useState(
+    client?.color ?? (client?.id ? clientColor({ id: client.id, color: null }) : "#E8533A")
+  );
   const [kickoffDate, setKickoffDate] = useState(client?.kickoff_date ?? "");
   const [credentials, setCredentials] = useState<Credential[]>(
     client?.credentials ?? []
@@ -78,7 +80,6 @@ export default function ClientEditor({
     description,
     story,
     color,
-    cost: Number(cost) || 0,
     kickoff_date: kickoffDate,
     credentials,
     contributor_ids: contributorIds,
@@ -94,7 +95,6 @@ export default function ClientEditor({
     setDescription("");
     setStory("");
     setColor("#E8533A");
-    setCost("");
     setKickoffDate("");
     setCredentials([]);
     setContributorIds([]);
@@ -173,18 +173,6 @@ export default function ClientEditor({
           </select>
         </div>
         <div>
-          <label className={labelClass}>// cost of project</label>
-          <input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            className={inputClass}
-            value={cost}
-            onChange={(e) => setCost(e.target.value)}
-            placeholder="0"
-          />
-        </div>
-        <div>
           <label className={labelClass}>// chart color</label>
           <div className="flex items-center gap-2">
             <input
@@ -203,7 +191,7 @@ export default function ClientEditor({
         <div className="flex flex-col justify-end">
           <span className="font-mono text-[10px] text-muted uppercase tracking-widest">// profit (contract − cost)</span>
           <span className="font-sans text-sm text-dark">
-            {formatMoney(roll.totalContract - (Number(cost) || 0), currency)}
+            {formatMoney(roll.totalContract - roll.cost, currency)}
           </span>
         </div>
       </div>

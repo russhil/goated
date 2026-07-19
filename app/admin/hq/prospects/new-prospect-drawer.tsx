@@ -3,8 +3,16 @@
 import { useState } from "react";
 import Drawer from "../components/drawer";
 import ProspectForm from "./prospect-form";
+import type { ProspectInput } from "./actions";
 
-export default function NewProspectDrawer() {
+// "+ New prospect" trigger + drawer. Rendered by page.tsx (list view / empty
+// state, plain refresh-on-save) and by KanbanBoard, which passes `onCreate` to
+// turn saves into optimistic temp cards.
+export default function NewProspectDrawer({
+  onCreate,
+}: {
+  onCreate?: (input: ProspectInput) => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -15,7 +23,7 @@ export default function NewProspectDrawer() {
         + New prospect
       </button>
       <Drawer open={open} onClose={() => setOpen(false)} title="New prospect">
-        <ProspectForm onSaved={() => setOpen(false)} />
+        <ProspectForm onCreate={onCreate} onSaved={() => setOpen(false)} />
       </Drawer>
     </>
   );

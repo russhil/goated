@@ -304,3 +304,8 @@ video::cue {
 }
 .hq-dark input::placeholder,
 .hq-dark textarea::placeholder { color: #6b7280; }
+
+/* Root/body match the dark HQ surface so the overscroll gutter and any gap
+   behind the wrapper stay dark (set on <html> by HqThemeProvider + pre-paint). */
+html.hq-dark-root,
+html.hq-dark-root body { background-color: #0d0d0d; }

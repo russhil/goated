@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
+import { getClientsAll, getSubprojectsAll } from "@/lib/hq-data";
+import { subOffTrack } from "@/lib/hq";
 import HqNav from "./hq-nav";
 import { HqThemeProvider } from "./theme";
+import Notifications, { type OffTrackItem } from "./notifications";
 
 export const metadata: Metadata = {
   title: "Client HQ",
@@ -60,18 +64,60 @@ export default async function HqLayout({
     );
   }
 
+  const initialTheme =
+    cookies().get("hq-theme")?.value === "dark" ? "dark" : "light";
+
+  const [clients, subprojects] = await Promise.all([
+    getClientsAll(),
+    getSubprojectsAll(),
+  ]);
+
+  const offTrackItems: OffTrackItem[] = clients
+    .filter((c) => !c.archived)
+    .flatMap((c) =>
+      subprojects
+        .filter((s) => s.client_id === c.id)
+        .filter((s) =>
+          subOffTrack(
+            {
+              accrued_revenue: s.accrued_revenue,
+              collected_revenue: s.collected_revenue,
+              due_date: s.due_date,
+            },
+            c.kickoff_date
+          )
+        )
+        .map((s) => ({
+          clientId: c.id,
+          clientName: c.name,
+          subName: s.name,
+          dueDate: s.due_date,
+        }))
+    );
+
   return (
     <main>
-      <HqThemeProvider>
+      {/* Pre-paint: adopt the dark root class before React hydrates so the
+          overscroll gutter never flashes white on a dark-theme navigation. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            "try{if(document.cookie.indexOf('hq-theme=dark')>-1)document.documentElement.classList.add('hq-dark-root')}catch(e){}",
+        }}
+      />
+      <HqThemeProvider initialTheme={initialTheme}>
         <Navbar />
         <section className="pt-32 pb-6 md:pt-40 md:pb-8 px-6 md:px-12 max-w-[1200px] mx-auto">
           <div className="section-label">{"// internal ops"}</div>
-          <h1
-            className="font-serif text-dark leading-[1.1] mb-3"
-            style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)" }}
-          >
-            Client HQ.
-          </h1>
+          <div className="flex items-start justify-between gap-4">
+            <h1
+              className="font-serif text-dark leading-[1.1] mb-3"
+              style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)" }}
+            >
+              Client HQ.
+            </h1>
+            <Notifications items={offTrackItems} />
+          </div>
           <p className="font-mono text-xs text-muted/70 mb-6">
             {"// signed in as "}
             <span className="text-dark">{user.email}</span>

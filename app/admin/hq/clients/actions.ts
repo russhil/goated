@@ -6,6 +6,7 @@ import {
   CURRENCIES,
   subProgress,
   phasesTotal,
+  sortPhases,
   type Credential,
   type Phase,
 } from "@/lib/hq";
@@ -20,7 +21,6 @@ export type ClientInput = {
   description: string;
   story: string;
   color: string;
-  cost: number;
   kickoff_date: string; // "yyyy-mm-dd" or ""
   credentials: Credential[];
   contributor_ids: string[];
@@ -51,7 +51,6 @@ function clientPayload(input: ClientInput) {
     description: (input.description || "").trim() || null,
     story: (input.story || "").trim() || null,
     color: /^#[0-9a-fA-F]{6}$/.test((input.color || "").trim()) ? input.color.trim() : null,
-    cost: Math.max(0, Number(input.cost) || 0),
     kickoff_date: input.kickoff_date ? input.kickoff_date : null,
     credentials: sanitizeCredentials(input.credentials),
     contributor_ids: Array.isArray(input.contributor_ids)
@@ -139,14 +138,17 @@ export type SubprojectInput = {
 function sanitizePhases(phases: Phase[]): Phase[] {
   if (!Array.isArray(phases)) return [];
   // A phase is meaningful if it's named or dated; that drops fully-empty rows.
-  // Amount is coerced (and clamped non-negative) so bad input can't poison the total.
-  return phases
+  // Amount and cost are coerced (and clamped non-negative) so bad input can't
+  // poison the totals. Stored date-ordered so downstream reads never re-sort.
+  const cleaned = phases
     .map((p) => ({
       name: (p.name || "").trim(),
       date: (p.date || "").trim(),
       amount: Math.max(0, Number(p.amount) || 0),
+      cost: Math.max(0, Number(p.cost) || 0),
     }))
     .filter((p) => p.name !== "" || p.date !== "");
+  return sortPhases(cleaned);
 }
 
 function subprojectPayload(input: SubprojectInput) {

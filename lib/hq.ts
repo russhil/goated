@@ -41,9 +41,20 @@ export type TeamMember = {
   created_at: string;
 };
 
-// A dated milestone on a sub-project that carries its own payment amount.
-// A sub-project's collected_revenue is the sum of its phase amounts.
-export type Phase = { name: string; date: string; amount: number };
+// A dated milestone on a sub-project carrying its own payment (amount) and cost.
+// collected_revenue = sum of phase amounts; project cost = sum of phase costs.
+export type Phase = { name: string; date: string; amount: number; cost: number };
+
+// Sort phases ascending by date (empty dates sink to the end).
+export function sortPhases(phases: Phase[]): Phase[] {
+  return [...phases].sort((a, b) => {
+    const da = a.date || "";
+    const db = b.date || "";
+    if (!da) return db ? 1 : 0;
+    if (!db) return -1;
+    return da.localeCompare(db);
+  });
+}
 
 export type Subproject = {
   id: string;
@@ -63,6 +74,11 @@ export type Subproject = {
 export function phasesTotal(phases: Phase[]): number {
   if (!Array.isArray(phases)) return 0;
   return phases.reduce((s, p) => s + Math.max(0, Number(p.amount || 0)), 0);
+}
+
+export function phasesCostTotal(phases: Phase[]): number {
+  if (!Array.isArray(phases)) return 0;
+  return phases.reduce((s, p) => s + Math.max(0, Number(p.cost || 0)), 0);
 }
 
 export type Client = {
@@ -101,14 +117,26 @@ export const CLIENT_COLORS = [
   "#ef4444",
 ];
 
-export function clientColor(client: { color: string | null }, index: number): string {
-  return client.color || CLIENT_COLORS[index % CLIENT_COLORS.length];
+// Stable per-client fallback color: keyed on the client id (a hash), NOT the
+// list index — so a client's color never changes when the list reorders or
+// another client is edited. An explicit client.color always wins.
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+export function clientColor(client: { id: string; color: string | null }): string {
+  return client.color || CLIENT_COLORS[hashString(client.id) % CLIENT_COLORS.length];
 }
 
 export type Rollup = {
   totalContract: number;
   collected: number;
   outstanding: number;
+  cost: number; // sum of phase costs across sub-projects
   progress: number; // 0-100, revenue-weighted, auto (collected/accrued)
   count: number;
   offTrackCount: number;
@@ -117,7 +145,7 @@ export type Rollup = {
 
 type MoneyProgress = Pick<
   Subproject,
-  "accrued_revenue" | "collected_revenue" | "due_date"
+  "accrued_revenue" | "collected_revenue" | "due_date" | "phases"
 >;
 
 // Progress is AUTO: how much of a sub-project's contract value is collected.
@@ -179,11 +207,13 @@ export function rollup(
         subprojects.reduce((s, p) => s + subProgress(p), 0) / subprojects.length;
     }
   }
+  const cost = subprojects.reduce((s, p) => s + phasesCostTotal(p.phases), 0);
   const offTrackCount = subprojects.filter((p) => subOffTrack(p, kickoffDate)).length;
   return {
     totalContract,
     collected,
     outstanding: totalContract - collected,
+    cost,
     progress: Math.round(progress),
     count: subprojects.length,
     offTrackCount,
@@ -242,7 +272,7 @@ export type CurrencyTotals = {
 // Group all money by currency (no FX conversion). Net is cash basis:
 // collected - project cost - petty cash - company expenses.
 export function summarizeByCurrency(
-  clients: { id: string; currency: string; cost: number }[],
+  clients: { id: string; currency: string }[],
   subsByClient: Map<string, MoneyProgress[]>,
   pettyCash: { currency: string; amount: number }[],
   expenses: { currency: string; amount: number }[]
@@ -271,7 +301,7 @@ export function summarizeByCurrency(
     t.contract += r.totalContract;
     t.collected += r.collected;
     t.outstanding += r.outstanding;
-    t.cost += Number(c.cost || 0);
+    t.cost += r.cost;
   }
   for (const p of pettyCash) get(p.currency).pettyCash += Number(p.amount || 0);
   for (const e of expenses) get(e.currency).expenses += Number(e.amount || 0);
@@ -303,7 +333,7 @@ export type InrTotals = {
 // Single INR-unified rollup across every currency, converted at `rates`.
 // Net is cash basis: collected - project cost - petty cash - company expenses.
 export function summarizeInInr(
-  clients: { id: string; currency: string; cost: number }[],
+  clients: { id: string; currency: string }[],
   subsByClient: Map<string, MoneyProgress[]>,
   pettyCash: { currency: string; amount: number }[],
   expenses: { currency: string; amount: number }[],
@@ -318,7 +348,7 @@ export function summarizeInInr(
     const r = rollup(subsByClient.get(c.id) ?? []);
     contract += toInr(r.totalContract, c.currency, rates);
     collected += toInr(r.collected, c.currency, rates);
-    cost += toInr(Number(c.cost || 0), c.currency, rates);
+    cost += toInr(r.cost, c.currency, rates);
   }
   for (const p of pettyCash) pettyCashTotal += toInr(Number(p.amount || 0), p.currency, rates);
   for (const e of expenses) expensesTotal += toInr(Number(e.amount || 0), e.currency, rates);
