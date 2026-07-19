@@ -60,12 +60,14 @@ export function TimeSeriesChart({
   dots,
   dotName,
   dotColor,
+  markers,
 }: {
   data: ChartRow[];
   series: SeriesDef[];
   dots: DotPoint[];
   dotName: string;
   dotColor: string;
+  markers?: { x: number; name: string }[];
 }) {
   const { theme } = useHqTheme();
   const dark = theme === "dark";
@@ -76,6 +78,9 @@ export function TimeSeriesChart({
   const tipText = dark ? "#e5e7eb" : "#0D0D0D";
   const tipBorder = dark ? "rgba(255,255,255,0.1)" : "rgba(13,13,13,0.1)";
   const dotStroke = dark ? "#17181b" : "#ffffff";
+  // Muted diamonds for phase markers — theme-aware so they read on either bg.
+  const markerColor = dark ? "#9ca3af" : "#6b7280";
+  const markerData = (markers ?? []).map((m) => ({ x: m.x, value: 0, name: m.name, _marker: true }));
 
   const hasData =
     data.some((d) => series.some((s) => Number(d[s.key]) > 0)) || dots.length > 0;
@@ -95,11 +100,16 @@ export function TimeSeriesChart({
     const idx = Math.round(Number(label));
     const monthLabel = data[idx]?.label ?? "";
 
-    // Split into line/area series rows vs scatter dots (dots carry a `name`).
+    // Split payload three ways: line/area series rows (no `name`), client dots
+    // (`name`, no `_marker`), and phase markers (`_marker`).
+    const isMarker = (p: TipItem) => Boolean(p.payload && (p.payload as { _marker?: boolean })._marker);
     const seriesItems = payload.filter((p) => !(p.payload && typeof (p.payload as DotPoint).name === "string"));
     const dotItems = payload
-      .filter((p) => p.payload && typeof (p.payload as DotPoint).name === "string")
+      .filter((p) => p.payload && typeof (p.payload as DotPoint).name === "string" && !isMarker(p))
       .map((p) => p.payload as unknown as DotPoint);
+    const markerItems = payload
+      .filter(isMarker)
+      .map((p) => p.payload as unknown as { name: string });
 
     return (
       <div
@@ -156,6 +166,38 @@ export function TimeSeriesChart({
             )}
           </div>
         ))}
+
+        {markerItems.length > 0 && (
+          <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${tipBorder}` }}>
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                color: axis,
+                marginBottom: 4,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              phases
+            </p>
+            {markerItems.map((m, i) => (
+              <div key={`m-${i}`} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: i ? 3 : 0 }}>
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    background: markerColor,
+                    display: "inline-block",
+                    flexShrink: 0,
+                    transform: "rotate(45deg)",
+                  }}
+                />
+                <span style={{ flex: 1 }}>{m.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
@@ -238,6 +280,17 @@ export function TimeSeriesChart({
         )}
 
         <Scatter name={dotName} data={dots} dataKey="value" fill={dotColor} stroke={dotStroke} strokeWidth={1} />
+
+        {markerData.length > 0 && (
+          <Scatter
+            name="phases"
+            data={markerData}
+            dataKey="value"
+            fill={markerColor}
+            shape="diamond"
+            legendType="diamond"
+          />
+        )}
       </ComposedChart>
     </ResponsiveContainer>
   );

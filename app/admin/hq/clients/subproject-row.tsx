@@ -7,10 +7,16 @@ import {
   labelClass,
   subProgress,
   subOffTrack,
+  paymentsTotal,
+  formatMoney,
+  type Payment,
+  type Phase,
   type Subproject,
   type TeamMember,
 } from "@/lib/hq";
 import ContributorPicker from "./contributor-picker";
+import PaymentsEditor from "./payments-editor";
+import PhasesEditor from "./phases-editor";
 import {
   createSubproject,
   updateSubproject,
@@ -41,9 +47,16 @@ export default function SubprojectRow({
   const [accrued, setAccrued] = useState(
     subproject ? String(subproject.accrued_revenue ?? "") : ""
   );
-  const [collected, setCollected] = useState(
-    subproject ? String(subproject.collected_revenue ?? "") : ""
-  );
+  // collected_revenue is no longer entered — it's the sum of dated payments.
+  // Seed legacy sub-projects that only have a collected total so editing them
+  // doesn't silently zero their collection.
+  const [payments, setPayments] = useState<Payment[]>(() => {
+    if (subproject?.payments && subproject.payments.length > 0) return subproject.payments;
+    if (subproject && subproject.collected_revenue > 0)
+      return [{ date: subproject.due_date ?? "", amount: subproject.collected_revenue }];
+    return [];
+  });
+  const [phases, setPhases] = useState<Phase[]>(() => subproject?.phases ?? []);
   const [dueDate, setDueDate] = useState(subproject?.due_date ?? "");
   const [contributorIds, setContributorIds] = useState<string[]>(
     subproject?.contributor_ids ?? []
@@ -55,9 +68,11 @@ export default function SubprojectRow({
   const [error, setError] = useState("");
 
   // Progress is auto: collected ÷ accrued, live from the editable state.
+  // Collected is the running sum of the dated payments.
+  const collectedTotal = paymentsTotal(payments);
   const autoProgress = subProgress({
     accrued_revenue: Number(accrued) || 0,
-    collected_revenue: Number(collected) || 0,
+    collected_revenue: collectedTotal,
   });
 
   // Off-track badge reflects the SAVED state, not the in-progress edits.
@@ -76,7 +91,8 @@ export default function SubprojectRow({
     name,
     description,
     accrued_revenue: Number(accrued) || 0,
-    collected_revenue: Number(collected) || 0,
+    payments,
+    phases,
     due_date: dueDate,
     contributor_ids: contributorIds,
     sort_order: Number(sortOrder) || 0,
@@ -96,7 +112,8 @@ export default function SubprojectRow({
         setName("");
         setDescription("");
         setAccrued("");
-        setCollected("");
+        setPayments([]);
+        setPhases([]);
         setDueDate("");
         setContributorIds([]);
         setSortOrder("");
@@ -142,14 +159,10 @@ export default function SubprojectRow({
         <textarea className={`${inputClass} resize-none`} rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+      <div className="grid grid-cols-2 gap-3 mb-3">
         <div>
           <label className={labelClass}>{`// accrued revenue (${currency})`}</label>
           <input type="number" inputMode="decimal" className={inputClass} value={accrued} onChange={(e) => setAccrued(e.target.value)} placeholder="0" />
-        </div>
-        <div>
-          <label className={labelClass}>{`// collected revenue (${currency})`}</label>
-          <input type="number" inputMode="decimal" className={inputClass} value={collected} onChange={(e) => setCollected(e.target.value)} placeholder="0" />
         </div>
         <div>
           <label className={labelClass}>// due date</label>
@@ -157,9 +170,19 @@ export default function SubprojectRow({
         </div>
       </div>
 
+      {/* Collected is the sum of dated payments — entered below, not typed. */}
+      <PaymentsEditor value={payments} onChange={setPayments} />
+
+      <PhasesEditor value={phases} onChange={setPhases} />
+
       {/* Progress is auto (collected ÷ accrued) — read-only. */}
       <div className="mb-3">
-        <label className={labelClass}>{`// progress: ${autoProgress}%`}</label>
+        <div className="flex items-center justify-between">
+          <label className={labelClass}>{`// progress: ${autoProgress}%`}</label>
+          <span className="font-mono text-[10px] text-muted uppercase tracking-widest">
+            {`collected ${formatMoney(collectedTotal, currency)}`}
+          </span>
+        </div>
         <div className="h-2 w-full rounded-full bg-dark/10 overflow-hidden">
           <div className="h-full bg-coral rounded-full transition-all" style={{ width: `${autoProgress}%` }} />
         </div>

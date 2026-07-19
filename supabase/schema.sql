@@ -575,3 +575,30 @@ create index if not exists petty_cash_settlements_date_idx on public.petty_cash_
 
 alter table public.petty_cash_settlements enable row level security;
 -- No policies — service role only.
+
+
+-- ============================================================================
+-- 12. Sub-project dated payments + phases
+--   payments: [{date, amount}] — collected_revenue is kept as their sum (set on
+--   save); revenue-vs-time plots each payment on its own date.
+--   phases:   [{name, date}] — dated milestones (shown on the sub-project and as
+--   markers on the revenue chart).
+-- Idempotent.
+-- ============================================================================
+alter table public.client_subprojects
+  add column if not exists payments jsonb not null default '[]'::jsonb;
+alter table public.client_subprojects
+  add column if not exists phases jsonb not null default '[]'::jsonb;
+
+-- One-time backfill: existing collected_revenue becomes a single dated payment
+-- (dated by due_date, else the row's creation date) so nothing is lost. Only
+-- touches rows that have collected money but no payments yet — safe to re-run.
+update public.client_subprojects
+set payments = jsonb_build_array(
+  jsonb_build_object(
+    'date', to_char(coalesce(due_date, created_at::date), 'YYYY-MM-DD'),
+    'amount', collected_revenue
+  )
+)
+where collected_revenue > 0
+  and (payments is null or jsonb_array_length(payments) = 0);

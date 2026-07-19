@@ -2,7 +2,14 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, revalidateHq, type Result } from "../guard";
-import { CURRENCIES, subProgress, type Credential } from "@/lib/hq";
+import {
+  CURRENCIES,
+  subProgress,
+  paymentsTotal,
+  type Credential,
+  type Payment,
+  type Phase,
+} from "@/lib/hq";
 
 export type ClientInput = {
   name: string;
@@ -122,21 +129,43 @@ export type SubprojectInput = {
   name: string;
   description: string;
   accrued_revenue: number;
-  collected_revenue: number;
+  payments: Payment[];
+  phases: Phase[];
   due_date: string; // "yyyy-mm-dd" or ""
   contributor_ids: string[];
   sort_order: number;
 };
 
+function sanitizePayments(payments: Payment[]): Payment[] {
+  if (!Array.isArray(payments)) return [];
+  // A payment is meaningful only if it's dated; a truthy date also drops
+  // fully-empty rows. Amount is coerced so bad input can't poison the total.
+  return payments
+    .map((p) => ({ date: (p.date || "").trim(), amount: Number(p.amount) || 0 }))
+    .filter((p) => Boolean(p.date));
+}
+
+function sanitizePhases(phases: Phase[]): Phase[] {
+  if (!Array.isArray(phases)) return [];
+  return phases
+    .map((p) => ({ name: (p.name || "").trim(), date: (p.date || "").trim() }))
+    .filter((p) => p.name !== "");
+}
+
 function subprojectPayload(input: SubprojectInput) {
   // Progress is derived, never entered: how much of the contract is collected.
   const accrued_revenue = Number.isFinite(input.accrued_revenue) ? input.accrued_revenue : 0;
-  const collected_revenue = Number.isFinite(input.collected_revenue) ? input.collected_revenue : 0;
+  const payments = sanitizePayments(input.payments);
+  const phases = sanitizePhases(input.phases);
+  // collected_revenue is no longer entered — it's the sum of the payments.
+  const collected_revenue = paymentsTotal(payments);
   return {
     name: input.name.trim(),
     description: (input.description || "").trim() || null,
     accrued_revenue,
     collected_revenue,
+    payments,
+    phases,
     progress: subProgress({ accrued_revenue, collected_revenue }),
     due_date: input.due_date || null,
     contributor_ids: Array.isArray(input.contributor_ids)

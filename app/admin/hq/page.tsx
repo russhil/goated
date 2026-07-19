@@ -106,34 +106,51 @@ export default async function DashboardPage() {
     if (!prev || s.created_at < prev) earliestSub.set(s.client_id, s.created_at);
   }
 
-  // ONE dot per client. Revenue dot value = the client's total collected, with a
-  // hover breakdown of its sub-projects. Cost dot value = the client's cost.
-  const revenueDots: DotPoint[] = [];
+  // Cost stays anchored: each client's cost is booked to its anchor month
+  // (kickoff → earliest sub-project → created_at). One cost dot per client.
   const costDots: DotPoint[] = [];
   for (const c of clientList) {
     const anchor = c.kickoff_date ?? earliestSub.get(c.id) ?? c.created_at;
     const idx = idxOf(monthKey(anchor));
     if (idx === null) continue;
-    const subs = subsByClient.get(c.id) ?? [];
-
-    const clientRevenue = subs.reduce(
-      (sum, s) => sum + toInr(Number(s.collected_revenue || 0), c.currency, rates),
-      0
-    );
-    buckets[idx].revenue += clientRevenue;
-    revenueDots.push({
-      x: idx,
-      value: clientRevenue,
-      name: c.name,
-      breakdown: subs.map((s) => ({
-        label: s.name,
-        value: toInr(Number(s.collected_revenue || 0), c.currency, rates),
-      })),
-    });
-
     const clientCostInr = toInr(Number(c.cost || 0), c.currency, rates);
     buckets[idx].clientCost += clientCostInr;
     costDots.push({ x: idx, value: clientCostInr, name: c.name });
+  }
+
+  // Revenue is driven by actual payment dates: every payment lands in the bucket
+  // for its own month. One revenue dot per (client, month-with-payments) — value
+  // is the client's total paid that month, breakdown the per-sub-project split.
+  // Unparseable/empty dates are skipped; out-of-window dates clamp into bucket 0.
+  const revenueDots: DotPoint[] = [];
+  for (const c of clientList) {
+    const subs = subsByClient.get(c.id) ?? [];
+    const byMonth = new Map<number, { total: number; subs: Map<string, number> }>();
+    for (const s of subs) {
+      for (const p of s.payments ?? []) {
+        const key = monthKey(p.date);
+        if (key == null) continue;
+        const idx = idxOf(key);
+        if (idx === null) continue;
+        const amountInr = toInr(Number(p.amount || 0), c.currency, rates);
+        buckets[idx].revenue += amountInr;
+        let entry = byMonth.get(idx);
+        if (!entry) {
+          entry = { total: 0, subs: new Map() };
+          byMonth.set(idx, entry);
+        }
+        entry.total += amountInr;
+        entry.subs.set(s.name, (entry.subs.get(s.name) ?? 0) + amountInr);
+      }
+    }
+    for (const [idx, entry] of Array.from(byMonth.entries())) {
+      revenueDots.push({
+        x: idx,
+        value: entry.total,
+        name: c.name,
+        breakdown: Array.from(entry.subs.entries()).map(([label, value]) => ({ label, value })),
+      });
+    }
   }
 
   // Expenses line = company expenses (incurred_on) + petty cash (spent_on).
@@ -144,6 +161,21 @@ export default async function DashboardPage() {
   for (const p of pettyList) {
     const idx = idxOf(monthKey(p.spent_on));
     if (idx !== null) buckets[idx].expenses += toInr(Number(p.amount || 0), p.currency, rates);
+  }
+
+  // Phase markers — every parseable, in-window milestone across all sub-projects,
+  // pinned to the revenue timeline so kickoff/launch dates read against payments.
+  const phaseMarkers: { x: number; name: string }[] = [];
+  for (const c of clientList) {
+    for (const s of subsByClient.get(c.id) ?? []) {
+      for (const ph of s.phases ?? []) {
+        const key = monthKey(ph.date);
+        if (key == null) continue;
+        const idx = indexByKey.get(key);
+        if (idx === undefined) continue; // only render phases that fall in-window
+        phaseMarkers.push({ x: idx, name: `${c.name} · ${s.name}: ${ph.name}` });
+      }
+    }
   }
 
   const chartRows: ChartRow[] = buckets.map((b) => ({
@@ -158,8 +190,8 @@ export default async function DashboardPage() {
     { key: "revenue", name: "revenue", color: "#E8533A", area: true },
   ];
   const COST_SERIES: SeriesDef[] = [
-    { key: "expenses", name: "expenses", color: "#6366f1" },
-    { key: "clientCost", name: "client costs", color: "#f59e0b" },
+    { key: "expenses", name: "expenses", color: "#6366f1", area: true },
+    { key: "clientCost", name: "client costs", color: "#f59e0b", area: true },
   ];
 
   // Health board — worst first (red < amber < green < grey).
@@ -202,6 +234,7 @@ export default async function DashboardPage() {
           dots={revenueDots}
           dotName="clients"
           dotColor="#E8533A"
+          markers={phaseMarkers}
         />
       </div>
 
