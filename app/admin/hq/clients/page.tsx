@@ -7,6 +7,8 @@ import {
   type Subproject,
 } from "@/lib/hq";
 import { getClientsAll, getSubprojectsAll, getTeamAll } from "@/lib/hq-data";
+import { canView, canManage, canSeeFinancials } from "@/lib/hq-perms";
+import { requireUser } from "../guard";
 import TeamManager from "./team-manager";
 import NewClientDrawer from "./new-client-drawer";
 import ClientsFilterBar from "./clients-filter-bar";
@@ -14,8 +16,10 @@ import RegenerateInvoicesButton from "./regenerate-invoices-button";
 
 export const dynamic = "force-dynamic";
 
-// Shared column template so the header and every row line up exactly.
+// Shared column template so the header and every row line up exactly. The lean
+// variant drops the three money columns for members who can't see financials.
 const COLS = "14px minmax(150px,1.6fr) 1fr 1fr 1fr 1fr 64px 96px";
+const COLS_LEAN = "14px minmax(150px,1.6fr) 1fr 64px 96px";
 
 export default async function ClientsPage({
   searchParams,
@@ -37,6 +41,27 @@ export default async function ClientsPage({
   const contributorFilter = searchParams.contributor ?? "";
   const sortKey = searchParams.sort ?? "kickoff";
   const sortDir = searchParams.dir === "asc" ? "asc" : "desc";
+
+  const gate = await requireUser();
+  if (!gate.ok) return null;
+  const perms = gate.perms;
+  if (!canView(perms, "clients")) {
+    return (
+      <section className="px-6 md:px-12 pb-24 max-w-[900px] mx-auto pt-6">
+        <p className="font-mono text-xs text-coral uppercase tracking-widest">
+          {"// 403 — no access to Clients"}
+        </p>
+      </section>
+    );
+  }
+  const canEdit = canManage(perms, "clients");
+  const showMoney = canSeeFinancials(perms);
+  const cols = showMoney ? COLS : COLS_LEAN;
+  // Money sort keys would leak relative ranking; fall back for non-financial users.
+  const effSort =
+    !showMoney && ["contract", "collected", "outstanding"].includes(sortKey)
+      ? "kickoff"
+      : sortKey;
 
   const [teamList, clientsAll, subsAll] = await Promise.all([
     getTeamAll(),
@@ -88,7 +113,7 @@ export default async function ClientsPage({
 
   const dirMul = sortDir === "asc" ? 1 : -1;
   const sortedRows = [...filteredRows].sort((a, b) => {
-    switch (sortKey) {
+    switch (effSort) {
       case "name":
         return dirMul * a.c.name.localeCompare(b.c.name);
       case "contract":
@@ -112,7 +137,7 @@ export default async function ClientsPage({
 
   return (
     <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1200px] mx-auto pt-6">
-      <TeamManager team={teamList} projectCounts={projectCounts} />
+      {canEdit && <TeamManager team={teamList} projectCounts={projectCounts} />}
 
       <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
         <div className="flex items-center gap-2">
@@ -134,8 +159,8 @@ export default async function ClientsPage({
           </a>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <RegenerateInvoicesButton />
-          {!showArchived && <NewClientDrawer team={teamList} />}
+          {canEdit && showMoney && <RegenerateInvoicesButton />}
+          {canEdit && !showArchived && <NewClientDrawer team={teamList} />}
         </div>
       </div>
 
@@ -143,6 +168,7 @@ export default async function ClientsPage({
         industries={industries}
         team={teamList}
         resultCount={sortedRows.length}
+        showMoney={showMoney}
       />
 
       {sortedRows.length > 0 ? (
@@ -150,14 +176,14 @@ export default async function ClientsPage({
           <div className="min-w-[860px]">
             <div
               className="grid gap-4 items-center px-5 py-3 font-mono text-[10px] text-muted uppercase tracking-widest"
-              style={{ gridTemplateColumns: COLS }}
+              style={{ gridTemplateColumns: cols }}
             >
               <span />
               <span>Client</span>
               <span>Industry</span>
-              <span className="text-right">Contract</span>
-              <span className="text-right">Collected</span>
-              <span className="text-right">Outstanding</span>
+              {showMoney && <span className="text-right">Contract</span>}
+              {showMoney && <span className="text-right">Collected</span>}
+              {showMoney && <span className="text-right">Outstanding</span>}
               <span className="text-right">Progress</span>
               <span className="text-right">Kickoff</span>
             </div>
@@ -166,7 +192,7 @@ export default async function ClientsPage({
                 key={c.id}
                 href={`/admin/hq/clients/${c.id}`}
                 className="grid gap-4 items-center px-5 py-4 border-t border-dark/10 hover:bg-dark/[0.02] transition-colors"
-                style={{ gridTemplateColumns: COLS }}
+                style={{ gridTemplateColumns: cols }}
               >
                 <span className={`w-2.5 h-2.5 rounded-full ${HEALTH_DOT[health]}`} title={HEALTH_LABEL[health]} />
                 <span className="flex items-center gap-2 min-w-0">
@@ -180,9 +206,9 @@ export default async function ClientsPage({
                 <span className="font-mono text-[11px] text-muted uppercase tracking-widest truncate">
                   {c.industry || "—"}
                 </span>
-                <span className="text-right font-sans text-sm text-dark">{formatMoney(r.totalContract, c.currency)}</span>
-                <span className="text-right font-sans text-sm text-dark">{formatMoney(r.collected, c.currency)}</span>
-                <span className="text-right font-sans text-sm text-coral">{formatMoney(r.outstanding, c.currency)}</span>
+                {showMoney && <span className="text-right font-sans text-sm text-dark">{formatMoney(r.totalContract, c.currency)}</span>}
+                {showMoney && <span className="text-right font-sans text-sm text-dark">{formatMoney(r.collected, c.currency)}</span>}
+                {showMoney && <span className="text-right font-sans text-sm text-coral">{formatMoney(r.outstanding, c.currency)}</span>}
                 <span className="text-right font-mono text-xs text-dark">{r.progress}%</span>
                 <span className="text-right font-mono text-[11px] text-muted">{c.kickoff_date || "—"}</span>
               </a>

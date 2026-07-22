@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin, revalidateHq } from "../guard";
+import { requireManage, revalidateHq } from "../guard";
 import type { Phase } from "@/lib/hq";
 
 const PREFIX = "GT";
@@ -73,8 +73,8 @@ export async function regenerateAllInvoices(): Promise<{
   count?: number;
   error?: string;
 }> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const admin = createAdminClient();
 
   const recs = await collectDatedPhases(admin);
@@ -120,8 +120,8 @@ export type EnsureInvoiceInput = {
 export async function ensureInvoiceForPhase(
   input: EnsureInvoiceInput
 ): Promise<{ ok: boolean; id?: string; invoiceNo?: string; error?: string }> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   if (!input.phaseId || !input.clientId) return { ok: false, error: "missing phase/client" };
   const admin = createAdminClient();
 

@@ -1,12 +1,12 @@
 import { buildInvoicePdf, type InvoiceRow } from "@/lib/invoice-pdf";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "../../guard";
+import { requireFinancials } from "../../guard";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
-  const gate = await requireAdmin();
-  if (!gate.admin) return new Response("forbidden", { status: 403 });
+  const gate = await requireFinancials();
+  if (!gate.ok) return new Response("forbidden", { status: 403 });
 
   const admin = createAdminClient();
   const { data: inv } = await admin

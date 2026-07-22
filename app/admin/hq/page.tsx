@@ -17,6 +17,8 @@ import {
   getPettyCashAll,
   getExpensesAll,
 } from "@/lib/hq-data";
+import { canSeeFinancials } from "@/lib/hq-perms";
+import { requireUser } from "./guard";
 import {
   StackedChart,
   type ChartRow,
@@ -45,6 +47,11 @@ export default async function DashboardPage() {
     getExpensesAll(),
     getInrRates(),
   ]);
+
+  // Money is only rendered (and only reaches the browser) for members who can
+  // see financials — the KPIs, both charts, and the "outstanding" figures below.
+  const gate = await requireUser();
+  const showMoney = gate.ok && canSeeFinancials(gate.perms);
 
   const clientList: Client[] = clientsAll.filter((c) => !c.archived);
   const pettyList = pettyAll as unknown as {
@@ -239,34 +246,38 @@ export default async function DashboardPage() {
         <span>· {subprojectCount} sub-projects</span>
         <span>· <span className={offTrack ? "text-red-600" : "text-dark"}>{offTrack} off track</span></span>
       </div>
-      <p className="font-mono text-[10px] text-muted/70 mb-6">
-        {"// all figures converted to INR at current rates (per-currency breakdown lives on Finance)"}
-      </p>
+      {showMoney && (
+        <>
+          <p className="font-mono text-[10px] text-muted/70 mb-6">
+            {"// all figures converted to INR at current rates (per-currency breakdown lives on Finance)"}
+          </p>
 
-      {/* INR KPI tiles */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-        <Kpi label="Contract" value={formatMoney(inr.contract, "INR")} />
-        <Kpi label="Collected" value={formatMoney(inr.collected, "INR")} />
-        <Kpi label="Outstanding" value={formatMoney(inr.outstanding, "INR")} accent />
-        <Kpi label="Project cost" value={formatMoney(inr.cost, "INR")} />
-        <Kpi label="Expenses" value={formatMoney(expensesTotal, "INR")} />
-        <Kpi label="Net (cash)" value={formatMoney(inr.net, "INR")} tone={inr.net >= 0 ? "pos" : "neg"} />
-      </div>
+          {/* INR KPI tiles */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+            <Kpi label="Contract" value={formatMoney(inr.contract, "INR")} />
+            <Kpi label="Collected" value={formatMoney(inr.collected, "INR")} />
+            <Kpi label="Outstanding" value={formatMoney(inr.outstanding, "INR")} accent />
+            <Kpi label="Project cost" value={formatMoney(inr.cost, "INR")} />
+            <Kpi label="Expenses" value={formatMoney(expensesTotal, "INR")} />
+            <Kpi label="Net (cash)" value={formatMoney(inr.net, "INR")} tone={inr.net >= 0 ? "pos" : "neg"} />
+          </div>
 
-      {/* Revenue timeline — a line per client at its own value; hover shows the
-          month total + per-client split, clicking a dot reveals that client's phases */}
-      <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-6">
-        <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// revenue over time (INR)"}</p>
-        <StackedChart data={revData} series={revSeries} details={revDetails} />
-      </div>
+          {/* Revenue timeline — a line per client at its own value; hover shows the
+              month total + per-client split, clicking a dot reveals that client's phases */}
+          <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-6">
+            <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// revenue over time (INR)"}</p>
+            <StackedChart data={revData} series={revSeries} details={revDetails} />
+          </div>
 
-      {/* Cost timeline — company expenses + each client's phase costs as its
-          own line at its own value; hover shows the month total + split, clicking
-          a dot reveals that line's items */}
-      <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-10">
-        <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// cost over time (INR)"}</p>
-        <StackedChart data={costData} series={costSeries} details={costDetails} />
-      </div>
+          {/* Cost timeline — company expenses + each client's phase costs as its
+              own line at its own value; hover shows the month total + split, clicking
+              a dot reveals that line's items */}
+          <div className="border border-dark/10 rounded-2xl bg-white p-5 mb-10">
+            <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-4">{"// cost over time (INR)"}</p>
+            <StackedChart data={costData} series={costSeries} details={costDetails} />
+          </div>
+        </>
+      )}
 
       {/* Health board */}
       <p className="font-mono text-[11px] text-coral uppercase tracking-widest mb-3">{"// client health"}</p>
@@ -279,9 +290,11 @@ export default async function DashboardPage() {
             </a>
             <span className="font-mono text-[11px] text-muted uppercase tracking-widest">{HEALTH_LABEL[health]}</span>
             <span className="font-mono text-xs text-dark">{roll.progress}%</span>
-            <span className="font-sans text-sm text-coral ml-auto">
-              {formatMoney(roll.outstanding, client.currency)} <span className="text-muted">outstanding</span>
-            </span>
+            {showMoney && (
+              <span className="font-sans text-sm text-coral ml-auto">
+                {formatMoney(roll.outstanding, client.currency)} <span className="text-muted">outstanding</span>
+              </span>
+            )}
           </li>
         ))}
         {board.length === 0 && <p className="font-sans text-muted">No active clients — add one under Clients.</p>}

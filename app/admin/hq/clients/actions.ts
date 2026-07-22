@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin, revalidateHq, type Result } from "../guard";
+import { requireManage, revalidateHq, type Result } from "../guard";
 import {
   CURRENCIES,
   subProgress,
@@ -68,8 +68,8 @@ function clientPayload(input: ClientInput) {
 }
 
 export async function createClient(input: ClientInput): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const payload = clientPayload(input);
   if (!payload.name) return { ok: false, error: "name is required" };
 
@@ -81,8 +81,8 @@ export async function createClient(input: ClientInput): Promise<Result> {
 }
 
 export async function updateClient(id: string, input: ClientInput): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const payload = clientPayload(input);
   if (!payload.name) return { ok: false, error: "name is required" };
 
@@ -94,8 +94,8 @@ export async function updateClient(id: string, input: ClientInput): Promise<Resu
 }
 
 export async function archiveClient(id: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const admin = createAdminClient();
   const { error } = await admin.from("clients").update({ archived: true }).eq("id", id);
   if (error) return { ok: false, error: error.message };
@@ -104,8 +104,8 @@ export async function archiveClient(id: string): Promise<Result> {
 }
 
 export async function restoreClient(id: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const admin = createAdminClient();
   const { error } = await admin.from("clients").update({ archived: false }).eq("id", id);
   if (error) return { ok: false, error: error.message };
@@ -115,8 +115,8 @@ export async function restoreClient(id: string): Promise<Result> {
 
 // Hard delete: removes PDFs from storage, cascades sub-projects.
 export async function deleteClient(id: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const admin = createAdminClient();
 
   const { data: client } = await admin
@@ -187,8 +187,8 @@ export async function createSubproject(
   clientId: string,
   input: SubprojectInput
 ): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const payload = subprojectPayload(input);
   if (!payload.name) return { ok: false, error: "name is required" };
 
@@ -205,8 +205,8 @@ export async function updateSubproject(
   id: string,
   input: SubprojectInput
 ): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const payload = subprojectPayload(input);
   if (!payload.name) return { ok: false, error: "name is required" };
 
@@ -218,8 +218,8 @@ export async function updateSubproject(
 }
 
 export async function deleteSubproject(id: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const admin = createAdminClient();
   const { error } = await admin.from("client_subprojects").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
@@ -238,8 +238,8 @@ const DOC_COL: Record<DocKind, "nda_path" | "contract_path"> = {
 export async function uploadClientDoc(
   formData: FormData
 ): Promise<{ ok: boolean; error?: string }> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
 
   const clientId = String(formData.get("clientId") || "");
   const kind = String(formData.get("kind") || "") as DocKind;
@@ -282,8 +282,8 @@ export async function getClientDocUrl(
   clientId: string,
   kind: string
 ): Promise<{ ok: boolean; url?: string; error?: string }> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   if (!DOC_KINDS.includes(kind as DocKind)) return { ok: false, error: "invalid kind" };
 
   const admin = createAdminClient();
@@ -298,8 +298,8 @@ export async function getClientDocUrl(
 }
 
 export async function removeClientDoc(clientId: string, kind: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   if (!DOC_KINDS.includes(kind as DocKind)) return { ok: false, error: "invalid kind" };
 
   const admin = createAdminClient();

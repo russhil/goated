@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin, revalidateHq, type Result } from "../guard";
+import { requireManage, revalidateHq, type Result } from "../guard";
 
 export type TeamMemberInput = {
   name: string;
@@ -20,8 +20,8 @@ function memberPayload(input: TeamMemberInput) {
 }
 
 export async function createTeamMember(input: TeamMemberInput): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const payload = memberPayload(input);
   if (!payload.name) return { ok: false, error: "name is required" };
 
@@ -36,8 +36,8 @@ export async function updateTeamMember(
   id: string,
   input: TeamMemberInput
 ): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const payload = memberPayload(input);
   if (!payload.name) return { ok: false, error: "name is required" };
 
@@ -51,8 +51,8 @@ export async function updateTeamMember(
 // Deleting a member scrubs their id from every contributor_ids array.
 // petty_cash.paid_by_id clears automatically via ON DELETE SET NULL.
 export async function deleteTeamMember(id: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("clients");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
 
   const admin = createAdminClient();
 

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin, revalidateHq, type Result } from "../guard";
+import { requireManage, revalidateHq, type Result } from "../guard";
 import { CURRENCIES } from "@/lib/hq";
 import { nextFollowupAt, sendDueFollowups } from "@/lib/followups";
 import { isStage } from "./stages";
@@ -62,8 +62,8 @@ function prospectPayload(input: ProspectInput) {
 }
 
 export async function createProspect(input: ProspectInput): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("prospects");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   if (!isStage(input.stage)) return { ok: false, error: "invalid stage" };
   const payload = prospectPayload(input);
   if (!payload.name) return { ok: false, error: "name is required" };
@@ -78,8 +78,8 @@ export async function createProspect(input: ProspectInput): Promise<Result> {
 }
 
 export async function updateProspect(id: string, input: ProspectInput): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("prospects");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   if (!isStage(input.stage)) return { ok: false, error: "invalid stage" };
   const payload = prospectPayload(input);
   if (!payload.name) return { ok: false, error: "name is required" };
@@ -91,8 +91,8 @@ export async function updateProspect(id: string, input: ProspectInput): Promise<
 }
 
 export async function deleteProspect(id: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("prospects");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const admin = createAdminClient();
   const { error } = await admin.from("prospects").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
@@ -102,8 +102,8 @@ export async function deleteProspect(id: string): Promise<Result> {
 
 // Quick single-field move for the kanban ◀/▶ buttons and the list's inline select.
 export async function updateProspectStage(id: string, stage: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("prospects");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   if (!isStage(stage)) return { ok: false, error: "invalid stage" };
   const admin = createAdminClient();
   const { error } = await admin.from("prospects").update({ stage }).eq("id", id);
@@ -116,8 +116,8 @@ export async function updateProspectStage(id: string, stage: string): Promise<Re
 // due-follow-up nudge over Telegram and bumps the timers. Idempotent — a second
 // call finds nothing due because the first one already moved the rows forward.
 export async function triggerDueFollowups(): Promise<Result & { count?: number }> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("prospects");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const { count } = await sendDueFollowups();
   if (count > 0) revalidate();
   return { ok: true, count };
@@ -126,8 +126,8 @@ export async function triggerDueFollowups(): Promise<Result & { count?: number }
 // "✓ followed up" on a card: reset this prospect's timer to the next cadence
 // without waiting for (or sending) a reminder.
 export async function markFollowedUp(id: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("prospects");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const admin = createAdminClient();
   const { error } = await admin
     .from("prospects")

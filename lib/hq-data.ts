@@ -7,8 +7,75 @@
 import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Client, Subproject, TeamMember } from "@/lib/hq";
+import {
+  OWNER_FALLBACK,
+  OWNER_PERMISSIONS,
+  normalizePermissions,
+  type Permissions,
+} from "@/lib/hq-perms";
 
 export const HQ_TAG = "hq";
+
+export type HqUser = {
+  id: string;
+  email: string;
+  name: string | null;
+  permissions: Record<string, unknown>;
+  is_owner: boolean;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export const getHqUsers = unstable_cache(
+  async (): Promise<HqUser[]> => {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("hq_users")
+      .select("*")
+      .order("is_owner", { ascending: false })
+      .order("created_at", { ascending: true });
+    return (data ?? []) as HqUser[];
+  },
+  ["hq:users"],
+  { tags: [HQ_TAG] }
+);
+
+export type ResolvedUser = {
+  email: string;
+  isOwner: boolean;
+  active: boolean;
+  perms: Permissions;
+};
+
+// Resolve a signed-in email to its permissions. Owners (by flag or the hard-coded
+// fallback) always get full access; inactive/unknown emails resolve to null (no
+// access at all). The fallback means the founders can never be locked out even
+// if the table is empty.
+export async function resolveHqUser(
+  email: string | null | undefined
+): Promise<ResolvedUser | null> {
+  if (!email) return null;
+  const e = email.toLowerCase();
+  const ownerByFallback = OWNER_FALLBACK.includes(e);
+  const users = await getHqUsers();
+  const row = users.find((u) => u.email.toLowerCase() === e);
+
+  if (row) {
+    if (!row.active && !ownerByFallback) return null;
+    const isOwner = row.is_owner || ownerByFallback;
+    return {
+      email: e,
+      isOwner,
+      active: true,
+      perms: isOwner ? OWNER_PERMISSIONS : normalizePermissions(row.permissions),
+    };
+  }
+  if (ownerByFallback) {
+    return { email: e, isOwner: true, active: true, perms: OWNER_PERMISSIONS };
+  }
+  return null;
+}
 
 export const getClientsAll = unstable_cache(
   async (): Promise<Client[]> => {

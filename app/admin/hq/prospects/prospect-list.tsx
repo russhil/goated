@@ -9,7 +9,13 @@ import Drawer from "../components/drawer";
 import ProspectForm from "./prospect-form";
 import FollowupCountdown from "./followup-countdown";
 
-export default function ProspectList({ prospects }: { prospects: Prospect[] }) {
+export default function ProspectList({
+  prospects,
+  canManage,
+}: {
+  prospects: Prospect[];
+  canManage: boolean;
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState<Prospect | null>(null);
   const [pending, startTransition] = useTransition();
@@ -53,18 +59,24 @@ export default function ProspectList({ prospects }: { prospects: Prospect[] }) {
                 <td className="p-3 text-dark font-medium">{p.name}</td>
                 <td className="p-3 text-muted">{p.company || "—"}</td>
                 <td className="p-3">
-                  <select
-                    value={p.stage}
-                    onChange={(e) => changeStage(p.id, e.target.value)}
-                    disabled={pending}
-                    className="px-2 py-1 border border-dark/10 rounded-lg bg-white text-xs font-sans focus:border-coral focus:outline-none disabled:opacity-50"
-                  >
-                    {STAGES.map((s) => (
-                      <option key={s} value={s}>
-                        {STAGE_LABELS[s]}
-                      </option>
-                    ))}
-                  </select>
+                  {canManage ? (
+                    <select
+                      value={p.stage}
+                      onChange={(e) => changeStage(p.id, e.target.value)}
+                      disabled={pending}
+                      className="px-2 py-1 border border-dark/10 rounded-lg bg-white text-xs font-sans focus:border-coral focus:outline-none disabled:opacity-50"
+                    >
+                      {STAGES.map((s) => (
+                        <option key={s} value={s}>
+                          {STAGE_LABELS[s]}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="font-mono text-[11px] text-dark/70 uppercase tracking-widest">
+                      {STAGE_LABELS[p.stage]}
+                    </span>
+                  )}
                 </td>
                 <td className="p-3 text-right text-dark">
                   {formatMoney(p.est_value, p.currency)}
@@ -84,19 +96,25 @@ export default function ProspectList({ prospects }: { prospects: Prospect[] }) {
                   <FollowupCountdown at={p.next_followup_at} />
                 </td>
                 <td className="p-3 text-right whitespace-nowrap">
-                  <button
-                    onClick={() => setEditing(p)}
-                    className="font-mono text-[11px] text-dark/60 hover:text-coral hover:underline"
-                  >
-                    edit
-                  </button>
-                  <button
-                    onClick={() => remove(p)}
-                    disabled={pending}
-                    className="ml-3 font-mono text-[11px] text-red-600 hover:underline disabled:opacity-40"
-                  >
-                    delete
-                  </button>
+                  {canManage ? (
+                    <>
+                      <button
+                        onClick={() => setEditing(p)}
+                        className="font-mono text-[11px] text-dark/60 hover:text-coral hover:underline"
+                      >
+                        edit
+                      </button>
+                      <button
+                        onClick={() => remove(p)}
+                        disabled={pending}
+                        className="ml-3 font-mono text-[11px] text-red-600 hover:underline disabled:opacity-40"
+                      >
+                        delete
+                      </button>
+                    </>
+                  ) : (
+                    <span className="font-mono text-[11px] text-muted">—</span>
+                  )}
                 </td>
               </tr>
             ))}

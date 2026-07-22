@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { createClient } from "@/lib/supabase/server";
-import { isAdmin } from "@/lib/admin";
 import { getClientsAll, getSubprojectsAll, getProspectsAll } from "@/lib/hq-data";
 import { subOffTrack } from "@/lib/hq";
+import { canSeeFinancials, canView } from "@/lib/hq-perms";
+import { requireUser } from "./guard";
 import HqNav from "./hq-nav";
 import { HqThemeProvider } from "./theme";
+import { PermsProvider } from "./perms-context";
 import Notifications, { type OffTrackItem, type ReachOutItem } from "./notifications";
 
 export const metadata: Metadata = {
@@ -22,33 +23,31 @@ export default async function HqLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const gate = await requireUser();
 
-  if (!user) {
+  if (!gate.ok && gate.reason === "unauth") {
     redirect("/explore?signin=1&next=/admin/hq");
   }
 
-  if (!isAdmin(user.email)) {
+  if (!gate.ok) {
     return (
       <main>
         <Navbar />
         <section className="min-h-screen flex items-center justify-center px-6">
           <div className="max-w-md text-center">
             <p className="font-mono text-xs text-coral uppercase tracking-widest mb-4">
-              {"// 403 — not on the allowlist"}
+              {"// 403 — no access yet"}
             </p>
             <h1
               className="font-serif text-dark mb-4"
               style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
             >
-              You&apos;re signed in, but not as an admin.
+              You don&apos;t have access to Client HQ.
             </h1>
             <p className="font-sans text-muted mb-8">
               Signed in as{" "}
-              <span className="text-dark font-medium">{user.email}</span>.
+              <span className="text-dark font-medium">{gate.email}</span>. Ask an
+              owner to add this email in Client HQ → Users.
             </p>
             <form action="/auth/sign-out" method="post" className="inline-block">
               <button
@@ -64,6 +63,8 @@ export default async function HqLayout({
     );
   }
 
+  const { email, perms } = gate;
+
   const initialTheme =
     cookies().get("hq-theme")?.value === "dark" ? "dark" : "light";
 
@@ -73,7 +74,11 @@ export default async function HqLayout({
     getProspectsAll(),
   ]);
 
-  const offTrackItems: OffTrackItem[] = clients
+  // Off-track flags reveal which clients are behind on collection — a financial
+  // signal, so only surface them to members who can see money.
+  const offTrackItems: OffTrackItem[] = !canSeeFinancials(perms)
+    ? []
+    : clients
     .filter((c) => !c.archived && !c.completed)
     .flatMap((c) =>
       subprojects
@@ -98,7 +103,9 @@ export default async function HqLayout({
 
   // Weekly reach-out flag: prospects still in the "New" stage after ≥ 1 week.
   const now = Date.now();
-  const reachOut: ReachOutItem[] = (
+  const reachOut: ReachOutItem[] = !canView(perms, "prospects")
+    ? []
+    : (
     prospects as { id: string; name: string; company: string | null; stage: string; created_at: string }[]
   )
     .filter((p) => p.stage === "new")
@@ -136,11 +143,11 @@ export default async function HqLayout({
           </div>
           <p className="font-mono text-xs text-muted/70 mb-6">
             {"// signed in as "}
-            <span className="text-dark">{user.email}</span>
+            <span className="text-dark">{email}</span>
           </p>
-          <HqNav />
+          <HqNav perms={perms} />
         </section>
-        {children}
+        <PermsProvider perms={perms}>{children}</PermsProvider>
       </HqThemeProvider>
     </main>
   );

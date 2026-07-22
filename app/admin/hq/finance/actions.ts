@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin, revalidateHq, type Result } from "../guard";
+import { requireManage, revalidateHq, type Result } from "../guard";
 import { CURRENCIES, EXPENSE_CATEGORIES, PEOPLE } from "@/lib/hq";
 
 function safeCurrency(c: string) {
@@ -35,8 +35,8 @@ function pettyPayload(input: PettyCashInput) {
 }
 
 export async function createPettyCash(input: PettyCashInput): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("pettyCash");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const payload = pettyPayload(input);
   if (!payload.payer) return { ok: false, error: "payer is required" };
   if (!payload.purpose) return { ok: false, error: "purpose is required" };
@@ -49,8 +49,8 @@ export async function createPettyCash(input: PettyCashInput): Promise<Result> {
 }
 
 export async function updatePettyCash(id: string, input: PettyCashInput): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("pettyCash");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const payload = pettyPayload(input);
   if (!payload.payer) return { ok: false, error: "payer is required" };
   if (!payload.purpose) return { ok: false, error: "purpose is required" };
@@ -63,8 +63,8 @@ export async function updatePettyCash(id: string, input: PettyCashInput): Promis
 }
 
 export async function deletePettyCash(id: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("pettyCash");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const admin = createAdminClient();
   const { error } = await admin.from("petty_cash").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
@@ -81,8 +81,8 @@ export type SettlementInput = {
 };
 
 export async function createSettlement(input: SettlementInput): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("pettyCash");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const from = safePerson(input.from_person);
   const to = safePerson(input.to_person);
   if (!from || !to) return { ok: false, error: "invalid person" };
@@ -104,8 +104,8 @@ export async function createSettlement(input: SettlementInput): Promise<Result> 
 }
 
 export async function deleteSettlement(id: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("pettyCash");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const admin = createAdminClient();
   const { error } = await admin.from("petty_cash_settlements").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
@@ -142,8 +142,8 @@ function expensePayload(input: ExpenseInput) {
 }
 
 export async function createExpense(input: ExpenseInput): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("expenses");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const payload = expensePayload(input);
   if (!payload.incurred_on) return { ok: false, error: "date is required" };
   const admin = createAdminClient();
@@ -154,8 +154,8 @@ export async function createExpense(input: ExpenseInput): Promise<Result> {
 }
 
 export async function updateExpense(id: string, input: ExpenseInput): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("expenses");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const payload = expensePayload(input);
   if (!payload.incurred_on) return { ok: false, error: "date is required" };
   const admin = createAdminClient();
@@ -166,8 +166,8 @@ export async function updateExpense(id: string, input: ExpenseInput): Promise<Re
 }
 
 export async function deleteExpense(id: string): Promise<Result> {
-  const gate = await requireAdmin();
-  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const gate = await requireManage("expenses");
+  if (!gate.ok) return { ok: false, error: "forbidden" };
   const admin = createAdminClient();
   const { error } = await admin.from("company_expenses").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };

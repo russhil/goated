@@ -2,19 +2,28 @@
 
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme";
+import {
+  canView,
+  canViewFinanceTab,
+  canManageUsers,
+  type Permissions,
+} from "@/lib/hq-perms";
 
-const TABS = [
-  { href: "/admin/hq", label: "Dashboard" },
-  { href: "/admin/hq/clients", label: "Clients" },
-  { href: "/admin/hq/prospects", label: "Prospects" },
-  { href: "/admin/hq/finance", label: "Finance" },
-];
-
-export default function HqNav() {
+export default function HqNav({ perms }: { perms: Permissions }) {
   const pathname = usePathname();
+
+  // Dashboard is always available to a member; the rest are permission-gated.
+  const tabs = [
+    { href: "/admin/hq", label: "Dashboard", show: true },
+    { href: "/admin/hq/clients", label: "Clients", show: canView(perms, "clients") },
+    { href: "/admin/hq/prospects", label: "Prospects", show: canView(perms, "prospects") },
+    { href: "/admin/hq/finance", label: "Finance", show: canViewFinanceTab(perms) },
+    { href: "/admin/hq/users", label: "Users", show: canManageUsers(perms) },
+  ].filter((t) => t.show);
+
   return (
     <div className="flex items-center gap-2 mb-2">
-      {TABS.map((t) => {
+      {tabs.map((t) => {
         const active =
           t.href === "/admin/hq"
             ? pathname === t.href

@@ -1,5 +1,7 @@
 import { formatMoney } from "@/lib/hq";
 import { getProspectsAll } from "@/lib/hq-data";
+import { canView, canManage } from "@/lib/hq-perms";
+import { requireUser } from "../guard";
 import { STAGES, STAGE_LABELS, salesMetrics, type Prospect, type Stage } from "./stages";
 import KanbanBoard from "./kanban-board";
 import ProspectList from "./prospect-list";
@@ -43,6 +45,20 @@ export default async function ProspectsPage({
 }: {
   searchParams: { view?: string };
 }) {
+  const gate = await requireUser();
+  if (!gate.ok) return null;
+  const perms = gate.perms;
+  if (!canView(perms, "prospects")) {
+    return (
+      <section className="px-6 md:px-12 pb-24 max-w-[900px] mx-auto pt-6">
+        <p className="font-mono text-xs text-coral uppercase tracking-widest">
+          {"// 403 — no access to Prospects"}
+        </p>
+      </section>
+    );
+  }
+  const canManageProspects = canManage(perms, "prospects");
+
   const view = searchParams.view === "list" ? "list" : "kanban";
   const prospects = (await getProspectsAll()) as unknown as Prospect[];
   const summaries = summarize(prospects);
@@ -70,8 +86,9 @@ export default async function ProspectsPage({
 
   // The kanban owns its own "+ New prospect" (so a create can paint an optimistic
   // card into the board's state). Keep the header trigger for the list view, and
-  // for the empty state where the board isn't rendered yet.
-  const showHeaderNew = view === "list" || prospects.length === 0;
+  // for the empty state where the board isn't rendered yet. Managers only.
+  const showHeaderNew =
+    canManageProspects && (view === "list" || prospects.length === 0);
 
   return (
     <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1200px] mx-auto pt-6">
@@ -87,7 +104,7 @@ export default async function ProspectsPage({
         {showHeaderNew && <NewProspectDrawer />}
       </div>
 
-      <FollowupTicker dueTimes={dueTimes} />
+      {canManageProspects && <FollowupTicker dueTimes={dueTimes} />}
 
       {prospects.length > 0 && (
         <>
@@ -136,9 +153,9 @@ export default async function ProspectsPage({
           </p>
         </div>
       ) : view === "kanban" ? (
-        <KanbanBoard prospects={prospects} />
+        <KanbanBoard prospects={prospects} canManage={canManageProspects} />
       ) : (
-        <ProspectList prospects={prospects} />
+        <ProspectList prospects={prospects} canManage={canManageProspects} />
       )}
     </section>
   );

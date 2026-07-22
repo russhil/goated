@@ -16,13 +16,15 @@ const HEALTH_OPTIONS: { value: Health; label: string }[] = [
 const selectClass =
   "font-mono text-[11px] uppercase tracking-widest text-dark/70 bg-light/40 border border-dark/10 rounded-full px-3 py-1.5 focus:border-coral focus:outline-none";
 
-// Sort keys map 1:1 to the server's sort handling in page.tsx.
-const SORT_OPTIONS: { value: string; label: string }[] = [
+// Sort keys map 1:1 to the server's sort handling in page.tsx. The money keys
+// are dropped for members who can't see financials (relative ranking would
+// otherwise leak).
+const SORT_OPTIONS: { value: string; label: string; money?: boolean }[] = [
   { value: "created", label: "Date added" },
   { value: "name", label: "Name" },
-  { value: "contract", label: "Contract" },
-  { value: "collected", label: "Collected" },
-  { value: "outstanding", label: "Outstanding" },
+  { value: "contract", label: "Contract", money: true },
+  { value: "collected", label: "Collected", money: true },
+  { value: "outstanding", label: "Outstanding", money: true },
   { value: "progress", label: "Progress" },
   { value: "kickoff", label: "Kickoff date" },
 ];
@@ -31,10 +33,12 @@ export default function ClientsFilterBar({
   industries,
   team,
   resultCount,
+  showMoney = true,
 }: {
   industries: string[];
   team: TeamMember[];
   resultCount: number;
+  showMoney?: boolean;
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -123,7 +127,7 @@ export default function ClientsFilterBar({
         onChange={(e) => setParam("sort", e.target.value === "kickoff" ? "" : e.target.value)}
         title="Sort by"
       >
-        {SORT_OPTIONS.map((s) => (
+        {SORT_OPTIONS.filter((s) => showMoney || !s.money).map((s) => (
           <option key={s.value} value={s.value}>sort: {s.label}</option>
         ))}
       </select>

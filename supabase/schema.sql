@@ -773,3 +773,42 @@ create index if not exists prospects_followup_idx
 update public.prospects
   set next_followup_at = now()
   where next_followup_at is null;
+
+
+-- ============================================================================
+-- 21. HQ users & permissions (email-based RBAC for /admin/hq).
+--   Owners (founders) see everything and can't be edited/removed. Everyone else
+--   gets a per-section permission object. Resolved by email at request time; a
+--   row can exist before that person has ever signed in. Service-role only.
+--   Idempotent; re-running is safe.
+-- ============================================================================
+create table if not exists public.hq_users (
+  id           uuid primary key default gen_random_uuid(),
+  email        text unique not null,
+  name         text,
+  -- {financials:bool, clients:'none'|'view'|'manage', prospects:.., expenses:..,
+  --  pettyCash:.., users:bool}
+  permissions  jsonb not null default '{}'::jsonb,
+  is_owner     boolean not null default false,
+  active       boolean not null default true,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+create index if not exists hq_users_email_idx on public.hq_users (lower(email));
+
+drop trigger if exists hq_users_set_updated_at on public.hq_users;
+create trigger hq_users_set_updated_at
+  before update on public.hq_users
+  for each row execute function public.set_updated_at();
+
+alter table public.hq_users enable row level security;
+-- No policies — service role only.
+
+-- Seed the founders as owners (all-access, protected).
+insert into public.hq_users (email, name, is_owner, permissions)
+values
+  ('alphaboyabg@gmail.com',   'Owner', true, '{}'::jsonb),
+  ('russhilchawla@gmail.com', 'Owner', true, '{}'::jsonb),
+  ('hello@goatedd.tech',      'Owner', true, '{}'::jsonb)
+on conflict (email) do update set is_owner = true, active = true;

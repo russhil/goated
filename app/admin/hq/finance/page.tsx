@@ -18,12 +18,32 @@ import { type PettyCash } from "./petty-cash-row";
 import ExpenseRow, { type Expense } from "./expense-row";
 import { type Settlement } from "./settlement-row";
 import { computeBalances, primaryBalance } from "./splitwise";
+import { canSeeFinancials, canView, canManage } from "@/lib/hq-perms";
+import { requireUser } from "../guard";
 import FinanceCard from "./finance-card";
 import PettyCashPanel from "./petty-cash-panel";
 
 export const dynamic = "force-dynamic";
 
 export default async function FinancePage() {
+  const gate = await requireUser();
+  if (!gate.ok) return null;
+  const perms = gate.perms;
+  const showFin = canSeeFinancials(perms);
+  const showPetty = canView(perms, "pettyCash");
+  const showExp = canView(perms, "expenses");
+  const manageExp = canManage(perms, "expenses");
+
+  if (!showFin && !showPetty && !showExp) {
+    return (
+      <section className="px-6 md:px-12 pb-24 max-w-[900px] mx-auto pt-6">
+        <p className="font-mono text-xs text-coral uppercase tracking-widest">
+          {"// 403 — you don't have access to Finance"}
+        </p>
+      </section>
+    );
+  }
+
   const [clientsAll, subsAll, pettyAll, expensesAll, settlementsAll, rates] =
     await Promise.all([
       getClientsAll(),
@@ -69,6 +89,8 @@ export default async function FinancePage() {
   return (
     <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1200px] mx-auto pt-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {showFin && (
+        <>
         {/* Totals by currency */}
         <FinanceCard
           label="// totals by currency"
@@ -137,7 +159,11 @@ export default async function FinancePage() {
             </table>
           </div>
         </FinanceCard>
+        </>
+        )}
 
+        {showPetty && (
+        <>
         {/* Petty cash */}
         <FinanceCard
           label="// petty cash"
@@ -155,7 +181,11 @@ export default async function FinancePage() {
         >
           <PettyCashPanel entries={pettyList} settlements={settlementList} />
         </FinanceCard>
+        </>
+        )}
 
+        {showExp && (
+        <>
         {/* Company expenses */}
         <FinanceCard
           label="// company expenses"
@@ -167,11 +197,15 @@ export default async function FinancePage() {
             {expenseList.map((e) => (
               <ExpenseRow key={e.id} expense={e} />
             ))}
-            <div className="pt-2 border-t border-dark/10">
-              <ExpenseRow />
-            </div>
+            {manageExp && (
+              <div className="pt-2 border-t border-dark/10">
+                <ExpenseRow />
+              </div>
+            )}
           </div>
         </FinanceCard>
+        </>
+        )}
       </div>
     </section>
   );

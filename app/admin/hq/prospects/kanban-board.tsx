@@ -21,7 +21,13 @@ const arrowBtn =
 // Drag-and-drop kanban. Cards live in local state so a move paints instantly;
 // the server write happens in the background (no router.refresh, so no loading
 // flash) and only touches state again if it fails, to revert.
-export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
+export default function KanbanBoard({
+  prospects,
+  canManage,
+}: {
+  prospects: Prospect[];
+  canManage: boolean;
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState<Prospect | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +132,7 @@ export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
         {error && (
           <p className="font-mono text-[11px] text-red-600 mr-auto">{`// ${error}`}</p>
         )}
-        <NewProspectDrawer onCreate={add} />
+        {canManage && <NewProspectDrawer onCreate={add} />}
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
@@ -178,7 +184,7 @@ export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
                   return (
                     <div
                       key={p.id}
-                      draggable
+                      draggable={canManage}
                       onDragStart={(e) => {
                         e.dataTransfer.setData("text/plain", p.id);
                         e.dataTransfer.effectAllowed = "move";
@@ -188,13 +194,15 @@ export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
                         setDragId(null);
                         setOverStage(null);
                       }}
-                      className={`bg-white border border-dark/10 rounded-2xl p-3 hover:border-coral/40 transition-colors cursor-grab active:cursor-grabbing ${
-                        dragId === p.id ? "opacity-40" : ""
-                      }`}
+                      className={`bg-white border border-dark/10 rounded-2xl p-3 transition-colors ${
+                        canManage
+                          ? "hover:border-coral/40 cursor-grab active:cursor-grabbing"
+                          : ""
+                      } ${dragId === p.id ? "opacity-40" : ""}`}
                     >
                       <button
-                        onClick={() => setEditing(p)}
-                        className="text-left w-full"
+                        onClick={() => canManage && setEditing(p)}
+                        className={`text-left w-full ${canManage ? "" : "cursor-default"}`}
                       >
                         <p className="font-serif text-base text-dark leading-tight">
                           {p.name}
@@ -227,7 +235,7 @@ export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
                           )}
                           <FollowupCountdown at={p.next_followup_at} />
                         </div>
-                        {p.next_followup_at && (
+                        {canManage && p.next_followup_at && (
                           <button
                             onClick={() => markDone(p.id)}
                             className="font-mono text-[9px] text-muted hover:text-coral whitespace-nowrap"
@@ -236,30 +244,32 @@ export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
                           </button>
                         )}
                       </div>
-                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-dark/5">
-                        <button
-                          onClick={() => moveByArrow(p, -1)}
-                          disabled={idx === 0}
-                          className={arrowBtn}
-                          aria-label="Move to previous stage"
-                        >
-                          ◀
-                        </button>
-                        <button
-                          onClick={() => setEditing(p)}
-                          className="font-mono text-[10px] text-muted hover:text-coral transition-colors"
-                        >
-                          edit
-                        </button>
-                        <button
-                          onClick={() => moveByArrow(p, 1)}
-                          disabled={idx === STAGES.length - 1}
-                          className={arrowBtn}
-                          aria-label="Move to next stage"
-                        >
-                          ▶
-                        </button>
-                      </div>
+                      {canManage && (
+                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-dark/5">
+                          <button
+                            onClick={() => moveByArrow(p, -1)}
+                            disabled={idx === 0}
+                            className={arrowBtn}
+                            aria-label="Move to previous stage"
+                          >
+                            ◀
+                          </button>
+                          <button
+                            onClick={() => setEditing(p)}
+                            className="font-mono text-[10px] text-muted hover:text-coral transition-colors"
+                          >
+                            edit
+                          </button>
+                          <button
+                            onClick={() => moveByArrow(p, 1)}
+                            disabled={idx === STAGES.length - 1}
+                            className={arrowBtn}
+                            aria-label="Move to next stage"
+                          >
+                            ▶
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
