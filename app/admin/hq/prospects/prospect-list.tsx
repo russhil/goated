@@ -7,6 +7,7 @@ import { STAGES, STAGE_LABELS, type Prospect } from "./stages";
 import { updateProspectStage, deleteProspect } from "./actions";
 import Drawer from "../components/drawer";
 import ProspectForm from "./prospect-form";
+import FollowupCountdown from "./followup-countdown";
 
 export default function ProspectList({ prospects }: { prospects: Prospect[] }) {
   const router = useRouter();
@@ -38,7 +39,8 @@ export default function ProspectList({ prospects }: { prospects: Prospect[] }) {
               <th className="p-3">Company</th>
               <th className="p-3">Stage</th>
               <th className="p-3 text-right">Est. value</th>
-              <th className="p-3">Email</th>
+              <th className="p-3">Outreach</th>
+              <th className="p-3">Follow-up</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -67,7 +69,20 @@ export default function ProspectList({ prospects }: { prospects: Prospect[] }) {
                 <td className="p-3 text-right text-dark">
                   {formatMoney(p.est_value, p.currency)}
                 </td>
-                <td className="p-3 text-muted">{p.email || "—"}</td>
+                <td className="p-3 whitespace-nowrap">
+                  <span className="font-mono text-[10px]">
+                    {p.responded ? (
+                      <span className="text-emerald-600">replied</span>
+                    ) : p.reached_out ? (
+                      <span className="text-dark/60">reached</span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </span>
+                </td>
+                <td className="p-3 whitespace-nowrap">
+                  <FollowupCountdown at={p.next_followup_at} />
+                </td>
                 <td className="p-3 text-right whitespace-nowrap">
                   <button
                     onClick={() => setEditing(p)}

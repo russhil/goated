@@ -40,6 +40,65 @@ export type Prospect = {
   currency: string;
   notes: string | null;
   sort_order: number;
+  reached_out: boolean;
+  reached_out_on: string | null;
+  responded: boolean;
+  next_followup_at: string | null;
+  last_reminded_at: string | null;
   created_at: string;
   updated_at: string;
 };
+
+export type SalesMetrics = {
+  reachedOut: number;
+  responded: number;
+  won: number;
+  replyRate: number; // headline "conversion" — responded / reached-out
+  closeRate: number; // won / reached-out
+  avgPerDay: number; // reach-outs per calendar day since the first one
+  reachedThisWeek: number;
+  followupsDue: number;
+};
+
+// Top-of-funnel outreach metrics for the Prospects dashboard. Reply rate is the
+// headline; close rate, throughput and follow-up load ride alongside it.
+export function salesMetrics(prospects: Prospect[]): SalesMetrics {
+  const now = Date.now();
+  const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+
+  const reached = prospects.filter((p) => p.reached_out);
+  const reachedOut = reached.length;
+  const responded = prospects.filter((p) => p.responded).length;
+  const won = prospects.filter((p) => p.stage === "won").length;
+
+  const dates = reached
+    .map((p) => (p.reached_out_on ? new Date(p.reached_out_on).getTime() : NaN))
+    .filter((t) => !Number.isNaN(t));
+  let avgPerDay = 0;
+  if (dates.length > 0) {
+    const earliest = Math.min(...dates);
+    const spanDays = Math.max(1, Math.ceil((now - earliest) / 86_400_000));
+    avgPerDay = reachedOut / spanDays;
+  }
+
+  const reachedThisWeek = dates.filter((t) => t >= weekAgo).length;
+
+  const followupsDue = prospects.filter(
+    (p) =>
+      p.stage !== "won" &&
+      p.stage !== "lost" &&
+      p.next_followup_at !== null &&
+      new Date(p.next_followup_at).getTime() <= now
+  ).length;
+
+  return {
+    reachedOut,
+    responded,
+    won,
+    replyRate: reachedOut > 0 ? Math.round((responded / reachedOut) * 100) : 0,
+    closeRate: reachedOut > 0 ? Math.round((won / reachedOut) * 100) : 0,
+    avgPerDay: Math.round(avgPerDay * 10) / 10,
+    reachedThisWeek,
+    followupsDue,
+  };
+}

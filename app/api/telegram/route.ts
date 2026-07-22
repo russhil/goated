@@ -10,7 +10,9 @@
 //    allowlist above — mirroring the requireAdmin() pattern used elsewhere.
 // The handler always returns 200 quickly so Telegram never retries.
 
+import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { HQ_TAG } from "@/lib/hq-data";
 import { sendMessage, sendDocument } from "@/lib/telegram";
 import { parseIntent, type BotIntent } from "@/lib/gemini";
 import { buildInvoicePdf, type InvoiceRow } from "@/lib/invoice-pdf";
@@ -18,6 +20,9 @@ import { getInrRates } from "@/lib/fx";
 import {
   summarizeInInr,
   subOffTrack,
+  subProgress,
+  rollup,
+  weeksElapsed,
   formatMoney,
   PEOPLE,
   EXPENSE_CATEGORIES,
@@ -26,6 +31,7 @@ import {
   type Phase,
 } from "@/lib/hq";
 import { computeBalances, primaryBalance } from "@/app/admin/hq/finance/splitwise";
+import { sendDueFollowups, buildClientWeeksDigest } from "@/lib/followups";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -74,7 +80,10 @@ const HELP = [
   "/summary — INR P&amp;L snapshot",
   "/balance — petty-cash who-owes-who",
   "/offtrack — sub-projects behind schedule",
+  "/client &lt;name&gt; — client snapshot (progress, weeks, collected)",
+  "/weeks — every client: week # + progress",
   "/invoice &lt;client&gt; [phase] — fetch an invoice PDF",
+  "/followups — nudge prospects due for follow-up now",
   "/whoami — your Telegram id",
   "/help — this message",
   "",
@@ -82,7 +91,8 @@ const HELP = [
   "• Vansh paid 500 for coffee — petty cash",
   "• add expense software 999 Vercel — company expense",
   "",
-  "<b>Pull invoices</b>",
+  "<b>Pull info</b>",
+  "• how's Azadi Records doing — client snapshot",
   "• invoice for Azadi Records — or: fetch phase 1 invoice for zenspace",
   "",
   "<b>Ask anything (ad-hoc lookups)</b>",
@@ -90,6 +100,8 @@ const HELP = [
   "• total collected from Azadi",
   "• prospects in proposal stage",
   "• how many invoices this month",
+  "",
+  "<i>Weekly (Sun): auto follow-up + client check-in reminders.</i>",
 ].join("\n");
 
 // ---- shared command handlers ----------------------------------------------
@@ -220,6 +232,7 @@ async function handleAddPettyCash(
     await sendMessage(chatId, "⚠️ couldn't save that petty-cash entry");
     return;
   }
+  revalidateTag(HQ_TAG); // reflect on the tool immediately
   await sendMessage(chatId, `✅ Added petty cash: <b>${esc(payer)}</b> ${formatMoney(amount, "INR")} — ${esc(purpose)}`);
 }
 
@@ -248,6 +261,7 @@ async function handleAddExpense(
     await sendMessage(chatId, "⚠️ couldn't save that expense");
     return;
   }
+  revalidateTag(HQ_TAG); // reflect on the tool immediately
   await sendMessage(
     chatId,
     `✅ Added expense: <b>${esc(category)}</b> ${formatMoney(amount, "INR")}${vendor ? ` — ${esc(vendor)}` : ""}`
@@ -325,6 +339,64 @@ function parseInvoiceArgs(args: string): { client: string; phase?: string } {
     if (client) return { client, phase: phase || undefined };
   }
   return { client: trimmed };
+}
+
+// ---- client snapshot + reminders -------------------------------------------
+
+async function handleClientInfo(chatId: number, clientQuery: string): Promise<void> {
+  const admin = createAdminClient();
+  const q = clientQuery.trim().toLowerCase();
+  const { data: clients } = await admin.from("clients").select("*");
+  const list = (clients ?? []) as Client[];
+  const client =
+    list.find((c) => (c.name || "").toLowerCase() === q) ??
+    list.find((c) => (c.name || "").toLowerCase().includes(q));
+  if (!client) {
+    await sendMessage(chatId, `Couldn't find a client matching "${esc(clientQuery)}".`);
+    return;
+  }
+
+  const { data: subsData } = await admin
+    .from("client_subprojects")
+    .select("*")
+    .eq("client_id", client.id);
+  const subs = (subsData ?? []) as Subproject[];
+  const r = rollup(subs, client.kickoff_date);
+  const weeks = weeksElapsed(client.kickoff_date);
+
+  const lines = [
+    `<b>${esc(client.name)}</b>${client.industry ? ` — ${esc(client.industry)}` : ""}`,
+    `Week ${weeks}${client.kickoff_date ? ` (kickoff ${client.kickoff_date})` : ""}`,
+    `Progress: ${Math.round(r.progress)}%${r.offTrack ? " ⚠️ off track" : ""}`,
+    `Contract: ${formatMoney(r.totalContract, client.currency)}`,
+    `Collected: ${formatMoney(r.collected, client.currency)}`,
+    `Outstanding: ${formatMoney(r.outstanding, client.currency)}`,
+  ];
+  if (subs.length) {
+    lines.push("", "<b>Sub-projects</b>");
+    for (const s of subs) {
+      lines.push(
+        `• ${esc(s.name)} — ${subProgress(s)}%${subOffTrack(s, client.kickoff_date) ? " ⚠️" : ""}`
+      );
+    }
+  }
+  await sendMessage(chatId, lines.join("\n"));
+}
+
+async function handleClientWeeks(chatId: number): Promise<void> {
+  const digest = await buildClientWeeksDigest();
+  await sendMessage(chatId, digest ?? "No active clients right now.");
+}
+
+async function handleFollowups(chatId: number): Promise<void> {
+  const { count } = await sendDueFollowups();
+  if (count > 0) revalidateTag(HQ_TAG);
+  await sendMessage(
+    chatId,
+    count > 0
+      ? `Nudged ${count} due prospect${count > 1 ? "s" : ""}.`
+      : "✅ No prospects are due for follow-up right now."
+  );
 }
 
 // ---- read-only query intent ------------------------------------------------
@@ -452,6 +524,20 @@ async function handle(text: string, fromId: number, chatId: number): Promise<voi
         await handleGetInvoice(chatId, { intent: "get_invoice", client, phase });
         return;
       }
+      case "client": {
+        if (!args) {
+          await sendMessage(chatId, "Usage: <code>/client &lt;name&gt;</code>");
+          return;
+        }
+        await handleClientInfo(chatId, args);
+        return;
+      }
+      case "weeks":
+        await handleClientWeeks(chatId);
+        return;
+      case "followups":
+        await handleFollowups(chatId);
+        return;
       default:
         await sendMessage(chatId, "Unknown command — try /help");
         return;
@@ -463,7 +549,7 @@ async function handle(text: string, fromId: number, chatId: number): Promise<voi
     // Gemini is down or GEMINI_API_KEY is unset — no free-text parsing available.
     await sendMessage(
       chatId,
-      "Couldn't read that right now. Try /help, or the slash commands: /summary /balance /offtrack /invoice /whoami."
+      "Couldn't read that right now. Try /help, or the slash commands: /summary /balance /offtrack /client /weeks /invoice /followups /whoami."
     );
     return;
   }
@@ -481,6 +567,9 @@ async function handle(text: string, fromId: number, chatId: number): Promise<voi
       return;
     case "get_invoice":
       await handleGetInvoice(chatId, intent);
+      return;
+    case "client_info":
+      await handleClientInfo(chatId, intent.client);
       return;
     case "query":
       await handleQuery(chatId, intent);

@@ -744,3 +744,29 @@ end;
 $$;
 
 revoke all on function public.exec_sql_readonly(text) from public, anon, authenticated;
+
+
+-- ============================================================================
+-- 20. Prospect outreach + follow-up reminders.
+--   Adds cold-outreach tracking (reached-out / responded) that powers the
+--   Prospects metrics dashboard, plus a per-prospect follow-up timer that the
+--   weekly cron (and the in-app ticker / bot) use to nudge us to follow up.
+--   Idempotent; re-running is safe.
+-- ============================================================================
+alter table public.prospects
+  add column if not exists reached_out      boolean not null default false,
+  add column if not exists reached_out_on   date,
+  add column if not exists responded        boolean not null default false,
+  add column if not exists next_followup_at timestamptz,
+  add column if not exists last_reminded_at timestamptz;
+
+-- Due-follow-up lookups filter on next_followup_at; index it.
+create index if not exists prospects_followup_idx
+  on public.prospects (next_followup_at)
+  where next_followup_at is not null;
+
+-- Backfill existing rows so the reminder engine can pick them up: due "now" on
+-- first run, then normalised to the weekly cadence when the reminder fires.
+update public.prospects
+  set next_followup_at = now()
+  where next_followup_at is null;

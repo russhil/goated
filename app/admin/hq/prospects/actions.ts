@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, revalidateHq, type Result } from "../guard";
 import { CURRENCIES } from "@/lib/hq";
+import { nextFollowupAt, sendDueFollowups } from "@/lib/followups";
 import { isStage } from "./stages";
 
 export type ProspectInput = {
@@ -16,6 +17,9 @@ export type ProspectInput = {
   est_value: number;
   currency: string;
   notes: string;
+  reached_out: boolean;
+  reached_out_on: string;
+  responded: boolean;
 };
 
 function safeCurrency(c: string) {
@@ -29,8 +33,18 @@ function revalidate() {
   revalidatePath("/admin/hq/prospects");
 }
 
+function validDate(s: string): string | null {
+  const t = (s || "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : null;
+}
+
 function prospectPayload(input: ProspectInput) {
   const value = Number(input.est_value) || 0;
+  const reached = !!input.reached_out;
+  // If marked reached-out with no date, stamp today so the metrics have a day.
+  const reachedOn = reached
+    ? validDate(input.reached_out_on) ?? new Date().toISOString().slice(0, 10)
+    : null;
   return {
     name: (input.name || "").trim(),
     company: (input.company || "").trim() || null,
@@ -41,6 +55,9 @@ function prospectPayload(input: ProspectInput) {
     est_value: value,
     currency: safeCurrency(input.currency),
     notes: (input.notes || "").trim() || null,
+    reached_out: reached,
+    reached_out_on: reachedOn,
+    responded: !!input.responded,
   };
 }
 
@@ -51,7 +68,10 @@ export async function createProspect(input: ProspectInput): Promise<Result> {
   const payload = prospectPayload(input);
   if (!payload.name) return { ok: false, error: "name is required" };
   const admin = createAdminClient();
-  const { error } = await admin.from("prospects").insert(payload);
+  // New prospects start their follow-up timer immediately.
+  const { error } = await admin
+    .from("prospects")
+    .insert({ ...payload, next_followup_at: nextFollowupAt() });
   if (error) return { ok: false, error: error.message };
   revalidate();
   return { ok: true };
@@ -87,6 +107,32 @@ export async function updateProspectStage(id: string, stage: string): Promise<Re
   if (!isStage(stage)) return { ok: false, error: "invalid stage" };
   const admin = createAdminClient();
   const { error } = await admin.from("prospects").update({ stage }).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidate();
+  return { ok: true };
+}
+
+// Fired by the in-app follow-up ticker when a card's timer hits zero: sends the
+// due-follow-up nudge over Telegram and bumps the timers. Idempotent — a second
+// call finds nothing due because the first one already moved the rows forward.
+export async function triggerDueFollowups(): Promise<Result & { count?: number }> {
+  const gate = await requireAdmin();
+  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const { count } = await sendDueFollowups();
+  if (count > 0) revalidate();
+  return { ok: true, count };
+}
+
+// "✓ followed up" on a card: reset this prospect's timer to the next cadence
+// without waiting for (or sending) a reminder.
+export async function markFollowedUp(id: string): Promise<Result> {
+  const gate = await requireAdmin();
+  if (!gate.admin) return { ok: false, error: "forbidden" };
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("prospects")
+    .update({ next_followup_at: nextFollowupAt(), last_reminded_at: new Date().toISOString() })
+    .eq("id", id);
   if (error) return { ok: false, error: error.message };
   revalidate();
   return { ok: true };

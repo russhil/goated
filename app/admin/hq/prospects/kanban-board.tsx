@@ -4,10 +4,16 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatMoney } from "@/lib/hq";
 import { STAGES, STAGE_LABELS, isStage, type Prospect, type Stage } from "./stages";
-import { updateProspectStage, createProspect, type ProspectInput } from "./actions";
+import {
+  updateProspectStage,
+  createProspect,
+  markFollowedUp,
+  type ProspectInput,
+} from "./actions";
 import Drawer from "../components/drawer";
 import ProspectForm from "./prospect-form";
 import NewProspectDrawer from "./new-prospect-drawer";
+import FollowupCountdown from "./followup-countdown";
 
 const arrowBtn =
   "w-7 h-7 flex items-center justify-center rounded-full text-[11px] bg-dark/[0.04] text-dark/70 hover:bg-dark/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors";
@@ -65,6 +71,15 @@ export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
     if (next) moveTo(p.id, next);
   };
 
+  // "✓ done" on a card: reset its follow-up timer to the next cadence.
+  const markDone = (id: string) => {
+    if (id.startsWith("temp-")) return;
+    startTransition(async () => {
+      await markFollowedUp(id);
+      router.refresh();
+    });
+  };
+
   // Optimistic create: paint a temp card immediately, then persist in the
   // background. On success a quiet router.refresh() replaces the temp with the
   // real server row (see the seed reconciliation above); on failure we drop the
@@ -84,6 +99,11 @@ export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
       currency: input.currency || "INR",
       notes: input.notes.trim() || null,
       sort_order: 0,
+      reached_out: !!input.reached_out,
+      reached_out_on: input.reached_out_on || null,
+      responded: !!input.responded,
+      next_followup_at: null, // the real server row carries the started timer
+      last_reminded_at: null,
       created_at: now,
       updated_at: now,
     };
@@ -193,6 +213,29 @@ export default function KanbanBoard({ prospects }: { prospects: Prospect[] }) {
                           </p>
                         )}
                       </button>
+                      <div className="flex items-center justify-between gap-2 mt-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {p.reached_out && (
+                            <span className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-dark/[0.06] text-dark/70">
+                              reached
+                            </span>
+                          )}
+                          {p.responded && (
+                            <span className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
+                              replied
+                            </span>
+                          )}
+                          <FollowupCountdown at={p.next_followup_at} />
+                        </div>
+                        {p.next_followup_at && (
+                          <button
+                            onClick={() => markDone(p.id)}
+                            className="font-mono text-[9px] text-muted hover:text-coral whitespace-nowrap"
+                          >
+                            ✓ done
+                          </button>
+                        )}
+                      </div>
                       <div className="flex items-center justify-between mt-3 pt-2 border-t border-dark/5">
                         <button
                           onClick={() => moveByArrow(p, -1)}

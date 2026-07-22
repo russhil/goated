@@ -137,6 +137,16 @@ export function clientColor(client: { id: string; color: string | null }): strin
   return client.color || CLIENT_COLORS[hashString(client.id) % CLIENT_COLORS.length];
 }
 
+// Whole weeks elapsed since kickoff (0 if no/invalid date, never negative).
+// Shared by the bot's /client, /weeks and the weekly check-in digest.
+export function weeksElapsed(kickoff: string | null): number {
+  if (!kickoff) return 0;
+  const start = new Date(kickoff);
+  if (Number.isNaN(start.getTime())) return 0;
+  const ms = Date.now() - start.getTime();
+  return Math.max(0, Math.floor(ms / (7 * 24 * 60 * 60 * 1000)));
+}
+
 export type Rollup = {
   totalContract: number;
   collected: number;

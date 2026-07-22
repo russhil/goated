@@ -42,6 +42,9 @@ export default function ProspectForm({
   );
   const [currency, setCurrency] = useState(prospect?.currency ?? "INR");
   const [notes, setNotes] = useState(prospect?.notes ?? "");
+  const [reachedOut, setReachedOut] = useState(prospect?.reached_out ?? false);
+  const [reachedOn, setReachedOn] = useState(prospect?.reached_out_on ?? "");
+  const [responded, setResponded] = useState(prospect?.responded ?? false);
 
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -56,6 +59,9 @@ export default function ProspectForm({
     est_value: Number(estValue) || 0,
     currency,
     notes,
+    reached_out: reachedOut,
+    reached_out_on: reachedOn,
+    responded,
   });
 
   const reset = () => {
@@ -68,6 +74,9 @@ export default function ProspectForm({
     setEstValue("");
     setCurrency("INR");
     setNotes("");
+    setReachedOut(false);
+    setReachedOn("");
+    setResponded(false);
   };
 
   const save = () => {
@@ -206,6 +215,44 @@ export default function ProspectForm({
               </option>
             ))}
           </select>
+        </div>
+      </div>
+
+      <div className="mb-4 border border-dark/10 rounded-2xl p-3">
+        <label className={labelClass}>// outreach</label>
+        <div className="flex items-center gap-4 flex-wrap mt-1">
+          <label className="flex items-center gap-2 font-sans text-sm text-dark cursor-pointer">
+            <input
+              type="checkbox"
+              checked={reachedOut}
+              onChange={(e) => {
+                setReachedOut(e.target.checked);
+                // Default the date to today the moment it's ticked.
+                if (e.target.checked && !reachedOn) {
+                  setReachedOn(new Date().toISOString().slice(0, 10));
+                }
+              }}
+              className="accent-coral"
+            />
+            Reached out
+          </label>
+          <label className="flex items-center gap-2 font-sans text-sm text-dark cursor-pointer">
+            <input
+              type="checkbox"
+              checked={responded}
+              onChange={(e) => setResponded(e.target.checked)}
+              className="accent-coral"
+            />
+            Responded
+          </label>
+          {reachedOut && (
+            <input
+              type="date"
+              className={`${inputClass} max-w-[170px]`}
+              value={reachedOn}
+              onChange={(e) => setReachedOn(e.target.value)}
+            />
+          )}
         </div>
       </div>
 

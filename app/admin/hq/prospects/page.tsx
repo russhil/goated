@@ -1,9 +1,10 @@
 import { formatMoney } from "@/lib/hq";
 import { getProspectsAll } from "@/lib/hq-data";
-import { STAGES, STAGE_LABELS, type Prospect, type Stage } from "./stages";
+import { STAGES, STAGE_LABELS, salesMetrics, type Prospect, type Stage } from "./stages";
 import KanbanBoard from "./kanban-board";
 import ProspectList from "./prospect-list";
 import NewProspectDrawer from "./new-prospect-drawer";
+import FollowupTicker from "./followup-ticker";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,27 @@ export default async function ProspectsPage({
   const view = searchParams.view === "list" ? "list" : "kanban";
   const prospects = (await getProspectsAll()) as unknown as Prospect[];
   const summaries = summarize(prospects);
+  const metrics = salesMetrics(prospects);
+
+  // Active timers the in-app ticker watches (won/lost drop out of reminders).
+  const dueTimes = prospects
+    .filter((p) => p.stage !== "won" && p.stage !== "lost" && p.next_followup_at)
+    .map((p) => p.next_followup_at as string);
+
+  const stat = (label: string, value: string, sub?: string, accent?: boolean) => (
+    <div
+      key={label}
+      className={`border rounded-2xl px-3 py-3 ${
+        accent ? "border-coral/40 bg-coral/[0.04]" : "border-dark/10 bg-white"
+      }`}
+    >
+      <p className="font-mono text-[10px] text-muted uppercase tracking-widest">{label}</p>
+      <p className={`font-serif text-xl leading-tight mt-1 ${accent ? "text-coral" : "text-dark"}`}>
+        {value}
+      </p>
+      {sub && <p className="font-sans text-xs text-muted mt-0.5">{sub}</p>}
+    </div>
+  );
 
   // The kanban owns its own "+ New prospect" (so a create can paint an optimistic
   // card into the board's state). Keep the header trigger for the list view, and
@@ -64,6 +86,28 @@ export default async function ProspectsPage({
         </div>
         {showHeaderNew && <NewProspectDrawer />}
       </div>
+
+      <FollowupTicker dueTimes={dueTimes} />
+
+      {prospects.length > 0 && (
+        <>
+          <p className="section-label mb-2">// outreach</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
+            {stat("Reply rate", `${metrics.replyRate}%`, `${metrics.responded}/${metrics.reachedOut} replied`, true)}
+            {stat("Close rate", `${metrics.closeRate}%`, `${metrics.won} won`)}
+            {stat("Reached out", String(metrics.reachedOut))}
+            {stat("Avg / day", String(metrics.avgPerDay))}
+            {stat("This week", String(metrics.reachedThisWeek))}
+            {stat(
+              "Follow-ups due",
+              String(metrics.followupsDue),
+              undefined,
+              metrics.followupsDue > 0
+            )}
+          </div>
+          <p className="section-label mb-2">// pipeline</p>
+        </>
+      )}
 
       {prospects.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-8">

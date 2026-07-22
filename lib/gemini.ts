@@ -10,6 +10,7 @@ export type BotIntent =
   | { intent: "add_petty_cash"; payer: string; amount: number; purpose: string; date?: string }
   | { intent: "add_expense"; category: string; vendor?: string; amount: number; date?: string }
   | { intent: "get_invoice"; client: string; phase?: string }
+  | { intent: "client_info"; client: string }
   | { intent: "query"; sql: string; explain: string }
   | { intent: "summary" }
   | { intent: "balance" }
@@ -37,11 +38,15 @@ Pick exactly ONE shape:
    {"intent":"get_invoice","client":"<client name>","phase":"<optional phase/milestone name, e.g. 'phase 1'>"}
    e.g. "fetch phase 1 invoice for zenspace" -> {"intent":"get_invoice","client":"zenspace","phase":"phase 1"}
 
-4) summary — financial summary / totals / P&L:  {"intent":"summary"}
-5) balance — petty-cash who-owes-who:  {"intent":"balance"}
-6) offtrack — which sub-projects are behind schedule:  {"intent":"offtrack"}
+4) client_info — a status snapshot for ONE named client ("tell me about Azadi", "how is Zenspace doing", "status of client X", "X progress", "how many weeks for X"). Returns contract/collected/progress/weeks.
+   {"intent":"client_info","client":"<client name>"}
+   e.g. "how's azadi records doing" -> {"intent":"client_info","client":"azadi records"}
 
-7) query — ANY other READ-ONLY data question the fixed intents above do not cover (e.g. "which clients are off track", "total collected from Azadi", "list prospects in proposal stage", "how many invoices this month", "top 5 expenses this year"). Return a SINGLE read-only SELECT.
+5) summary — financial summary / totals / P&L:  {"intent":"summary"}
+6) balance — petty-cash who-owes-who:  {"intent":"balance"}
+7) offtrack — which sub-projects are behind schedule:  {"intent":"offtrack"}
+
+8) query — ANY other READ-ONLY data question the fixed intents above do not cover (e.g. "which clients are off track", "total collected from Azadi", "list prospects in proposal stage", "how many invoices this month", "top 5 expenses this year"). Return a SINGLE read-only SELECT.
    {"intent":"query","sql":"<one SELECT statement>","explain":"<one-line human summary of what it fetches>"}
    sql rules: exactly ONE statement; must start with SELECT (or WITH ... SELECT); NO semicolons; NO INSERT/UPDATE/DELETE/DROP/ALTER/TRUNCATE/GRANT/REVOKE/COPY/CALL/MERGE/VACUUM or any write/DDL; ALWAYS add a LIMIT (<=200); use ILIKE '%name%' for fuzzy name matching. Money is per-row in each row's own currency column (mostly INR) — do NOT convert currencies. A client's collected revenue = SUM of that client's client_subprojects.collected_revenue.
 
@@ -55,7 +60,7 @@ DATABASE SCHEMA (Postgres):
 - team_members(id uuid, name text, role text, email text, active bool)
 - petty_cash_settlements(id uuid, from_person text, to_person text, amount numeric, currency text, settled_on date)
 
-8) unknown — an unsupported write (see above), or a message that is neither an action nor answerable by a SELECT:  {"intent":"unknown"}
+9) unknown — an unsupported write (see above), or a message that is neither an action nor answerable by a SELECT:  {"intent":"unknown"}
 Prefer "query" over "unknown" for anything that READS data; use "unknown" for any write that is not petty cash or expense.`;
 }
 
@@ -105,6 +110,11 @@ function toIntent(raw: unknown): BotIntent | null {
       const client = str(o.client);
       if (!client) return { intent: "unknown" };
       return { intent: "get_invoice", client, phase: str(o.phase) };
+    }
+    case "client_info": {
+      const client = str(o.client);
+      if (!client) return { intent: "unknown" };
+      return { intent: "client_info", client };
     }
     case "query": {
       const sql = str(o.sql);
