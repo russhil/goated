@@ -7,6 +7,7 @@ import {
   OWNER_FALLBACK,
   type Permissions,
 } from "@/lib/hq-perms";
+import { logAudit } from "@/lib/audit";
 import { requireUsersAdmin, revalidateHq, type Result } from "../guard";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -45,6 +46,7 @@ export async function saveHqUser(input: {
     { onConflict: "email" }
   );
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "update", entity: "hq_user", entityLabel: email, summary: `Set permissions for ${email}` });
   revalidateHq();
   return { ok: true };
 }
@@ -60,6 +62,7 @@ export async function setHqUserActive(id: string, active: boolean): Promise<Resu
   }
   const { error } = await admin.from("hq_users").update({ active }).eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "update", entity: "hq_user", entityLabel: (row as { email?: string } | null)?.email ?? null, summary: `${active ? "Reactivated" : "Deactivated"} ${(row as { email?: string } | null)?.email ?? "a user"}` });
   revalidateHq();
   return { ok: true };
 }
@@ -75,6 +78,7 @@ export async function deleteHqUser(id: string): Promise<Result> {
   }
   const { error } = await admin.from("hq_users").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "delete", entity: "hq_user", entityLabel: (row as { email?: string } | null)?.email ?? null, summary: `Removed ${(row as { email?: string } | null)?.email ?? "a user"}` });
   revalidateHq();
   return { ok: true };
 }

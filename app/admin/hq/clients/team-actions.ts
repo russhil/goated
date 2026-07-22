@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireManage, revalidateHq, type Result } from "../guard";
+import { logAudit } from "@/lib/audit";
 
 export type TeamMemberInput = {
   name: string;
@@ -28,6 +29,7 @@ export async function createTeamMember(input: TeamMemberInput): Promise<Result> 
   const admin = createAdminClient();
   const { error } = await admin.from("team_members").insert(payload);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "create", entity: "team_member", entityLabel: payload.name, summary: `Added team member ${payload.name}` });
   revalidateHq();
   return { ok: true };
 }
@@ -44,6 +46,7 @@ export async function updateTeamMember(
   const admin = createAdminClient();
   const { error } = await admin.from("team_members").update(payload).eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "update", entity: "team_member", entityLabel: payload.name, summary: `Updated team member ${payload.name}` });
   revalidateHq();
   return { ok: true };
 }
@@ -84,6 +87,7 @@ export async function deleteTeamMember(id: string): Promise<Result> {
 
   const { error } = await admin.from("team_members").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "delete", entity: "team_member", summary: "Removed a team member" });
   revalidateHq();
   return { ok: true };
 }

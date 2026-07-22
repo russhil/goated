@@ -13,6 +13,7 @@
 import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { HQ_TAG } from "@/lib/hq-data";
+import { logAudit } from "@/lib/audit";
 import { sendMessage, sendDocument } from "@/lib/telegram";
 import { parseIntent, type BotIntent } from "@/lib/gemini";
 import { buildInvoicePdf, type InvoiceRow } from "@/lib/invoice-pdf";
@@ -84,8 +85,14 @@ const HELP = [
   "/weeks — every client: week # + progress",
   "/invoice &lt;client&gt; [phase] — fetch an invoice PDF",
   "/followups — nudge prospects due for follow-up now",
+  "/reminders — your upcoming reminders",
   "/whoami — your Telegram id",
   "/help — this message",
+  "",
+  "<b>Reminders (like an alarm)</b>",
+  "• remind me to text Sam tomorrow",
+  "• remind me to send the invoice at 6pm",
+  "• remind me to call the accountant in 2 hours",
   "",
   "<b>Log things (just type)</b> — only these two write",
   "• Vansh paid 500 for coffee — petty cash",
@@ -232,6 +239,7 @@ async function handleAddPettyCash(
     await sendMessage(chatId, "⚠️ couldn't save that petty-cash entry");
     return;
   }
+  await logAudit({ actor: "telegram", action: "create", entity: "petty_cash", summary: `Added petty cash: ${payer} ${formatMoney(amount, "INR")} — ${purpose}` });
   revalidateTag(HQ_TAG); // reflect on the tool immediately
   await sendMessage(chatId, `✅ Added petty cash: <b>${esc(payer)}</b> ${formatMoney(amount, "INR")} — ${esc(purpose)}`);
 }
@@ -261,6 +269,7 @@ async function handleAddExpense(
     await sendMessage(chatId, "⚠️ couldn't save that expense");
     return;
   }
+  await logAudit({ actor: "telegram", action: "create", entity: "expense", summary: `Added expense: ${category} ${formatMoney(amount, "INR")}${vendor ? ` — ${vendor}` : ""}` });
   revalidateTag(HQ_TAG); // reflect on the tool immediately
   await sendMessage(
     chatId,
@@ -397,6 +406,68 @@ async function handleFollowups(chatId: number): Promise<void> {
       ? `Nudged ${count} due prospect${count > 1 ? "s" : ""}.`
       : "✅ No prospects are due for follow-up right now."
   );
+}
+
+// ---- personal reminders ("remind me to text xyz tomorrow") -----------------
+// Stored here; fired at the exact time by the self-hosted alarm daemon
+// (scripts/reminder-alarm.mjs), NOT a Vercel cron.
+
+function istLabel(d: Date): string {
+  return d.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+async function handleAddReminder(
+  chatId: number,
+  intent: Extract<BotIntent, { intent: "add_reminder" }>
+): Promise<void> {
+  const t = new Date(intent.remindAt);
+  if (Number.isNaN(t.getTime())) {
+    await sendMessage(chatId, 'Couldn\'t work out the time — try e.g. "remind me to text Sam tomorrow 9am".');
+    return;
+  }
+  if (t.getTime() <= Date.now() + 5000) {
+    await sendMessage(chatId, "That time's already passed — give me a future time.");
+    return;
+  }
+  const text = (intent.text || "").trim().slice(0, 500) || "(reminder)";
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("reminders")
+    .insert({ chat_id: chatId, text, remind_at: t.toISOString() });
+  if (error) {
+    await sendMessage(chatId, "⚠️ couldn't save that reminder");
+    return;
+  }
+  await logAudit({ actor: "telegram", action: "create", entity: "reminder", summary: `Set reminder for ${istLabel(t)}: ${text}` });
+  await sendMessage(chatId, `⏰ Reminder set for <b>${istLabel(t)}</b>:\n${esc(text)}`);
+}
+
+async function handleListReminders(chatId: number): Promise<void> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("reminders")
+    .select("text, remind_at")
+    .eq("chat_id", chatId)
+    .eq("sent", false)
+    .gte("remind_at", new Date().toISOString())
+    .order("remind_at", { ascending: true })
+    .limit(20);
+  const rows = (data ?? []) as { text: string; remind_at: string }[];
+  if (rows.length === 0) {
+    await sendMessage(chatId, "No upcoming reminders.");
+    return;
+  }
+  const lines = ["<b>Upcoming reminders</b>"];
+  for (const r of rows) lines.push(`• ${istLabel(new Date(r.remind_at))} — ${esc(r.text)}`);
+  await sendMessage(chatId, lines.join("\n"));
 }
 
 // ---- read-only query intent ------------------------------------------------
@@ -541,13 +612,16 @@ async function handle(text: string, fromId: number, chatId: number): Promise<voi
       case "followups":
         await handleFollowups(chatId);
         return;
+      case "reminders":
+        await handleListReminders(chatId);
+        return;
       default:
         await sendMessage(chatId, "Unknown command — try /help");
         return;
     }
   }
 
-  const intent = await parseIntent(trimmed, today());
+  const intent = await parseIntent(trimmed, new Date().toISOString());
   if (!intent) {
     // Gemini is down or GEMINI_API_KEY is unset — no free-text parsing available.
     await sendMessage(
@@ -573,6 +647,9 @@ async function handle(text: string, fromId: number, chatId: number): Promise<voi
       return;
     case "client_info":
       await handleClientInfo(chatId, intent.client);
+      return;
+    case "add_reminder":
+      await handleAddReminder(chatId, intent);
       return;
     case "query":
       await handleQuery(chatId, intent);

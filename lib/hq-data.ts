@@ -182,3 +182,27 @@ export const getInvoicesAll = unstable_cache(
   ["hq:invoices"],
   { tags: [HQ_TAG] }
 );
+
+export type AuditRow = {
+  id: string;
+  actor: string;
+  action: string;
+  entity: string;
+  entity_label: string | null;
+  summary: string;
+  created_at: string;
+};
+
+export const getAuditLog = unstable_cache(
+  async (): Promise<AuditRow[]> => {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("audit_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    return (data ?? []) as AuditRow[];
+  },
+  ["hq:audit"],
+  { tags: [HQ_TAG] }
+);

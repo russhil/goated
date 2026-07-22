@@ -37,25 +37,28 @@ export async function requireUser(): Promise<UserGate> {
   };
 }
 
+// Gate result carrying the actor email on success (for audit logging).
+export type Gate = { ok: true; email: string } | { ok: false; error: string };
+
 // Manage-level gate for a section's mutating server actions.
-export async function requireManage(section: Section): Promise<Result> {
+export async function requireManage(section: Section): Promise<Gate> {
   const g = await requireUser();
   if (!g.ok || !canManage(g.perms, section)) return { ok: false, error: "forbidden" };
-  return { ok: true };
+  return { ok: true, email: g.email };
 }
 
 // Anything that reveals money (invoice PDFs, etc.).
-export async function requireFinancials(): Promise<Result> {
+export async function requireFinancials(): Promise<Gate> {
   const g = await requireUser();
   if (!g.ok || !canSeeFinancials(g.perms)) return { ok: false, error: "forbidden" };
-  return { ok: true };
+  return { ok: true, email: g.email };
 }
 
 // The user-management panel.
-export async function requireUsersAdmin(): Promise<Result> {
+export async function requireUsersAdmin(): Promise<Gate> {
   const g = await requireUser();
   if (!g.ok || !canManageUsers(g.perms)) return { ok: false, error: "forbidden" };
-  return { ok: true };
+  return { ok: true, email: g.email };
 }
 
 export function revalidateHq() {

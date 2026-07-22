@@ -2,14 +2,15 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { getClientsAll, getSubprojectsAll, getProspectsAll } from "@/lib/hq-data";
+import { getClientsAll, getSubprojectsAll, getProspectsAll, getAuditLog } from "@/lib/hq-data";
 import { subOffTrack } from "@/lib/hq";
-import { canSeeFinancials, canView } from "@/lib/hq-perms";
+import { canSeeFinancials, canView, canManageUsers } from "@/lib/hq-perms";
 import { requireUser } from "./guard";
 import HqNav from "./hq-nav";
 import { HqThemeProvider } from "./theme";
 import { PermsProvider } from "./perms-context";
 import Notifications, { type OffTrackItem, type ReachOutItem } from "./notifications";
+import AuditTrail from "./audit-trail";
 
 export const metadata: Metadata = {
   title: "Client HQ",
@@ -64,6 +65,10 @@ export default async function HqLayout({
   }
 
   const { email, perms } = gate;
+
+  // The audit trail is oversight for the admin group: owners + Users-admins.
+  const showAudit = gate.isOwner || canManageUsers(perms);
+  const auditEntries = showAudit ? await getAuditLog() : [];
 
   const initialTheme =
     cookies().get("hq-theme")?.value === "dark" ? "dark" : "light";
@@ -148,6 +153,7 @@ export default async function HqLayout({
           <HqNav perms={perms} />
         </section>
         <PermsProvider perms={perms}>{children}</PermsProvider>
+        {showAudit && <AuditTrail entries={auditEntries} />}
       </HqThemeProvider>
     </main>
   );

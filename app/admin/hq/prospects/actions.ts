@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireManage, revalidateHq, type Result } from "../guard";
+import { logAudit } from "@/lib/audit";
 import { CURRENCIES } from "@/lib/hq";
 import { nextFollowupAt, sendDueFollowups } from "@/lib/followups";
 import { isStage } from "./stages";
@@ -73,6 +74,7 @@ export async function createProspect(input: ProspectInput): Promise<Result> {
     .from("prospects")
     .insert({ ...payload, next_followup_at: nextFollowupAt() });
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "create", entity: "prospect", entityLabel: payload.name, summary: `Added prospect ${payload.name}` });
   revalidate();
   return { ok: true };
 }
@@ -86,6 +88,7 @@ export async function updateProspect(id: string, input: ProspectInput): Promise<
   const admin = createAdminClient();
   const { error } = await admin.from("prospects").update(payload).eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "update", entity: "prospect", entityLabel: payload.name, summary: `Updated prospect ${payload.name}` });
   revalidate();
   return { ok: true };
 }
@@ -96,6 +99,7 @@ export async function deleteProspect(id: string): Promise<Result> {
   const admin = createAdminClient();
   const { error } = await admin.from("prospects").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "delete", entity: "prospect", summary: "Deleted a prospect" });
   revalidate();
   return { ok: true };
 }
@@ -108,6 +112,7 @@ export async function updateProspectStage(id: string, stage: string): Promise<Re
   const admin = createAdminClient();
   const { error } = await admin.from("prospects").update({ stage }).eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "update", entity: "prospect", summary: `Moved a prospect to ${stage}` });
   revalidate();
   return { ok: true };
 }

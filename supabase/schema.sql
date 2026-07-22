@@ -812,3 +812,46 @@ values
   ('russhilchawla@gmail.com', 'Owner', true, '{}'::jsonb),
   ('hello@goatedd.tech',      'Owner', true, '{}'::jsonb)
 on conflict (email) do update set is_owner = true, active = true;
+
+
+-- ============================================================================
+-- 22. Audit trail — who changed what on the tool.
+--   Every HQ mutation (and the bot's writes) appends a row. Service-role only;
+--   surfaced in the HQ header history panel to owners + Users-admins.
+--   Idempotent; re-running is safe.
+-- ============================================================================
+create table if not exists public.audit_log (
+  id           uuid primary key default gen_random_uuid(),
+  actor        text not null,        -- email, or "telegram:<id>"
+  action       text not null,        -- create | update | delete | archive | restore | generate | send
+  entity       text not null,        -- client | subproject | prospect | expense | petty_cash | settlement | invoice | team_member | hq_user | reminder
+  entity_label text,                 -- human name (client name, etc.)
+  summary      text not null,        -- one-line sentence
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists audit_log_created_idx on public.audit_log (created_at desc);
+
+alter table public.audit_log enable row level security;
+-- No policies — service role only.
+
+
+-- ============================================================================
+-- 23. Telegram reminders ("remind me to text xyz tomorrow").
+--   The bot webhook parses + stores; a self-hosted alarm daemon
+--   (scripts/reminder-alarm.mjs) fires them at the exact time — NOT a Vercel
+--   cron. Service-role only. Idempotent; re-running is safe.
+-- ============================================================================
+create table if not exists public.reminders (
+  id          uuid primary key default gen_random_uuid(),
+  chat_id     bigint not null,       -- Telegram chat to DM
+  text        text not null,         -- what to remind about
+  remind_at   timestamptz not null,  -- when to fire
+  sent        boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists reminders_due_idx on public.reminders (remind_at) where sent = false;
+
+alter table public.reminders enable row level security;
+-- No policies — service role only.

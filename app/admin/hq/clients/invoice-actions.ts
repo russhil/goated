@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireManage, revalidateHq } from "../guard";
+import { logAudit } from "@/lib/audit";
 import type { Phase } from "@/lib/hq";
 
 const PREFIX = "GT";
@@ -101,6 +102,7 @@ export async function regenerateAllInvoices(): Promise<{
     const { error } = await admin.from("invoices").insert(rows);
     if (error) return { ok: false, error: error.message };
   }
+  await logAudit({ actor: gate.email, action: "generate", entity: "invoice", summary: `Regenerated all invoices (${rows.length})` });
   revalidateHq();
   return { ok: true, count: rows.length };
 }
@@ -168,6 +170,7 @@ export async function ensureInvoiceForPhase(
     .single();
 
   if (error || !inserted) return { ok: false, error: error?.message || "insert failed" };
+  await logAudit({ actor: gate.email, action: "generate", entity: "invoice", entityLabel: invNo(seq), summary: `Generated invoice ${invNo(seq)}` });
   revalidateHq();
   return { ok: true, id: (inserted as { id: string }).id, invoiceNo: invNo(seq) };
 }

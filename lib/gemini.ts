@@ -11,18 +11,20 @@ export type BotIntent =
   | { intent: "add_expense"; category: string; vendor?: string; amount: number; date?: string }
   | { intent: "get_invoice"; client: string; phase?: string }
   | { intent: "client_info"; client: string }
+  | { intent: "add_reminder"; text: string; remindAt: string }
   | { intent: "query"; sql: string; explain: string }
   | { intent: "summary" }
   | { intent: "balance" }
   | { intent: "offtrack" }
   | { intent: "unknown" };
 
-function systemInstruction(today: string): string {
+function systemInstruction(now: string): string {
+  const today = now.slice(0, 10);
   return `You route short internal-ops messages for a software agency's back office ("Goated") into ONE structured intent, OR into a single read-only database query. Reply with STRICT JSON only — one object, no prose, no markdown fences.
 
-TODAY'S DATE is ${today} (ISO YYYY-MM-DD). Resolve every natural date the user gives ("13th july 2026", "yesterday", "last friday", "next month") to an absolute YYYY-MM-DD relative to today. Include "date" only when the message states one. Money defaults to INR. Never invent values the user did not state.
+CURRENT INSTANT is ${now} (ISO 8601, UTC). TODAY'S DATE is ${today}. The user's timezone is Asia/Kolkata (IST, UTC+05:30). Resolve every natural date the user gives ("13th july 2026", "yesterday", "last friday", "next month") to an absolute YYYY-MM-DD relative to today. Include "date" only when the message states one. Money defaults to INR. Never invent values the user did not state.
 
-WRITES ARE STRICTLY LIMITED. The ONLY two operations that may change data are add_petty_cash and add_expense. Any request to create, add, update, edit, or delete ANYTHING else (a prospect/lead, client, sub-project, invoice, team member, settlement) is NOT supported — return {"intent":"unknown"}. Never invent a write intent for those.
+WRITES ARE STRICTLY LIMITED. The ONLY operations that may change BUSINESS data are add_petty_cash and add_expense. (add_reminder is separate — it just sets a personal reminder for the user, no business data.) Any request to create, add, update, edit, or delete ANYTHING else (a prospect/lead, client, sub-project, invoice, team member, settlement) is NOT supported — return {"intent":"unknown"}. Never invent a write intent for those.
 
 Pick exactly ONE shape:
 
@@ -42,11 +44,16 @@ Pick exactly ONE shape:
    {"intent":"client_info","client":"<client name>"}
    e.g. "how's azadi records doing" -> {"intent":"client_info","client":"azadi records"}
 
-5) summary — financial summary / totals / P&L:  {"intent":"summary"}
-6) balance — petty-cash who-owes-who:  {"intent":"balance"}
-7) offtrack — which sub-projects are behind schedule:  {"intent":"offtrack"}
+5) add_reminder — a PERSONAL reminder the user wants pinged back to them ("remind me to text xyz tomorrow", "remind me to call the accountant in 2 hours", "remind me at 6pm to send the invoice", "reminder next monday 9am: follow up with Aurix"). Only creates a personal reminder; touches no business data.
+   {"intent":"add_reminder","text":"<what to be reminded of, imperative — e.g. 'text xyz'>","remindAt":"<absolute ISO 8601 datetime WITH the +05:30 IST offset>"}
+   Resolve the time in IST relative to the CURRENT INSTANT above. If only a date is given (no clock time), use 09:00 IST. remindAt MUST be in the future and look like "2026-07-23T09:00:00+05:30".
+   e.g. (today 2026-07-22) "remind me to text xyz tomorrow" -> {"intent":"add_reminder","text":"text xyz","remindAt":"2026-07-23T09:00:00+05:30"}
 
-8) query — ANY other READ-ONLY data question the fixed intents above do not cover (e.g. "which clients are off track", "total collected from Azadi", "list prospects in proposal stage", "how many invoices this month", "top 5 expenses this year"). Return a SINGLE read-only SELECT.
+6) summary — financial summary / totals / P&L:  {"intent":"summary"}
+7) balance — petty-cash who-owes-who:  {"intent":"balance"}
+8) offtrack — which sub-projects are behind schedule:  {"intent":"offtrack"}
+
+9) query — ANY other READ-ONLY data question the fixed intents above do not cover (e.g. "which clients are off track", "total collected from Azadi", "list prospects in proposal stage", "how many invoices this month", "top 5 expenses this year"). Return a SINGLE read-only SELECT.
    {"intent":"query","sql":"<one SELECT statement>","explain":"<one-line human summary of what it fetches>"}
    sql rules: exactly ONE statement; must start with SELECT (or WITH ... SELECT); NO semicolons; NO INSERT/UPDATE/DELETE/DROP/ALTER/TRUNCATE/GRANT/REVOKE/COPY/CALL/MERGE/VACUUM or any write/DDL; ALWAYS add a LIMIT (<=200); use ILIKE '%name%' for fuzzy name matching. Money is per-row in each row's own currency column (mostly INR) — do NOT convert currencies. A client's collected revenue = SUM of that client's client_subprojects.collected_revenue.
 
@@ -62,7 +69,7 @@ DATABASE SCHEMA (Postgres):
 
 SEMANTICS: "projects" = clients and/or client_subprojects — there is NO table named "projects". A client is completed when clients.completed = true (yet-to-be-completed = completed = false and archived = false). A sub-project is "done" when its progress >= 100. Only reference tables/columns listed above.
 
-9) unknown — an unsupported write (see above), or a message that is neither an action nor answerable by a SELECT:  {"intent":"unknown"}
+10) unknown — an unsupported write (see above), or a message that is neither an action nor answerable by a SELECT:  {"intent":"unknown"}
 Prefer "query" over "unknown" for anything that READS data; use "unknown" for any write that is not petty cash or expense.`;
 }
 
@@ -118,6 +125,12 @@ function toIntent(raw: unknown): BotIntent | null {
       if (!client) return { intent: "unknown" };
       return { intent: "client_info", client };
     }
+    case "add_reminder": {
+      const text = str(o.text);
+      const remindAt = str(o.remindAt);
+      if (!text || !remindAt) return { intent: "unknown" };
+      return { intent: "add_reminder", text, remindAt };
+    }
     case "query": {
       const sql = str(o.sql);
       if (!sql) return { intent: "unknown" };
@@ -140,7 +153,7 @@ function toIntent(raw: unknown): BotIntent | null {
 
 export async function parseIntent(
   text: string,
-  today: string = new Date().toISOString().slice(0, 10)
+  now: string = new Date().toISOString()
 ): Promise<BotIntent | null> {
   const key = process.env.GEMINI_API_KEY;
   if (!key || !text.trim()) return null;
@@ -150,7 +163,7 @@ export async function parseIntent(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemInstruction(today) }] },
+        system_instruction: { parts: [{ text: systemInstruction(now) }] },
         contents: [{ role: "user", parts: [{ text }] }],
         generationConfig: { responseMimeType: "application/json", temperature: 0 },
       }),

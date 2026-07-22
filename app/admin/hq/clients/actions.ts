@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireManage, revalidateHq, type Result } from "../guard";
+import { logAudit } from "@/lib/audit";
 import {
   CURRENCIES,
   subProgress,
@@ -76,6 +77,7 @@ export async function createClient(input: ClientInput): Promise<Result> {
   const admin = createAdminClient();
   const { error } = await admin.from("clients").insert(payload);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "create", entity: "client", entityLabel: payload.name, summary: `Added client ${payload.name}` });
   revalidateHq();
   return { ok: true };
 }
@@ -89,6 +91,7 @@ export async function updateClient(id: string, input: ClientInput): Promise<Resu
   const admin = createAdminClient();
   const { error } = await admin.from("clients").update(payload).eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "update", entity: "client", entityLabel: payload.name, summary: `Updated client ${payload.name}` });
   revalidateHq();
   return { ok: true };
 }
@@ -99,6 +102,7 @@ export async function archiveClient(id: string): Promise<Result> {
   const admin = createAdminClient();
   const { error } = await admin.from("clients").update({ archived: true }).eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "archive", entity: "client", summary: "Archived a client" });
   revalidateHq();
   return { ok: true };
 }
@@ -109,6 +113,7 @@ export async function restoreClient(id: string): Promise<Result> {
   const admin = createAdminClient();
   const { error } = await admin.from("clients").update({ archived: false }).eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "restore", entity: "client", summary: "Restored a client" });
   revalidateHq();
   return { ok: true };
 }
@@ -129,6 +134,7 @@ export async function deleteClient(id: string): Promise<Result> {
 
   const { error } = await admin.from("clients").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "delete", entity: "client", summary: "Deleted a client" });
   revalidateHq();
   return { ok: true };
 }
@@ -197,6 +203,7 @@ export async function createSubproject(
     .from("client_subprojects")
     .insert({ client_id: clientId, ...payload });
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "create", entity: "subproject", entityLabel: payload.name, summary: `Added sub-project ${payload.name}` });
   revalidateHq();
   return { ok: true };
 }
@@ -213,6 +220,7 @@ export async function updateSubproject(
   const admin = createAdminClient();
   const { error } = await admin.from("client_subprojects").update(payload).eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "update", entity: "subproject", entityLabel: payload.name, summary: `Updated sub-project ${payload.name}` });
   revalidateHq();
   return { ok: true };
 }
@@ -223,6 +231,7 @@ export async function deleteSubproject(id: string): Promise<Result> {
   const admin = createAdminClient();
   const { error } = await admin.from("client_subprojects").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "delete", entity: "subproject", summary: "Deleted a sub-project" });
   revalidateHq();
   return { ok: true };
 }
@@ -274,6 +283,7 @@ export async function uploadClientDoc(
   if (updErr) return { ok: false, error: updErr.message };
   if (oldPath && oldPath !== path) await admin.storage.from(DOC_BUCKET).remove([oldPath]);
 
+  await logAudit({ actor: gate.email, action: "update", entity: "client", summary: `Uploaded ${kind} document` });
   revalidateHq();
   return { ok: true };
 }
@@ -310,6 +320,7 @@ export async function removeClientDoc(clientId: string, kind: string): Promise<R
 
   const { error } = await admin.from("clients").update({ [col]: null }).eq("id", clientId);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "delete", entity: "client", summary: `Removed ${kind} document` });
   revalidateHq();
   return { ok: true };
 }

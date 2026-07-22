@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireManage, revalidateHq, type Result } from "../guard";
+import { logAudit } from "@/lib/audit";
 import { CURRENCIES, EXPENSE_CATEGORIES, PEOPLE } from "@/lib/hq";
 
 function safeCurrency(c: string) {
@@ -44,6 +45,7 @@ export async function createPettyCash(input: PettyCashInput): Promise<Result> {
   const admin = createAdminClient();
   const { error } = await admin.from("petty_cash").insert(payload);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "create", entity: "petty_cash", summary: `Added petty cash ${payload.amount} ${payload.currency} (${payload.payer}) — ${payload.purpose}` });
   revalidateHq();
   return { ok: true };
 }
@@ -58,6 +60,7 @@ export async function updatePettyCash(id: string, input: PettyCashInput): Promis
   const admin = createAdminClient();
   const { error } = await admin.from("petty_cash").update(payload).eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "update", entity: "petty_cash", summary: `Updated a petty cash entry` });
   revalidateHq();
   return { ok: true };
 }
@@ -68,6 +71,7 @@ export async function deletePettyCash(id: string): Promise<Result> {
   const admin = createAdminClient();
   const { error } = await admin.from("petty_cash").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "delete", entity: "petty_cash", summary: "Deleted a petty cash entry" });
   revalidateHq();
   return { ok: true };
 }
@@ -99,6 +103,7 @@ export async function createSettlement(input: SettlementInput): Promise<Result> 
     settled_on: input.settled_on,
   });
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "create", entity: "settlement", summary: `Recorded settlement: ${from} → ${to} ${amount} ${safeCurrency(input.currency)}` });
   revalidateHq();
   return { ok: true };
 }
@@ -109,6 +114,7 @@ export async function deleteSettlement(id: string): Promise<Result> {
   const admin = createAdminClient();
   const { error } = await admin.from("petty_cash_settlements").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "delete", entity: "settlement", summary: "Deleted a settlement" });
   revalidateHq();
   return { ok: true };
 }
@@ -149,6 +155,7 @@ export async function createExpense(input: ExpenseInput): Promise<Result> {
   const admin = createAdminClient();
   const { error } = await admin.from("company_expenses").insert(payload);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "create", entity: "expense", summary: `Added expense ${payload.category} ${payload.amount} ${payload.currency}${payload.vendor ? ` (${payload.vendor})` : ""}` });
   revalidateHq();
   return { ok: true };
 }
@@ -161,6 +168,7 @@ export async function updateExpense(id: string, input: ExpenseInput): Promise<Re
   const admin = createAdminClient();
   const { error } = await admin.from("company_expenses").update(payload).eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "update", entity: "expense", summary: `Updated expense ${payload.category} ${payload.amount} ${payload.currency}` });
   revalidateHq();
   return { ok: true };
 }
@@ -171,6 +179,7 @@ export async function deleteExpense(id: string): Promise<Result> {
   const admin = createAdminClient();
   const { error } = await admin.from("company_expenses").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  await logAudit({ actor: gate.email, action: "delete", entity: "expense", summary: "Deleted an expense" });
   revalidateHq();
   return { ok: true };
 }
