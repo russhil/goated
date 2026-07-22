@@ -445,7 +445,10 @@ async function handleQuery(
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("exec_sql_readonly", { q: sql });
   if (error) {
-    await sendMessage(chatId, "⚠️ couldn't run that lookup — try rephrasing.");
+    // Surface the DB reason (schema-level info, admin-only chat) — makes a bad
+    // column/table or a guard mismatch diagnosable instead of a blank wall.
+    const reason = (error.message || "").slice(0, 200);
+    await sendMessage(chatId, `⚠️ couldn't run that lookup${reason ? `: ${esc(reason)}` : " — try rephrasing."}`);
     return;
   }
 

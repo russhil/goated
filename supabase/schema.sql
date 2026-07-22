@@ -722,16 +722,19 @@ security definer
 set search_path = public
 as $$
 declare
-  cleaned text := btrim(regexp_replace(q, ';\s*$', ''));
+  -- NOTE: PostgreSQL regex uses \y for a word boundary; \b is a BACKSPACE
+  -- character here (unlike JS/PCRE). Whitespace uses the POSIX [[:space:]]
+  -- class rather than \s so nothing depends on backslash-escape handling.
+  cleaned text := btrim(regexp_replace(q, ';+[[:space:]]*$', ''));
   result jsonb;
 begin
-  if cleaned !~* '^\s*(select|with)\b' then
+  if cleaned !~* '^[[:space:]]*(select|with)\y' then
     raise exception 'only SELECT queries are allowed';
   end if;
   if position(';' in cleaned) > 0 then
     raise exception 'multiple statements are not allowed';
   end if;
-  if cleaned ~* '\b(insert|update|delete|drop|alter|truncate|grant|revoke|copy|call|merge|vacuum)\b' then
+  if cleaned ~* '\y(insert|update|delete|drop|alter|truncate|grant|revoke|copy|call|merge|vacuum)\y' then
     raise exception 'write/DDL keywords are not allowed';
   end if;
   perform set_config('statement_timeout', '5000', true);

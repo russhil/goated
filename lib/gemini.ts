@@ -60,6 +60,8 @@ DATABASE SCHEMA (Postgres):
 - team_members(id uuid, name text, role text, email text, active bool)
 - petty_cash_settlements(id uuid, from_person text, to_person text, amount numeric, currency text, settled_on date)
 
+SEMANTICS: "projects" = clients and/or client_subprojects — there is NO table named "projects". A client is completed when clients.completed = true (yet-to-be-completed = completed = false and archived = false). A sub-project is "done" when its progress >= 100. Only reference tables/columns listed above.
+
 9) unknown — an unsupported write (see above), or a message that is neither an action nor answerable by a SELECT:  {"intent":"unknown"}
 Prefer "query" over "unknown" for anything that READS data; use "unknown" for any write that is not petty cash or expense.`;
 }
