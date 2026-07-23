@@ -14,18 +14,19 @@ export default function HqNav({ perms }: { perms: Permissions }) {
 
   // Dashboard is always available to a member; the rest are permission-gated.
   const tabs = [
-    { href: "/admin/hq", label: "Dashboard", show: true },
-    { href: "/admin/hq/clients", label: "Clients", show: canView(perms, "clients") },
-    { href: "/admin/hq/prospects", label: "Prospects", show: canView(perms, "prospects") },
-    { href: "/admin/hq/finance", label: "Finance", show: canViewFinanceTab(perms) },
-    { href: "/admin/hq/users", label: "Users", show: canManageUsers(perms) },
+    { href: "/hq", label: "Dashboard", show: true },
+    { href: "/hq/clients", label: "Clients", show: canView(perms, "clients") },
+    { href: "/hq/prospects", label: "Prospects", show: canView(perms, "prospects") },
+    { href: "/hq/content", label: "Content", show: canView(perms, "content") },
+    { href: "/hq/finance", label: "Finance", show: canViewFinanceTab(perms) },
+    { href: "/hq/users", label: "Users", show: canManageUsers(perms) },
   ].filter((t) => t.show);
 
   return (
     <div className="flex items-center gap-2 mb-2">
       {tabs.map((t) => {
         const active =
-          t.href === "/admin/hq"
+          t.href === "/hq"
             ? pathname === t.href
             : pathname.startsWith(t.href);
         return (

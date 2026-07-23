@@ -25,7 +25,7 @@ export default function InvoiceCard({
     };
   }, [onClose]);
 
-  const src = `/admin/hq/invoice/${invoiceId}`;
+  const src = `/hq/invoice/${invoiceId}`;
 
   const print = () => {
     const frame = document.getElementById("inv-frame") as HTMLIFrameElement | null;

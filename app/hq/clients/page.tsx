@@ -142,7 +142,7 @@ export default async function ClientsPage({
       <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
         <div className="flex items-center gap-2">
           <a
-            href="/admin/hq/clients"
+            href="/hq/clients"
             className={`px-3 py-1.5 rounded-full text-xs font-mono uppercase tracking-widest transition ${
               !showArchived ? "bg-coral text-white" : "bg-dark/[0.04] text-dark/70 hover:bg-dark/10"
             }`}
@@ -150,7 +150,7 @@ export default async function ClientsPage({
             active
           </a>
           <a
-            href="/admin/hq/clients?archived=1"
+            href="/hq/clients?archived=1"
             className={`px-3 py-1.5 rounded-full text-xs font-mono uppercase tracking-widest transition ${
               showArchived ? "bg-coral text-white" : "bg-dark/[0.04] text-dark/70 hover:bg-dark/10"
             }`}
@@ -190,7 +190,7 @@ export default async function ClientsPage({
             {sortedRows.map(({ c, r, health }) => (
               <a
                 key={c.id}
-                href={`/admin/hq/clients/${c.id}`}
+                href={`/hq/clients/${c.id}`}
                 className="grid gap-4 items-center px-5 py-4 border-t border-dark/10 hover:bg-dark/[0.02] transition-colors"
                 style={{ gridTemplateColumns: cols }}
               >

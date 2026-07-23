@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useBooking } from "./BookingProvider";
@@ -22,6 +22,28 @@ export default function Navbar() {
   const { user, loading, openSignIn, signOut } = useAuth();
   const userIsAdmin = isAdmin(user?.email);
   const initial = (user?.email || "?").charAt(0).toUpperCase();
+
+  // Client HQ membership lives in the DB, so ask the server. Admin falls back to
+  // the instant client-side check until the fetch resolves (avoids a flicker).
+  const [access, setAccess] = useState<{ member: boolean; admin: boolean } | null>(null);
+  useEffect(() => {
+    if (!user) {
+      setAccess(null);
+      return;
+    }
+    let alive = true;
+    fetch("/api/hq/access")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (alive && d) setAccess(d);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [user]);
+  const showHq = access?.member ?? false;
+  const showAdmin = access?.admin ?? userIsAdmin;
 
   const handleBook = (source: "navbar_desktop" | "navbar_mobile") => {
     posthog.capture("booking_cta_clicked", { source });
@@ -107,18 +129,26 @@ export default function Navbar() {
                         {user.email}
                       </p>
                     </div>
+                    {showHq && (
+                      <Link
+                        href="/hq"
+                        className="block px-4 py-2.5 font-sans text-sm text-coral hover:bg-coral/5 transition"
+                      >
+                        Client HQ
+                      </Link>
+                    )}
                     <Link
                       href="/explore/dashboard"
                       className="block px-4 py-2.5 font-sans text-sm text-dark hover:bg-dark/5 transition"
                     >
                       Your applications
                     </Link>
-                    {userIsAdmin && (
+                    {showAdmin && (
                       <Link
                         href="/admin"
-                        className="block px-4 py-2.5 font-sans text-sm text-coral hover:bg-coral/5 transition"
+                        className="block px-4 py-2.5 font-sans text-sm text-dark hover:bg-dark/5 transition"
                       >
-                        Admin panel
+                        Admin (back-office)
                       </Link>
                     )}
                     <button
@@ -192,11 +222,20 @@ export default function Navbar() {
             {item.label}
           </Link>
         ))}
-        {!loading && user && userIsAdmin && (
+        {!loading && user && showHq && (
+          <Link
+            href="/hq"
+            onClick={() => setMobileOpen(false)}
+            className="font-serif text-2xl text-coral hover:underline transition-colors"
+          >
+            Client HQ
+          </Link>
+        )}
+        {!loading && user && showAdmin && (
           <Link
             href="/admin"
             onClick={() => setMobileOpen(false)}
-            className="font-serif text-2xl text-coral hover:underline transition-colors"
+            className="font-serif text-2xl text-dark/70 hover:text-coral transition-colors"
           >
             Admin
           </Link>

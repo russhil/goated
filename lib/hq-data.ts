@@ -183,6 +183,33 @@ export const getInvoicesAll = unstable_cache(
   { tags: [HQ_TAG] }
 );
 
+export type ContentItem = {
+  id: string;
+  title: string;
+  kind: string;
+  platform: string;
+  status: string;
+  scheduled_at: string | null;
+  topic: string | null;
+  notes: string | null;
+  link: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const getContentAll = unstable_cache(
+  async (): Promise<ContentItem[]> => {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("content_items")
+      .select("*")
+      .order("scheduled_at", { ascending: true, nullsFirst: false });
+    return (data ?? []) as ContentItem[];
+  },
+  ["hq:content"],
+  { tags: [HQ_TAG] }
+);
+
 export type AuditRow = {
   id: string;
   actor: string;

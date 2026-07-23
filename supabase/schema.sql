@@ -855,3 +855,36 @@ create index if not exists reminders_due_idx on public.reminders (remind_at) whe
 
 alter table public.reminders enable row level security;
 -- No policies — service role only.
+
+
+-- ============================================================================
+-- 24. Content pipeline — what video/reel goes out, exactly when, and about what.
+--   Gated by the `content` permission. Service-role only.
+--   Idempotent; re-running is safe.
+-- ============================================================================
+create table if not exists public.content_items (
+  id            uuid primary key default gen_random_uuid(),
+  title         text not null,
+  kind          text not null default 'reel'
+                check (kind in ('reel','video','short','post','carousel','story')),
+  platform      text not null default 'instagram'
+                check (platform in ('instagram','youtube','tiktok','linkedin','x','other')),
+  status        text not null default 'idea'
+                check (status in ('idea','scripting','filming','editing','scheduled','posted')),
+  scheduled_at  timestamptz,          -- when it goes out (date + time)
+  topic         text,                 -- what the video is about
+  notes         text,
+  link          text,                 -- draft / published url
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create index if not exists content_items_sched_idx on public.content_items (scheduled_at);
+
+drop trigger if exists content_items_set_updated_at on public.content_items;
+create trigger content_items_set_updated_at
+  before update on public.content_items
+  for each row execute function public.set_updated_at();
+
+alter table public.content_items enable row level security;
+-- No policies — service role only.

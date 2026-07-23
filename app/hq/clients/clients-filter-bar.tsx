@@ -56,7 +56,7 @@ export default function ClientsFilterBar({
   // Preserve any param we don't own (notably `archived`) when writing.
   const push = (next: URLSearchParams) => {
     const qs = next.toString();
-    router.push(qs ? `/admin/hq/clients?${qs}` : "/admin/hq/clients");
+    router.push(qs ? `/hq/clients?${qs}` : "/hq/clients");
   };
 
   const setParam = (key: string, value: string) => {

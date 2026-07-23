@@ -61,7 +61,7 @@ export default async function ClientDetailPage({
 
   return (
     <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1000px] mx-auto pt-6">
-      <a href="/admin/hq/clients" className="font-mono text-[11px] text-muted hover:text-dark transition-colors">
+      <a href="/hq/clients" className="font-mono text-[11px] text-muted hover:text-dark transition-colors">
         ← back to clients
       </a>
 

@@ -143,7 +143,7 @@ export default async function FinancePage() {
                 {perClient.map(({ client: c, roll: r }) => (
                   <tr key={c.id} className="border-b border-dark/5 last:border-0 hover:bg-dark/[0.02]">
                     <td className="p-3 text-dark">
-                      <a href={`/admin/hq/clients/${c.id}`} className="hover:text-coral">{c.name}</a>
+                      <a href={`/hq/clients/${c.id}`} className="hover:text-coral">{c.name}</a>
                     </td>
                     <td className="p-3 text-right">{formatMoney(r.totalContract, c.currency)}</td>
                     <td className="p-3 text-right">{formatMoney(r.collected, c.currency)}</td>

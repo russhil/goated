@@ -31,7 +31,7 @@ function safeCurrency(c: string) {
 // own path, so bust that too.
 function revalidate() {
   revalidateHq();
-  revalidatePath("/admin/hq/prospects");
+  revalidatePath("/hq/prospects");
 }
 
 function validDate(s: string): string | null {

@@ -1,5 +1,5 @@
 // Invoice PDF builder — the single source of truth for the GT-numbered invoice
-// PDF. Extracted from app/admin/hq/invoice/[id]/route.ts so both that route and
+// PDF. Extracted from app/hq/invoice/[id]/route.ts so both that route and
 // the Telegram bot (app/api/telegram) render the exact same document.
 
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";

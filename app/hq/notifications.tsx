@@ -69,7 +69,7 @@ export default function Notifications({
                 {items.map((it, i) => (
                   <li key={`${it.clientId}-${it.subName}-${i}`}>
                     <a
-                      href={`/admin/hq/clients/${it.clientId}`}
+                      href={`/hq/clients/${it.clientId}`}
                       onClick={() => setOpen(false)}
                       className="block px-2 py-2 rounded-lg hover:bg-dark/[0.02] transition"
                     >
@@ -95,7 +95,7 @@ export default function Notifications({
                 {prospects.map((p) => (
                   <li key={p.id}>
                     <a
-                      href="/admin/hq/prospects"
+                      href="/hq/prospects"
                       onClick={() => setOpen(false)}
                       className="block px-2 py-2 rounded-lg hover:bg-dark/[0.02] transition"
                     >

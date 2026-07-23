@@ -94,10 +94,10 @@ export default async function ProspectsPage({
     <section className="px-6 md:px-12 pb-24 md:pb-32 max-w-[1200px] mx-auto pt-6">
       <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
         <div className="flex items-center gap-2">
-          <a href="/admin/hq/prospects?view=kanban" className={pillCls(view === "kanban")}>
+          <a href="/hq/prospects?view=kanban" className={pillCls(view === "kanban")}>
             kanban
           </a>
-          <a href="/admin/hq/prospects?view=list" className={pillCls(view === "list")}>
+          <a href="/hq/prospects?view=list" className={pillCls(view === "list")}>
             list
           </a>
         </div>

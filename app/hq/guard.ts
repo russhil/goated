@@ -1,4 +1,4 @@
-// Shared server-side auth + permission guard + revalidation for /admin/hq.
+// Shared server-side auth + permission guard + revalidation for /hq.
 // NOT a "use server" file — it exports sync helpers and types too.
 import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -64,9 +64,9 @@ export async function requireUsersAdmin(): Promise<Gate> {
 export function revalidateHq() {
   // Bust the cached data loaders (lib/hq-data) so reads refresh after a write.
   revalidateTag(HQ_TAG);
-  revalidatePath("/admin/hq");
-  revalidatePath("/admin/hq/clients");
-  revalidatePath("/admin/hq/prospects");
-  revalidatePath("/admin/hq/finance");
-  revalidatePath("/admin/hq/users");
+  revalidatePath("/hq");
+  revalidatePath("/hq/clients");
+  revalidatePath("/hq/prospects");
+  revalidatePath("/hq/finance");
+  revalidatePath("/hq/users");
 }

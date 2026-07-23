@@ -24,6 +24,7 @@ export type HqUserRow = {
 const SECTIONS: { key: Section; label: string }[] = [
   { key: "clients", label: "Clients" },
   { key: "prospects", label: "Prospects / Kanban" },
+  { key: "content", label: "Content pipeline" },
   { key: "expenses", label: "Company expenses" },
   { key: "pettyCash", label: "Petty cash" },
 ];

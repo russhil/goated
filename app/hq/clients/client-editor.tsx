@@ -133,7 +133,7 @@ export default function ClientEditor({
     if (!client) return;
     startTransition(async () => {
       const res = await archiveClient(client.id);
-      if (res.ok) router.push("/admin/hq/clients");
+      if (res.ok) router.push("/hq/clients");
       else setError(res.error || "archive failed");
     });
   };
@@ -157,7 +157,7 @@ export default function ClientEditor({
       return;
     startTransition(async () => {
       const res = await deleteClient(client.id);
-      if (res.ok) router.push("/admin/hq/clients");
+      if (res.ok) router.push("/hq/clients");
       else setError(res.error || "delete failed");
     });
   };

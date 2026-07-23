@@ -8,7 +8,7 @@
 export type Level = "none" | "view" | "manage";
 
 // Sections that use the none/view/manage scale.
-export type Section = "clients" | "prospects" | "expenses" | "pettyCash";
+export type Section = "clients" | "prospects" | "expenses" | "pettyCash" | "content";
 
 export type Permissions = {
   financials: boolean;
@@ -16,6 +16,7 @@ export type Permissions = {
   prospects: Level;
   expenses: Level;
   pettyCash: Level;
+  content: Level;
   users: boolean;
 };
 
@@ -31,6 +32,7 @@ export const OWNER_PERMISSIONS: Permissions = {
   prospects: "manage",
   expenses: "manage",
   pettyCash: "manage",
+  content: "manage",
   users: true,
 };
 
@@ -40,6 +42,7 @@ export const NO_PERMISSIONS: Permissions = {
   prospects: "none",
   expenses: "none",
   pettyCash: "none",
+  content: "none",
   users: false,
 };
 
@@ -54,6 +57,19 @@ export const PRESETS: Record<string, { label: string; perms: Permissions }> = {
       prospects: "manage",
       expenses: "manage",
       pettyCash: "none",
+      content: "none",
+      users: false,
+    },
+  },
+  content: {
+    label: "Content",
+    perms: {
+      financials: false,
+      clients: "view",
+      prospects: "none",
+      expenses: "none",
+      pettyCash: "none",
+      content: "manage",
       users: false,
     },
   },
@@ -65,6 +81,7 @@ export const PRESETS: Record<string, { label: string; perms: Permissions }> = {
       prospects: "view",
       expenses: "none",
       pettyCash: "none",
+      content: "view",
       users: false,
     },
   },
@@ -86,6 +103,7 @@ export function normalizePermissions(raw: unknown): Permissions {
     prospects: level(o.prospects),
     expenses: level(o.expenses),
     pettyCash: level(o.pettyCash),
+    content: level(o.content),
     users: o.users === true,
   };
 }

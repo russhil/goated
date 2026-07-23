@@ -31,7 +31,7 @@ import {
   type Subproject,
   type Phase,
 } from "@/lib/hq";
-import { computeBalances, primaryBalance } from "@/app/admin/hq/finance/splitwise";
+import { computeBalances, primaryBalance } from "@/app/hq/finance/splitwise";
 import { sendDueFollowups, buildClientWeeksDigest } from "@/lib/followups";
 
 export const dynamic = "force-dynamic";

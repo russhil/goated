@@ -27,7 +27,7 @@ export default async function HqLayout({
   const gate = await requireUser();
 
   if (!gate.ok && gate.reason === "unauth") {
-    redirect("/explore?signin=1&next=/admin/hq");
+    redirect("/explore?signin=1&next=/hq");
   }
 
   if (!gate.ok) {

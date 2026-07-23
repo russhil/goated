@@ -285,7 +285,7 @@ export default async function DashboardPage() {
         {board.map(({ client, roll, health }) => (
           <li key={client.id} className="border border-dark/10 rounded-xl bg-white px-5 py-3 flex items-center gap-4 flex-wrap">
             <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${HEALTH_DOT[health]}`} title={HEALTH_LABEL[health]} />
-            <a href={`/admin/hq/clients/${client.id}`} className="font-serif text-base text-dark min-w-[140px] hover:text-coral">
+            <a href={`/hq/clients/${client.id}`} className="font-serif text-base text-dark min-w-[140px] hover:text-coral">
               {client.name}
             </a>
             <span className="font-mono text-[11px] text-muted uppercase tracking-widest">{HEALTH_LABEL[health]}</span>

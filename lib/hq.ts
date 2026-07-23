@@ -1,4 +1,4 @@
-// Shared helpers for the Admin HQ internal-ops area (/admin/hq).
+// Shared helpers for the Admin HQ internal-ops area (/hq).
 // The rollup() helper is the SINGLE place client totals are computed, so the
 // clients page, dashboard, and finance page can never drift from each other.
 
