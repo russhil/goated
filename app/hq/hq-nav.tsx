@@ -5,6 +5,7 @@ import { ThemeToggle } from "./theme";
 import {
   canView,
   canViewFinanceTab,
+  canViewDashboard,
   canManageUsers,
   type Permissions,
 } from "@/lib/hq-perms";
@@ -14,7 +15,7 @@ export default function HqNav({ perms }: { perms: Permissions }) {
 
   // Dashboard is always available to a member; the rest are permission-gated.
   const tabs = [
-    { href: "/hq", label: "Dashboard", show: true },
+    { href: "/hq", label: "Dashboard", show: canViewDashboard(perms) },
     { href: "/hq/clients", label: "Clients", show: canView(perms, "clients") },
     { href: "/hq/prospects", label: "Prospects", show: canView(perms, "prospects") },
     { href: "/hq/content", label: "Content", show: canView(perms, "content") },

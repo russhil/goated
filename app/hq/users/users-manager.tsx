@@ -33,6 +33,7 @@ const LEVELS: Level[] = ["none", "view", "manage"];
 
 function summarize(p: Permissions): string[] {
   const out: string[] = [];
+  if (!p.dashboard) out.push("No dashboard");
   if (p.financials) out.push("Revenue");
   for (const s of SECTIONS) {
     if (p[s.key] !== "none") out.push(`${s.label}: ${p[s.key]}`);
@@ -109,6 +110,14 @@ function PermsEditor({
             {p.label}
           </button>
         ))}
+      </div>
+
+      <div className="flex items-center justify-between py-2 border-t border-dark/5">
+        <div>
+          <p className="font-sans text-sm text-dark">Main dashboard</p>
+          <p className="font-mono text-[10px] text-muted">the /hq overview page</p>
+        </div>
+        <Toggle checked={value.dashboard} onChange={(b) => set({ dashboard: b })} />
       </div>
 
       <div className="flex items-center justify-between py-2 border-t border-dark/5">

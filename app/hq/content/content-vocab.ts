@@ -67,9 +67,42 @@ export type ContentItem = {
   topic: string | null;
   notes: string | null;
   link: string | null;
+  account_id: string | null;
+  starred: boolean;
   created_at: string;
   updated_at: string;
 };
+
+export type ContentAccount = {
+  id: string;
+  name: string;
+  handle: string | null;
+  platform: string;
+  color: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+// Distinct, theme-safe palette for account color dots on the calendar.
+export const ACCOUNT_COLORS = [
+  "#E8533A",
+  "#6366f1",
+  "#10b981",
+  "#f59e0b",
+  "#ec4899",
+  "#14b8a6",
+  "#8b5cf6",
+  "#3b82f6",
+];
+
+// Stable fallback color for an account without one (hash by id, not list index).
+export function accountColor(acc: { id: string; color: string | null }): string {
+  if (acc.color) return acc.color;
+  let h = 0;
+  for (let i = 0; i < acc.id.length; i++) h = (h * 31 + acc.id.charCodeAt(i)) | 0;
+  return ACCOUNT_COLORS[Math.abs(h) % ACCOUNT_COLORS.length];
+}
 
 // Timezone-pinned formatters (IST) so server (UTC) and client render identically
 // — no hydration mismatch from a floating local timezone.

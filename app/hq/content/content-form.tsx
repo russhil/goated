@@ -11,6 +11,7 @@ import {
   PLATFORM_LABEL,
   STATUS_LABEL,
   type ContentItem,
+  type ContentAccount,
 } from "./content-vocab";
 import { createContent, updateContent, deleteContent, type ContentInput } from "./actions";
 
@@ -26,9 +27,11 @@ function toLocalInput(iso: string | null): string {
 
 export default function ContentForm({
   item,
+  accounts,
   onSaved,
 }: {
   item?: ContentItem;
+  accounts: ContentAccount[];
   onSaved?: () => void;
 }) {
   const isNew = !item;
@@ -38,6 +41,7 @@ export default function ContentForm({
   const [kind, setKind] = useState(item?.kind ?? "reel");
   const [platform, setPlatform] = useState(item?.platform ?? "instagram");
   const [status, setStatus] = useState(item?.status ?? "idea");
+  const [accountId, setAccountId] = useState(item?.account_id ?? "");
   const [scheduled, setScheduled] = useState(toLocalInput(item?.scheduled_at ?? null));
   const [topic, setTopic] = useState(item?.topic ?? "");
   const [notes, setNotes] = useState(item?.notes ?? "");
@@ -51,6 +55,7 @@ export default function ContentForm({
     kind,
     platform,
     status,
+    account_id: accountId,
     // Convert the local datetime-local value to a full ISO instant here, where
     // the browser knows the local timezone.
     scheduled_at: scheduled ? new Date(scheduled).toISOString() : "",
@@ -64,6 +69,7 @@ export default function ContentForm({
     setKind("reel");
     setPlatform("instagram");
     setStatus("idea");
+    setAccountId("");
     setScheduled("");
     setTopic("");
     setNotes("");
@@ -144,14 +150,32 @@ export default function ContentForm({
         </div>
       </div>
 
-      <div className="mb-4">
-        <label className={labelClass}>// scheduled upload (date &amp; time)</label>
-        <input
-          type="datetime-local"
-          className={inputClass}
-          value={scheduled}
-          onChange={(e) => setScheduled(e.target.value)}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className={labelClass}>// account (whose handle)</label>
+          <select
+            className={inputClass}
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+          >
+            <option value="">— no account —</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+                {a.handle ? ` (@${a.handle})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>// scheduled upload (date &amp; time)</label>
+          <input
+            type="datetime-local"
+            className={inputClass}
+            value={scheduled}
+            onChange={(e) => setScheduled(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="mb-4">

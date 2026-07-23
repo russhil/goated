@@ -17,7 +17,8 @@ import {
   getPettyCashAll,
   getExpensesAll,
 } from "@/lib/hq-data";
-import { canSeeFinancials } from "@/lib/hq-perms";
+import { redirect } from "next/navigation";
+import { canSeeFinancials, canViewDashboard, firstAccessibleRoute } from "@/lib/hq-perms";
 import { requireUser } from "./guard";
 import {
   StackedChart,
@@ -48,9 +49,14 @@ export default async function DashboardPage() {
     getInrRates(),
   ]);
 
+  const gate = await requireUser();
+  // Dashboard can be hidden per-user; send them to their first available tab.
+  if (gate.ok && !canViewDashboard(gate.perms)) {
+    const to = firstAccessibleRoute(gate.perms);
+    if (to && to !== "/hq") redirect(to);
+  }
   // Money is only rendered (and only reaches the browser) for members who can
   // see financials — the KPIs, both charts, and the "outstanding" figures below.
-  const gate = await requireUser();
   const showMoney = gate.ok && canSeeFinancials(gate.perms);
 
   const clientList: Client[] = clientsAll.filter((c) => !c.archived);

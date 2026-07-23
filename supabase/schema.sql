@@ -888,3 +888,33 @@ create trigger content_items_set_updated_at
 
 alter table public.content_items enable row level security;
 -- No policies — service role only.
+
+
+-- ============================================================================
+-- 25. Content accounts (whose handle a post goes out on) + star performers.
+--   Idempotent; re-running is safe.
+-- ============================================================================
+create table if not exists public.content_accounts (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  handle      text,
+  platform    text not null default 'instagram'
+              check (platform in ('instagram','youtube','tiktok','linkedin','x','other')),
+  color       text,
+  active      boolean not null default true,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+drop trigger if exists content_accounts_set_updated_at on public.content_accounts;
+create trigger content_accounts_set_updated_at
+  before update on public.content_accounts
+  for each row execute function public.set_updated_at();
+
+alter table public.content_accounts enable row level security;
+-- No policies — service role only.
+
+-- Which account a piece of content posts on, and whether it's a star performer.
+alter table public.content_items
+  add column if not exists account_id uuid references public.content_accounts(id) on delete set null,
+  add column if not exists starred    boolean not null default false;

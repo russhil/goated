@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Drawer from "../components/drawer";
 import ContentForm from "./content-form";
+import { type ContentAccount } from "./content-vocab";
 
-export default function NewContentDrawer() {
+export default function NewContentDrawer({ accounts }: { accounts: ContentAccount[] }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -15,7 +16,7 @@ export default function NewContentDrawer() {
         + New content
       </button>
       <Drawer open={open} onClose={() => setOpen(false)} title="New content">
-        <ContentForm onSaved={() => setOpen(false)} />
+        <ContentForm accounts={accounts} onSaved={() => setOpen(false)} />
       </Drawer>
     </>
   );

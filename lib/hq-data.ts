@@ -193,6 +193,8 @@ export type ContentItem = {
   topic: string | null;
   notes: string | null;
   link: string | null;
+  account_id: string | null;
+  starred: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -207,6 +209,30 @@ export const getContentAll = unstable_cache(
     return (data ?? []) as ContentItem[];
   },
   ["hq:content"],
+  { tags: [HQ_TAG] }
+);
+
+export type ContentAccount = {
+  id: string;
+  name: string;
+  handle: string | null;
+  platform: string;
+  color: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export const getContentAccounts = unstable_cache(
+  async (): Promise<ContentAccount[]> => {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("content_accounts")
+      .select("*")
+      .order("name", { ascending: true });
+    return (data ?? []) as ContentAccount[];
+  },
+  ["hq:content_accounts"],
   { tags: [HQ_TAG] }
 );
 
