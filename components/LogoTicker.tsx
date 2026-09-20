@@ -22,10 +22,11 @@ const newsLogos = [
   { name: 'Radio Mirchi', file: 'logos/news/radiomirchi.png' },
 ];
 
-// Duplicate 2x for seamless infinite loop
-const allLogos = [...logos, ...logos];
+export default function LogoTicker({ only }: { only?: string[] }) {
+  const shown = only ? logos.filter((logo) => only.includes(logo.name)) : logos;
+  // Duplicate 2x for seamless infinite loop
+  const allLogos = [...shown, ...shown];
 
-export default function LogoTicker() {
   return (
     <section className="py-10 md:py-16 border-y border-[#F0F0F0] overflow-hidden">
       {/* Label */}

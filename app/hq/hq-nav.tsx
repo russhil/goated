@@ -20,6 +20,7 @@ export default function HqNav({ perms }: { perms: Permissions }) {
     { href: "/hq/prospects", label: "Prospects", show: canView(perms, "prospects") },
     { href: "/hq/content", label: "Content", show: canView(perms, "content") },
     { href: "/hq/finance", label: "Finance", show: canViewFinanceTab(perms) },
+    { href: "/hq/ads", label: "Ads", show: canManageUsers(perms) },
     { href: "/hq/users", label: "Users", show: canManageUsers(perms) },
   ].filter((t) => t.show);
 
