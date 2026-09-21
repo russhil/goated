@@ -15,12 +15,23 @@ const CAMPAIGN_LOGOS = ["NBA", "KPMG", "Everest Fleet", "Kiko Live", "DlaN5", "W
 // action. No navigation and
 // no outbound links; the only exit is the booking form.
 
-export const metadata: Metadata = {
-  title: "Grow without hiring more people",
-  description: HERO.subhead,
-  alternates: { canonical: "https://goatedd.tech/ai" },
-  robots: { index: false, follow: false },
-};
+// Link-preview image per ad: X and WhatsApp render this as the creative, so
+// each X ad links to /ai?c=<creative> and shows its own approved image.
+const OG_CREATIVES = ["staff", "salary", "dataentry"] as const;
+
+export function generateMetadata({ searchParams }: { searchParams: { c?: string | string[] } }): Metadata {
+  const raw = Array.isArray(searchParams.c) ? searchParams.c[0] : searchParams.c;
+  const creative = OG_CREATIVES.find((c) => c === raw) ?? "staff";
+  const image = { url: `https://goatedd.tech/ai-og/${creative}.jpg`, width: 1200, height: 628, alt: HERO.headline };
+  return {
+    title: "Grow without hiring more people",
+    description: HERO.subhead,
+    alternates: { canonical: "https://goatedd.tech/ai" },
+    robots: { index: false, follow: false },
+    openGraph: { title: HERO.headline, description: HERO.subhead, url: "https://goatedd.tech/ai", images: [image], type: "website" },
+    twitter: { card: "summary_large_image", title: HERO.headline, description: HERO.subhead, images: [image.url] },
+  };
+}
 
 const CTA_CLASS = "!bg-coral !text-white hover:!bg-dark !text-lg !px-9 !py-[1.15rem]";
 const H2 = "ai-lining font-sans font-extrabold leading-[1.05] tracking-[-0.025em]";

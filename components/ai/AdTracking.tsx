@@ -107,6 +107,18 @@ function loadXPixel(pixelId: string) {
   twq("config", pixelId);
 }
 
+// X events come in two shapes: an Events Manager id ("tw-<pixel>-<event>")
+// fired through the base pixel, or a standalone conversion tag id that the
+// Ads API creates, which reports through its own tracking image.
+function fireXEvent(id: string, conversionId: string) {
+  if (id.startsWith("tw-")) {
+    window.twq?.("event", id, { conversion_id: conversionId });
+    return;
+  }
+  const img = new Image();
+  img.src = `https://analytics.twitter.com/i/adsct?txn_id=${encodeURIComponent(id)}&p_id=Twitter&tw_sale_amount=0&tw_order_quantity=0`;
+}
+
 export default function AdTracking({
   variant,
   children,
@@ -214,7 +226,7 @@ export default function AdTracking({
         { content_name: "ai-lead-form", variant },
         { eventID: eventId }
       );
-      if (X_LEAD_EVENT) window.twq?.("event", X_LEAD_EVENT, { conversion_id: eventId });
+      if (X_LEAD_EVENT) fireXEvent(X_LEAD_EVENT, eventId);
       posthog.capture("ai_lead_submitted", { variant });
     },
     [variant]
@@ -227,9 +239,7 @@ export default function AdTracking({
       { content_name: "free-30-minute-call", variant },
       { eventID: scheduleEventId.current }
     );
-    if (X_SCHEDULE_EVENT) {
-      window.twq?.("event", X_SCHEDULE_EVENT, { conversion_id: scheduleEventId.current });
-    }
+    if (X_SCHEDULE_EVENT) fireXEvent(X_SCHEDULE_EVENT, scheduleEventId.current);
     posthog.capture("ai_booking_completed", { variant });
   }, [variant]);
 
