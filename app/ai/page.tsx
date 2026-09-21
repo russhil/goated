@@ -1,31 +1,31 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import LogoTicker from "@/components/LogoTicker";
 import AdTracking from "@/components/ai/AdTracking";
 import BookCallButton, { StickyBookCall } from "@/components/ai/BookCallButton";
+import FounderVideo from "@/components/ai/FounderVideo";
 import {
-  AUDIT_OFFER,
-  CASES,
+  CLIENTS_LABEL,
   CLOSE,
-  EYEBROW,
-  FAQS,
+  FOUNDERS,
   HERO,
-  PAINS,
-  PROOF_HEADING,
-  REASSURANCE,
+  JOBS,
+  PROOF,
   STEPS,
+  TRUST,
   resolveVariant,
-  type HeroVariant,
 } from "@/lib/ai/content";
 import "./ai.css";
 
 const CAMPAIGN_LOGOS = ["NBA", "KPMG", "Everest Fleet", "Kiko Live", "DlaN5", "Wear World Peace", "Partner"];
 
 // Paid-traffic landing page. No navigation and no outbound links: the only
-// exit is the booking calendar. Headline variant: /ai (a) or /ai?v=b.
+// exit is the booking form. Built to be understood in one scroll by an owner
+// who reads English as a second language.
 
 export const metadata: Metadata = {
-  title: "AI automation for Indian businesses above ₹25 Cr",
-  description: HERO.subhead,
+  title: "Free AI consulting for Indian businesses",
+  description: HERO.headline,
   alternates: { canonical: "https://goatedd.tech/ai" },
   robots: { index: false, follow: false },
 };
@@ -41,79 +41,113 @@ function Brand() {
   );
 }
 
-function Figure({ before, after, size }: { before: string; after: string; size: string }) {
+function Label({ children, dark = false }: { children: string; dark?: boolean }) {
   return (
-    <p className="ai-figure flex flex-wrap items-baseline gap-x-[0.18em]" style={{ fontSize: size }}>
-      <span className="ai-before">{before}</span>
-      <span className="ai-arrow" style={{ fontSize: "0.5em" }} aria-hidden="true">
-        →
-      </span>
-      <span className="sr-only">to</span>
-      <span className="ai-after">{after}</span>
-    </p>
+    <p className={`font-mono text-xs uppercase tracking-[0.14em] ${dark ? "text-[#FF9E82]" : "text-coral"}`}>{children}</p>
   );
 }
 
-function Hero({ variant }: { variant: HeroVariant }) {
-  const numberLed = variant === "a";
-  const figure = (
-    <div className={numberLed ? "" : "mt-10 border-t border-dark/10 pt-8"}>
-      <Figure
-        before={HERO.before}
-        after={HERO.after}
-        size={numberLed ? "clamp(6rem, 30vw, 17rem)" : "clamp(3.5rem, 14vw, 7rem)"}
-      />
-      <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-muted md:text-xs">
-        {HERO.unit} <span className="text-coral">·</span> {HERO.span}
-      </p>
-    </div>
-  );
-
+function Hero() {
   return (
-    <section className="mx-auto max-w-[1100px] px-6 pb-16 pt-6 md:px-12 md:pb-24 md:pt-8">
+    <section className="mx-auto max-w-[1100px] px-5 pb-14 pt-6 md:px-12 md:pb-24 md:pt-8">
       <Brand />
-      <p className="mt-10 inline-block rounded-full border border-coral/40 bg-coral/5 px-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.06em] text-coral md:mt-14 md:px-4 md:text-xs md:tracking-[0.12em]">
-        {EYEBROW}
-      </p>
-
-      <div className="mt-8 md:mt-10">
-        {numberLed && figure}
-        <h1
-          className={`ai-lining font-serif leading-[1.12] text-dark ${numberLed ? "mt-8 max-w-[760px]" : "max-w-[900px]"}`}
-          style={{
-            fontSize: numberLed ? "clamp(1.7rem, 4.2vw, 3.1rem)" : "clamp(2.1rem, 5.6vw, 4.4rem)",
-          }}
-        >
-          {HERO.headline[variant]}
-        </h1>
-        {!numberLed && figure}
+      <div className="mt-8 grid items-center gap-8 md:mt-14 md:grid-cols-[1fr_1.1fr] md:gap-14">
+        <div>
+          <p className="inline-block rounded-full bg-coral/10 px-3.5 py-2 font-sans text-[13px] font-semibold text-coral md:text-sm">
+            {HERO.eyebrow}
+          </p>
+          <h1 className="ai-lining mt-5 font-sans font-extrabold leading-[1.02] tracking-[-0.03em] text-dark" style={{ fontSize: "clamp(2.4rem, 6.2vw, 4.4rem)" }}>
+            {HERO.headline}
+          </h1>
+          <p className="mt-5 font-sans text-lg text-gray-600 md:text-xl">{HERO.subhead}</p>
+        </div>
+        <FounderVideo />
       </div>
 
-      <p className="ai-rise mt-6 max-w-[620px] font-sans text-base leading-relaxed text-gray-600 md:text-lg" style={{ animationDelay: "1200ms" }}>
-        {HERO.subhead}
-      </p>
-
-      <div id="hero-cta" className="ai-rise mt-9" style={{ animationDelay: "1350ms" }}>
-        <BookCallButton source="hero" />
+      <div id="hero-cta" className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6 md:mt-12">
+        <BookCallButton source="hero" className="!bg-coral !text-white hover:!bg-dark !text-lg !px-9 !py-[1.15rem]" />
+        <ul className="flex flex-wrap gap-x-5 gap-y-2 font-sans text-[15px] font-medium text-dark">
+          {HERO.facts.map((fact) => (
+            <li key={fact} className="flex items-center gap-1.5">
+              <span className="text-coral" aria-hidden="true">✓</span>
+              {fact}
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
 }
 
-function Pains() {
+function Founders() {
   return (
     <section className="border-y border-[#F0F0F0] bg-light/60">
-      <div className="mx-auto grid max-w-[1100px] grid-cols-1 px-6 md:grid-cols-3 md:px-12">
-        {PAINS.map((pain, i) => (
-          <div
-            key={pain.title}
-            className={`py-9 md:px-8 md:py-14 ${i > 0 ? "border-t border-dark/10 md:border-l md:border-t-0" : ""} ${i === 0 ? "md:pl-0" : ""}`}
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/10 font-sans text-sm font-bold text-coral" aria-hidden="true">
-              ✕
+      <div className="mx-auto grid max-w-[1100px] gap-10 px-5 py-14 md:grid-cols-[1fr_1.1fr] md:items-center md:gap-14 md:px-12 md:py-24">
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
+          {FOUNDERS.people.map((p) => (
+            <figure key={p.name}>
+              <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-dark/5">
+                <Image src={p.photo} alt={p.name} fill sizes="(min-width: 768px) 260px, 45vw" className="object-cover object-top" />
+              </div>
+              <figcaption className="mt-3">
+                <p className="font-sans text-base font-bold text-dark md:text-lg">{p.name}</p>
+                <p className="font-sans text-sm text-gray-600">{p.role}</p>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+        <div>
+          <Label>{FOUNDERS.label}</Label>
+          <h2 className="mt-4 font-serif leading-[1.1] text-dark" style={{ fontSize: "clamp(2rem, 4.4vw, 3.2rem)" }}>
+            {FOUNDERS.heading}
+          </h2>
+          <ul className="mt-6 space-y-3">
+            {FOUNDERS.lines.map((line) => (
+              <li key={line} className="flex gap-3 font-sans text-lg leading-snug text-dark md:text-xl">
+                <span className="mt-[0.1em] text-coral" aria-hidden="true">✓</span>
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Line icons, 24px grid, drawn with the current text colour.
+const ICONS: Record<string, React.ReactNode> = {
+  keyboard: <><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10" /></>,
+  rupee: <path d="M6 3h12M6 8h12M6 13l8.5 8M6 13h3a5 5 0 0 0 0-10" />,
+  chart: <path d="M3 3v18h18M7 16v-4M12 16V8M17 16v-7" />,
+  chat: <path d="M21 12a8 8 0 0 1-11.8 7L3 21l2-6.2A8 8 0 1 1 21 12z" />,
+  box: <><path d="M21 8l-9-5-9 5 9 5 9-5z" /><path d="M3 8v8l9 5 9-5V8M12 13v8" /></>,
+  check: <><circle cx="12" cy="12" r="9" /><path d="M8 12l3 3 5-6" /></>,
+};
+
+function Icon({ name }: { name: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {ICONS[name]}
+    </svg>
+  );
+}
+
+function Jobs() {
+  return (
+    <section className="mx-auto max-w-[1100px] px-5 py-14 md:px-12 md:py-24">
+      <Label>{JOBS.label}</Label>
+      <h2 className="mt-4 max-w-[760px] font-serif leading-[1.1] text-dark" style={{ fontSize: "clamp(2rem, 4.4vw, 3.2rem)" }}>
+        {JOBS.heading}
+      </h2>
+      <div className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+        {JOBS.items.map((job) => (
+          <div key={job.title} className="rounded-2xl border border-dark/10 p-5 md:p-7">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-coral/10 text-coral">
+              <Icon name={job.icon} />
             </span>
-            <h2 className="mt-5 font-serif text-2xl leading-snug text-dark">{pain.title}</h2>
-            <p className="mt-2 font-sans text-[15px] leading-relaxed text-gray-600">{pain.body}</p>
+            <h3 className="mt-4 font-sans text-lg font-bold text-dark md:text-xl">{job.title}</h3>
+            <p className="mt-1 font-sans text-[15px] leading-snug text-gray-600 md:text-base">{job.body}</p>
           </div>
         ))}
       </div>
@@ -123,107 +157,62 @@ function Pains() {
 
 function Proof() {
   return (
-    <section className="ai-on-dark ai-static bg-dark text-white">
-      <div className="mx-auto max-w-[1100px] px-6 py-16 md:px-12 md:py-28">
-        <p className="font-mono text-xs tracking-[0.05em] text-coral">{"// proof"}</p>
-        <h2 className="mt-5 font-serif leading-[1.1]" style={{ fontSize: "clamp(2.1rem, 5vw, 3.8rem)" }}>
-          {PROOF_HEADING}
-        </h2>
-
-        <div className="mt-12 grid grid-cols-1 gap-px overflow-hidden rounded-2xl bg-white/15 md:mt-16 md:grid-cols-2">
-          {CASES.map((c) => (
-            <article key={c.sector} className="bg-dark p-7 md:p-10">
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-coral">{c.sector}</p>
-              <p className="mt-4 font-sans text-[15px] leading-relaxed text-white/70">{c.context}</p>
-              <div className="mt-8">
-                <Figure before={c.before} after={c.after} size="clamp(2.6rem, 9vw, 4.6rem)" />
-                <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-white/50">{c.unit}</p>
-              </div>
-              <p className="mt-8 border-t border-white/15 pt-5 font-sans text-base leading-relaxed text-white">
-                {c.outcome}
-              </p>
-            </article>
-          ))}
+    <section className="bg-dark text-white">
+      <div className="mx-auto grid max-w-[1100px] gap-10 px-5 py-14 md:grid-cols-2 md:items-end md:px-12 md:py-24">
+        <div>
+          <Label dark>{PROOF.label}</Label>
+          <h2 className="mt-4 font-serif leading-[1.05]" style={{ fontSize: "clamp(2.2rem, 5vw, 3.8rem)" }}>
+            {PROOF.heading}
+          </h2>
         </div>
+        <dl>
+          {PROOF.rows.map((row) => (
+            <div key={row.label} className="flex items-baseline justify-between gap-6 border-t border-white/20 py-5">
+              <dt className="font-sans text-base text-white/70 md:text-lg">{row.label}</dt>
+              <dd className="ai-lining font-sans text-4xl font-extrabold tracking-[-0.02em] text-[#FF9E82] md:text-5xl">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
       <div id="proof-end" aria-hidden="true" />
     </section>
   );
 }
 
-function HowItWorks() {
+function Steps() {
   return (
-    <section className="mx-auto max-w-[1100px] px-6 py-16 md:px-12 md:py-28">
-      <p className="section-label">{"// how it works"}</p>
-      <ol className="border-b border-dark/10">
-        {STEPS.map((step) => (
-          <li key={step.n} className="grid grid-cols-[3rem_1fr] gap-x-4 border-t border-dark/10 py-7 md:grid-cols-[5rem_14rem_1fr] md:items-baseline md:py-9">
-            <span className="font-mono text-sm text-coral">{step.n}</span>
+    <section className="mx-auto max-w-[1100px] px-5 py-14 md:px-12 md:py-24">
+      <Label>{STEPS.label}</Label>
+      <ol className="mt-8 grid gap-3 md:grid-cols-3 md:gap-4">
+        {STEPS.items.map((step) => (
+          <li key={step.n} className="flex gap-4 rounded-2xl bg-light/70 p-5 md:flex-col md:p-7">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-coral font-sans text-lg font-bold text-white">
+              {step.n}
+            </span>
             <div>
-              <h3 className="font-serif text-2xl text-dark md:text-3xl">{step.title}</h3>
-              <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{step.meta}</p>
+              <h3 className="font-sans text-xl font-bold text-dark">{step.title}</h3>
+              <p className="mt-1 font-sans text-base leading-snug text-gray-600">{step.body}</p>
             </div>
-            <p className="col-start-2 mt-3 font-sans text-[15px] leading-relaxed text-gray-600 md:col-start-3 md:mt-0 md:text-base">
-              {step.body}
-            </p>
           </li>
         ))}
       </ol>
-
-      <div className="mt-14 grid grid-cols-1 gap-8 rounded-2xl border border-dark/10 p-7 md:mt-20 md:grid-cols-2 md:gap-14 md:p-12">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-coral">The audit</p>
-          <h2 className="mt-4 font-serif leading-[1.15] text-dark" style={{ fontSize: "clamp(1.8rem, 3.6vw, 2.8rem)" }}>
-            {AUDIT_OFFER.heading}
-          </h2>
-        </div>
-        <dl className="self-end">
-          {AUDIT_OFFER.rows.map((row, i) => {
-            const last = i === AUDIT_OFFER.rows.length - 1;
-            return (
-              <div key={row.label} className={`flex items-baseline justify-between gap-6 border-t py-3.5 ${last ? "border-dark" : "border-dark/10"}`}>
-                <dt className={`font-sans text-[15px] ${last ? "font-medium text-dark" : "text-gray-600"}`}>{row.label}</dt>
-                <dd className={`font-serif text-xl ${last ? "text-coral" : "text-dark"}`}>{row.value}</dd>
-              </div>
-            );
-          })}
-        </dl>
-      </div>
     </section>
   );
 }
 
-function Reassurance() {
+function Trust() {
   return (
     <section className="border-t border-[#F0F0F0]">
-      <div className="mx-auto grid max-w-[1100px] grid-cols-1 gap-8 px-6 py-14 md:grid-cols-3 md:gap-12 md:px-12 md:py-20">
-        {REASSURANCE.map((item) => (
-          <div key={item.title}>
-            <h3 className="font-serif text-xl text-dark">{item.title}</h3>
-            <p className="mt-2 font-sans text-[15px] leading-relaxed text-gray-600">{item.body}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Faq() {
-  return (
-    <section className="ai-faq mx-auto max-w-[820px] px-6 pb-16 md:px-12 md:pb-28">
-      <p className="section-label">{"// questions"}</p>
-      <div className="border-b border-dark/10">
-        {FAQS.map((faq) => (
-          <details key={faq.question} className="border-t border-dark/10">
-            <summary className="flex items-center justify-between gap-6 py-5 font-serif text-xl text-dark md:text-2xl">
-              {faq.question}
-              <span className="ai-faq-mark shrink-0 font-sans text-2xl text-coral transition-transform duration-300" aria-hidden="true">
-                +
-              </span>
-            </summary>
-            <p className="pb-6 pr-10 font-sans text-base leading-relaxed text-gray-600">{faq.answer}</p>
-          </details>
-        ))}
+      <div className="mx-auto max-w-[1100px] px-5 py-14 md:px-12 md:py-20">
+        <Label>{TRUST.label}</Label>
+        <div className="mt-8 grid gap-6 md:grid-cols-3 md:gap-12">
+          {TRUST.items.map((item) => (
+            <div key={item.title} className="border-l-2 border-coral pl-4">
+              <h3 className="font-sans text-xl font-bold text-dark">{item.title}</h3>
+              <p className="mt-1 font-sans text-base leading-snug text-gray-600">{item.body}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -232,13 +221,13 @@ function Faq() {
 function Close() {
   return (
     <section className="bg-dark text-white">
-      <div className="mx-auto max-w-[1100px] px-6 pb-32 pt-16 md:px-12 md:py-28">
-        <h2 className="max-w-[760px] font-serif leading-[1.08]" style={{ fontSize: "clamp(2.3rem, 6vw, 4.6rem)" }}>
+      <div className="mx-auto max-w-[1100px] px-5 pb-32 pt-16 md:px-12 md:py-24">
+        <h2 className="max-w-[760px] font-serif leading-[1.08]" style={{ fontSize: "clamp(2.2rem, 5.6vw, 4.2rem)" }}>
           {CLOSE.heading}
         </h2>
-        <p className="mt-6 max-w-[560px] font-sans text-base leading-relaxed text-white/70 md:text-lg">{CLOSE.body}</p>
-        <div className="mt-10">
-          <BookCallButton source="close" tone="light" />
+        <p className="mt-5 font-sans text-lg text-white/75 md:text-xl">{CLOSE.body}</p>
+        <div className="mt-9">
+          <BookCallButton source="close" className="!bg-coral !text-white hover:!bg-white hover:!text-dark !text-lg !px-9 !py-[1.15rem]" />
         </div>
         <p className="mt-16 font-mono text-[11px] uppercase tracking-[0.16em] text-white/40">
           GOATED<span className="text-coral">.</span> · Mumbai
@@ -258,13 +247,13 @@ export default function AiLandingPage({
   return (
     <AdTracking variant={variant}>
       <main>
-        <Hero variant={variant} />
-        <Pains />
+        <Hero />
+        <Founders />
+        <Jobs />
         <Proof />
-        <LogoTicker only={CAMPAIGN_LOGOS} />
-        <HowItWorks />
-        <Reassurance />
-        <Faq />
+        <Steps />
+        <Trust />
+        <LogoTicker only={CAMPAIGN_LOGOS} label={`// ${CLIENTS_LABEL.toLowerCase()}`} />
         <Close />
       </main>
       <StickyBookCall />

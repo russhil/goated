@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 
-const logos: { name: string; file: string; width?: number }[] = [
+const logos: { name: string; file: string; width?: number; height?: number }[] = [
   { name: 'Azadi Records', file: 'logos/azadi.png' },
   { name: 'NBA', file: 'logos/nba.png' },
   { name: 'DlaN5', file: 'DlaN5 NP.png' },
@@ -10,7 +10,7 @@ const logos: { name: string; file: string; width?: number }[] = [
   { name: 'Everest Fleet', file: 'logos/everestfleet.png' },
   { name: 'KPMG', file: 'KPMG Blue Logo.webp' },
   { name: 'Partner', file: 'logos/partner1.png' },
-  { name: 'Wear World Peace', file: 'logos/wearworldpeace.png', width: 80 },
+  { name: 'Wear World Peace', file: 'logos/wearworldpeace.png', width: 300, height: 17 },
 ];
 
 const newsLogos = [
@@ -22,7 +22,7 @@ const newsLogos = [
   { name: 'Radio Mirchi', file: 'logos/news/radiomirchi.png' },
 ];
 
-export default function LogoTicker({ only }: { only?: string[] }) {
+export default function LogoTicker({ only, label = '// worked alongside' }: { only?: string[]; label?: string }) {
   const shown = only ? logos.filter((logo) => only.includes(logo.name)) : logos;
   // Duplicate 2x for seamless infinite loop
   const allLogos = [...shown, ...shown];
@@ -31,7 +31,7 @@ export default function LogoTicker({ only }: { only?: string[] }) {
     <section className="py-10 md:py-16 border-y border-[#F0F0F0] overflow-hidden">
       {/* Label */}
       <p className="font-mono text-[11px] tracking-[0.2em] text-coral text-center mb-10 lowercase">
-        {'// worked alongside'}
+        {label}
       </p>
 
       {/* Ticker wrapper */}
@@ -45,6 +45,7 @@ export default function LogoTicker({ only }: { only?: string[] }) {
                 width={logo.width ?? 120}
                 height={32}
                 loading="lazy"
+                style={logo.height ? { height: logo.height } : undefined}
               />
             </div>
           ))}
