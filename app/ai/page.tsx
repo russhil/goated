@@ -4,13 +4,15 @@ import LogoTicker from "@/components/LogoTicker";
 import AdTracking from "@/components/ai/AdTracking";
 import BookCallButton, { StickyBookCall } from "@/components/ai/BookCallButton";
 import FounderVideo from "@/components/ai/FounderVideo";
-import { CHANGE, CLOSE, HERO, PATH, PROBLEM, TRUST, resolveVariant } from "@/lib/ai/content";
+import CaseScroller from "@/components/ai/CaseScroller";
+import { CASES_INTRO, CLOSE, HERO, PATH, PROBLEM, TRUST, resolveVariant } from "@/lib/ai/content";
 import "./ai.css";
 
 const CAMPAIGN_LOGOS = ["NBA", "KPMG", "Everest Fleet", "Kiko Live", "DlaN5", "Wear World Peace", "Partner"];
 
 // Paid-traffic landing page. One argument, top to bottom, carried by the
-// headlines: problem, change, proof, path, trust, action. No navigation and
+// headlines: problem, three real cases wiping in on scroll, path, trust,
+// action. No navigation and
 // no outbound links; the only exit is the booking form.
 
 export const metadata: Metadata = {
@@ -29,15 +31,6 @@ function Facts({ items, dark = false }: { items: string[]; dark?: boolean }) {
     <p className={`font-sans text-base ${dark ? "text-white/70" : "text-gray-600"}`}>
       {items.join("  ·  ")}
     </p>
-  );
-}
-
-function Person({ dim = false }: { dim?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" className={`h-full w-full ${dim ? "text-white/15" : "text-coral"}`} fill="currentColor" aria-hidden="true">
-      <circle cx="12" cy="7" r="4" />
-      <path d="M4 22a8 8 0 0 1 16 0z" />
-    </svg>
   );
 }
 
@@ -85,28 +78,15 @@ function Problem() {
   );
 }
 
-function Change() {
-  const { before, after, line } = CHANGE.proof;
+function Cases() {
   return (
-    <section className="bg-dark text-white">
-      <div className="mx-auto grid max-w-[1100px] gap-12 px-5 py-20 md:grid-cols-[1fr_1fr] md:items-center md:gap-16 md:px-12 md:py-28">
-        <div>
-          <h2 className={H2} style={H2_SIZE}>
-            {CHANGE.headline}
-          </h2>
-          <p className="ai-lining mt-10 font-sans font-extrabold leading-none tracking-[-0.03em]" style={{ fontSize: "clamp(4rem, 11vw, 7rem)" }}>
-            {before} <span className="text-[#FF9E82]">→ {after}</span>
-          </p>
-          <p className="mt-4 font-sans text-lg text-white/70 md:text-xl">{line}</p>
-        </div>
-        <div className="grid grid-cols-5 gap-3 md:gap-4" role="img" aria-label={`${before} people became ${after}`}>
-          {Array.from({ length: before }, (_, i) => (
-            <span key={i} className="aspect-square p-1.5">
-              <Person dim={i >= after} />
-            </span>
-          ))}
-        </div>
+    <section>
+      <div className="mx-auto max-w-[1100px] px-5 pb-12 pt-20 md:px-12 md:pb-16 md:pt-28">
+        <h2 className={`${H2} max-w-[760px] text-dark`} style={H2_SIZE}>
+          {CASES_INTRO.headline}
+        </h2>
       </div>
+      <CaseScroller />
       <div id="proof-end" aria-hidden="true" />
     </section>
   );
@@ -197,7 +177,7 @@ export default function AiLandingPage({
       <main>
         <Hero />
         <Problem />
-        <Change />
+        <Cases />
         <Path />
         <Trust />
         <Close />

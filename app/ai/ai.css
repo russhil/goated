@@ -93,3 +93,24 @@
   .ai-after,
   .ai-rise { animation: none; opacity: 1; transform: none; }
 }
+
+/* Case-study demos: new messages and rows pop in; a scan line sweeps the
+   price list while AI reads it. */
+.ai-pop {
+  animation: aiPop 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes aiPop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.ai-scan {
+  background: linear-gradient(180deg, rgba(232, 83, 58, 0) 0%, rgba(232, 83, 58, 0.18) 60%, rgba(232, 83, 58, 0.55) 100%);
+  animation: aiScan 3.6s linear infinite;
+}
+@keyframes aiScan {
+  from { transform: translateY(0); }
+  to { transform: translateY(150px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-pop, .ai-scan { animation: none; }
+}
