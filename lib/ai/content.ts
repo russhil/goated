@@ -26,14 +26,12 @@ export const PROBLEM = {
   line: "Most of it is the same task, done again and again. AI can now do it.",
 };
 
-export const CASES_INTRO = {
-  headline: "Three businesses that stopped hiring for it.",
-};
-
 export type CaseStudy = {
   client: string;
   system: string;
   story: string;
+  beforeStat: string;
+  beforeUnit: string;
   saved: string;
   savedUnit: string;
   rows: { label: string; value: string }[];
@@ -48,6 +46,8 @@ export const CASES: CaseStudy[] = [
     client: "Pan-India laminate manufacturer",
     system: "AI order desk",
     story: "Dealers send orders on WhatsApp. AI enters them into the ERP.",
+    beforeStat: "15 people",
+    beforeUnit: "typing WhatsApp orders into the ERP",
     saved: "₹3.6 lakh",
     savedUnit: "saved every month",
     rows: [
@@ -62,6 +62,8 @@ export const CASES: CaseStudy[] = [
     client: "Electrical goods distributor",
     system: "Stock and quotes",
     story: "AI reads supplier price lists and makes quotes in one click.",
+    beforeStat: "30% of staff",
+    beforeUnit: "typing price lists and stock sheets",
     saved: "₹2 lakh",
     savedUnit: "saved every month",
     rows: [
@@ -76,6 +78,8 @@ export const CASES: CaseStudy[] = [
     client: "Azadi Records",
     system: "Royalty statements",
     story: "Every distributor's report, read and matched into one statement.",
+    beforeStat: "3 months",
+    beforeUnit: "to make one statement in Excel",
     saved: "3 months",
     savedUnit: "saved on every statement",
     rows: [

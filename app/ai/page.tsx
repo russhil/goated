@@ -5,7 +5,7 @@ import AdTracking from "@/components/ai/AdTracking";
 import BookCallButton, { StickyBookCall } from "@/components/ai/BookCallButton";
 import FounderVideo from "@/components/ai/FounderVideo";
 import CaseScroller from "@/components/ai/CaseScroller";
-import { CASES_INTRO, CLOSE, HERO, PATH, PROBLEM, TRUST, resolveVariant } from "@/lib/ai/content";
+import { CLOSE, HERO, PATH, PROBLEM, TRUST, resolveVariant } from "@/lib/ai/content";
 import "./ai.css";
 
 const CAMPAIGN_LOGOS = ["NBA", "KPMG", "Everest Fleet", "Kiko Live", "DlaN5", "Wear World Peace", "Partner"];
@@ -81,11 +81,6 @@ function Problem() {
 function Cases() {
   return (
     <section>
-      <div className="mx-auto max-w-[1100px] px-5 pb-12 pt-20 md:px-12 md:pb-16 md:pt-28">
-        <h2 className={`${H2} max-w-[760px] text-dark`} style={H2_SIZE}>
-          {CASES_INTRO.headline}
-        </h2>
-      </div>
       <CaseScroller />
       <div id="proof-end" aria-hidden="true" />
     </section>

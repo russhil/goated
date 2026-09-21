@@ -19,13 +19,14 @@ function useTicker(active: boolean, length: number, ms: number, start = 0) {
   return step;
 }
 
+// The same kind of messages as the "before", now parsed by AI.
 const ORDERS = [
-  { from: "Sharma Traders, Pune", text: "200 sheet white gloss 1mm bhej do", item: "White Gloss 1mm", qty: 200 },
-  { from: "Om Laminates, Surat", text: "Teak matte 0.8 ke 50 sheet chahiye", item: "Teak Matte 0.8mm", qty: 50 },
-  { from: "Kapoor Interiors", text: "Grey suede 1mm 120 sheet urgent chahiye", item: "Grey Suede 1mm", qty: 120 },
-  { from: "Jain Plywood, Indore", text: "Walnut 1mm 80 sheet same rate pe", item: "Walnut 1mm", qty: 80 },
-  { from: "Mehta Traders, Nagpur", text: "Ivory gloss 1mm 150 sheet kal tak", item: "Ivory Gloss 1mm", qty: 150 },
-  { from: "Patel Decor, Rajkot", text: "Oak matte 0.8 ke 60 sheet", item: "Oak Matte 0.8mm", qty: 60 },
+  { from: "Dealer, Chennai", text: "Sf 129 - 20\nSf 135 - 10\nOrder conform", item: "SF 129 + SF 135", qty: 30 },
+  { from: "Dealer, Pune", text: "Cw 1081 - 10 order conform", item: "CW 1081", qty: 10 },
+  { from: "Dealer, Surat", text: "Vv 8889 - 30\nOrder conform", item: "VV 8889", qty: 30 },
+  { from: "Dealer, Indore", text: "ZM 162 - 56 order confirmed send it today", item: "ZM 162", qty: 56 },
+  { from: "Dealer, Nagpur", text: "Rkd 95013 - 6 order conform", item: "RKD 95013", qty: 6 },
+  { from: "Dealer, Rajkot", text: "Sf 9043 - 10 order conform", item: "SF 9043", qty: 10 },
 ];
 
 // A continuous stream: a WhatsApp order arrives on the left, and a beat later
@@ -48,14 +49,14 @@ export function OrderDeskDemo({ active }: { active: boolean }) {
           {messages.map((o) => (
             <div key={o.key} className="ai-pop rounded-lg rounded-tl-none bg-white px-2.5 py-1.5 shadow-[0_1px_0_rgba(0,0,0,0.12)]">
               <p className="font-sans text-[10px] font-bold text-[#128C7E] md:text-xs">{o.from}</p>
-              <p className="font-sans text-[11px] leading-snug text-dark md:text-sm">{o.text}</p>
+              <p className="whitespace-pre-line font-sans text-[11px] leading-snug text-dark md:text-sm">{o.text}</p>
             </div>
           ))}
         </div>
       </div>
       <div className="flex flex-col overflow-hidden rounded-2xl bg-white ring-1 ring-dark/10">
         <p className="flex items-center justify-between gap-2 bg-dark px-3 py-2 font-sans text-[12px] font-semibold text-white md:text-sm">
-          ERP<span className="hidden md:inline"> · Sales orders</span>
+          <span>ERP<span className="hidden md:inline"> · Sales orders</span></span>
           <span className="rounded-full bg-coral px-2 py-0.5 text-[10px] md:text-[11px]">AI</span>
         </p>
         <div className="flex-1 divide-y divide-dark/[0.07] overflow-hidden px-2.5 md:px-3">
@@ -63,7 +64,7 @@ export function OrderDeskDemo({ active }: { active: boolean }) {
             <div key={o.key} className="ai-pop flex items-center justify-between gap-2 py-2">
               <div className="min-w-0">
                 <p className="truncate font-sans text-[11px] font-semibold text-dark md:text-sm">{o.item}</p>
-                <p className="truncate font-sans text-[10px] text-gray-500 md:text-xs">{o.from.split(",")[0]}</p>
+                <p className="truncate font-sans text-[10px] text-gray-500 md:text-xs">{o.from}</p>
               </div>
               <p className="ai-lining shrink-0 font-sans text-[11px] font-bold text-dark md:text-sm">
                 {o.qty} <span className="ml-1 text-[#1a7f4b]">✓</span>
@@ -76,11 +77,12 @@ export function OrderDeskDemo({ active }: { active: boolean }) {
   );
 }
 
+// Real rows from the scanned price list in the "before".
 const PRICES = [
-  { item: "Ceiling fan 1200mm", from: "2,150", to: "2,290" },
-  { item: "Wire 1.5 sq mm, 90 m", from: "1,840", to: "1,920" },
-  { item: "MCB 32A double pole", from: "612", to: "648" },
-  { item: "Modular switch 6A", from: "84", to: "91" },
+  { item: "DX3 MCB C 6-32A SP", code: "MCB", price: "494" },
+  { item: "RCCB 25A DP 30mA", code: "411851", price: "5,478" },
+  { item: "Isolator 63A DP", code: "ISO", price: "1,290" },
+  { item: "RCBO 16A DP 30mA", code: "411324", price: "6,974" },
 ];
 
 // A scanned supplier price list is read line by line and the catalogue
@@ -95,7 +97,7 @@ export function DistributorDemo({ active }: { active: boolean }) {
     <div className="grid h-full grid-rows-[1fr_auto] gap-2.5 md:gap-4">
       <div className="relative overflow-hidden rounded-2xl bg-white ring-1 ring-dark/10">
         <p className="flex items-center justify-between bg-dark px-3 py-2 font-sans text-[12px] font-semibold text-white md:text-sm">
-          <span>Supplier price list<span className="hidden md:inline"> · scanned PDF</span></span>
+          <span>Catalogue<span className="hidden md:inline"> · from supplier PDF</span></span>
           <span className="rounded-full bg-coral px-2 py-0.5 text-[10px] md:text-[11px]">AI reading</span>
         </p>
         <div className="divide-y divide-dark/[0.07] px-3">
@@ -105,11 +107,10 @@ export function DistributorDemo({ active }: { active: boolean }) {
               <p className="ai-lining shrink-0 font-sans text-[11px] md:text-sm">
                 {i < read ? (
                   <>
-                    <span className="text-gray-400 line-through">₹{p.from}</span>{" "}
-                    <span className="font-bold text-dark">₹{p.to}</span> <span className="text-[#1a7f4b]">✓</span>
+                    <span className="font-bold text-dark">₹{p.price}</span> <span className="text-[#1a7f4b]">✓</span>
                   </>
                 ) : (
-                  <span className="text-gray-400">₹{p.from}</span>
+                  <span className="text-gray-300">reading</span>
                 )}
               </p>
             </div>
@@ -120,12 +121,12 @@ export function DistributorDemo({ active }: { active: boolean }) {
       <div className="flex min-h-[4.5rem] items-end gap-2 rounded-2xl bg-[#ECE5DD] p-2 md:min-h-[5.5rem] md:p-3">
         {quoteAsked && (
           <p className="ai-pop rounded-lg rounded-tl-none bg-white px-2.5 py-1.5 font-sans text-[11px] leading-snug text-dark shadow-[0_1px_0_rgba(0,0,0,0.12)] md:text-sm">
-            20 fans aur 10 MCB ka quote bhejo
+            10 MCB aur 4 RCCB ka quote bhejo
           </p>
         )}
         {quoteReady && (
           <p className="ai-pop ml-auto rounded-lg rounded-tr-none bg-[#DCF8C6] px-2.5 py-1.5 font-sans text-[11px] leading-snug text-dark shadow-[0_1px_0_rgba(0,0,0,0.12)] md:text-sm">
-            <span className="font-bold">Quote ready</span> · 30 items · PDF sent
+            <span className="font-bold">Quote ready</span> · 14 items · PDF sent
           </p>
         )}
       </div>
