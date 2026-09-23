@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Cal, { getCalApi } from "@calcom/embed-react";
+import { getCalApi } from "@calcom/embed-react";
 import { CAL_LINK } from "@/lib/booking";
 import { REVENUE_BANDS, validateLead, type LeadErrors, type LeadInput } from "@/lib/ai/lead";
 
@@ -28,12 +28,11 @@ const inputClass =
 const labelClass = "mb-2 block font-mono text-[10px] uppercase tracking-widest text-muted";
 
 export default function LeadModal({ isOpen, onClose, getContext, onLead, onScheduled }: Props) {
-  const [step, setStep] = useState<"form" | "thanks" | "calendar">("form");
+  const [step, setStep] = useState<"form">("form");
   const [input, setInput] = useState<LeadInput>(EMPTY);
   const [errors, setErrors] = useState<LeadErrors>({});
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [calConfig, setCalConfig] = useState<Record<string, string>>({});
   const [honeypot, setHoneypot] = useState("");
 
   useEffect(() => {
@@ -111,8 +110,14 @@ export default function LeadModal({ isOpen, onClose, getContext, onLead, onSched
       for (const [key, value] of Object.entries(meta)) {
         if (value) config[`metadata[${key}]`] = value;
       }
-      setCalConfig(config);
-      setStep("thanks");
+      // Hand the calendar its prefill without putting personal data in the URL.
+      try {
+        sessionStorage.setItem("goated_cal_prefill", JSON.stringify(config));
+      } catch {
+        // Private mode: the visitor just types the details again.
+      }
+      window.location.assign("/thankyou?from=site");
+      return;
     } catch {
       setFormError("Network error: retry.");
     }
@@ -133,7 +138,7 @@ export default function LeadModal({ isOpen, onClose, getContext, onLead, onSched
         aria-modal="true"
         aria-label="Book a call"
         className={`relative flex h-full w-full flex-col overflow-hidden bg-white shadow-2xl transition-all duration-300 md:mx-6 md:rounded-2xl ${
-          step === "calendar" ? "md:h-[88vh] md:max-w-[1100px]" : "md:h-auto md:max-h-[92vh] md:max-w-[560px]"
+          "md:h-auto md:max-h-[92vh] md:max-w-[560px]"
         } ${isOpen ? "translate-y-0 scale-100" : "translate-y-4 scale-95"}`}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-dark/10 px-4 py-3 md:px-5">
@@ -142,7 +147,7 @@ export default function LeadModal({ isOpen, onClose, getContext, onLead, onSched
             <span className="font-bold">GOATED</span>
             <span className="font-bold text-coral">.</span>
             <span>]</span>
-            <span className="ml-3 text-muted">{step === "form" ? "1 / 2" : "2 / 2"}</span>
+            <span className="ml-3 text-muted">Book a call</span>
           </div>
           <button
             type="button"
@@ -172,7 +177,7 @@ export default function LeadModal({ isOpen, onClose, getContext, onLead, onSched
               </div>
 
               <div>
-                <label htmlFor="lead-email" className={labelClass}>Work email</label>
+                <label htmlFor="lead-email" className={labelClass}>Email</label>
                 <input id="lead-email" type="email" inputMode="email" autoComplete="email" placeholder="name@company.com" value={input.email} onChange={set("email")} className={inputClass} aria-invalid={Boolean(errors.email)} />
                 {errors.email && <p className="mt-1.5 font-sans text-sm text-red-600">{errors.email}</p>}
               </div>
@@ -228,38 +233,6 @@ export default function LeadModal({ isOpen, onClose, getContext, onLead, onSched
             </form>
           )}
 
-          {step === "thanks" && (
-            <div className="flex flex-col gap-5 px-6 py-10 md:px-9">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-coral/10 font-sans text-2xl text-coral" aria-hidden="true">
-                ✓
-              </span>
-              <div>
-                <h2 className="font-serif text-3xl leading-tight text-dark">Thank you, we have your details.</h2>
-                <p className="mt-2 font-sans text-base text-gray-600">A founder will get back to you on WhatsApp, phone or email.</p>
-              </div>
-              <div className="border-t border-dark/10 pt-5">
-                <p className="font-sans text-base font-semibold text-dark">Pick a time yourself</p>
-                <p className="mt-1 font-sans text-sm text-muted">30 minutes with a founder, free.</p>
-                <button
-                  type="button"
-                  onClick={() => setStep("calendar")}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-coral px-7 py-4 font-sans text-base font-medium text-white transition-colors duration-300 hover:bg-dark sm:w-auto"
-                >
-                  Schedule a call now
-                  <span aria-hidden="true">→</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === "calendar" && (
-            <Cal
-              namespace={CAL_NAMESPACE}
-              calLink={CAL_LINK}
-              style={{ width: "100%", height: "100%", minHeight: "100%" }}
-              config={{ layout: "month_view", theme: "light", ...calConfig }}
-            />
-          )}
         </div>
       </div>
     </div>

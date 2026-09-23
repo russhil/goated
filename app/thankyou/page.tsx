@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ScheduleCall from "@/components/ai/ScheduleCall";
+import ThankYouTracking from "@/components/ai/ThankYouTracking";
 
 // Where every lead form lands: the Meta Instant Form's thank-you button and
 // the site form both end here. The details are already in; booking a time is
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 export default function ThankYouPage() {
   return (
     <main className="mx-auto flex min-h-[100svh] max-w-[720px] flex-col justify-center px-5 py-16 md:px-10">
+      <ThankYouTracking />
       <p className="font-mono text-sm tracking-tight">
         [<span className="font-bold">GOATED</span>
         <span className="font-bold text-coral">.</span>]

@@ -10,6 +10,18 @@ const NAMESPACE = "thankyou-call";
 
 export default function ScheduleCall() {
   const [open, setOpen] = useState(false);
+  const [prefill, setPrefill] = useState<Record<string, string>>({});
+
+  // The site form leaves its answers here so the calendar arrives filled in,
+  // without personal data travelling in the URL.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("goated_cal_prefill");
+      if (raw) setPrefill(JSON.parse(raw) as Record<string, string>);
+    } catch {
+      // Nothing stored: the visitor types the details into the calendar.
+    }
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -39,7 +51,7 @@ export default function ScheduleCall() {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-dark/10">
-      <Cal namespace={NAMESPACE} calLink={CAL_LINK} style={{ width: "100%", height: "640px", overflow: "scroll" }} config={{ layout: "month_view" }} />
+      <Cal namespace={NAMESPACE} calLink={CAL_LINK} style={{ width: "100%", height: "640px", overflow: "scroll" }} config={{ layout: "month_view", theme: "light", ...prefill }} />
     </div>
   );
 }

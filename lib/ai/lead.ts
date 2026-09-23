@@ -48,8 +48,9 @@ export function validateLead(input: LeadInput): LeadErrors {
   const name = input.name.trim();
   if (name.length < 2 || name.length > 100) errors.name = "Enter your name.";
 
+  // Any mailbox is accepted (founder, 2026-09-22): owners on phones often have
+  // no work address to hand. isCompanyEmail still tags the lead for scoring.
   if (!emailDomain(input.email)) errors.email = "Enter a valid email address.";
-  else if (!isCompanyEmail(input.email)) errors.email = "Use a company email address.";
 
   const company = input.company.trim();
   if (company.length < 2 || company.length > 120) errors.company = "Enter your company name.";
