@@ -10,3 +10,8 @@ tsconfig.tsbuildinfo
 # misc
 .DS_Store
 *.log
+
+# Ads scripts and staged campaign data stay local: this repo is public.
+scripts/ads/
+ads/
+docs/ads/
