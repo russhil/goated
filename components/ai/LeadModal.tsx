@@ -28,7 +28,7 @@ const inputClass =
 const labelClass = "mb-2 block font-mono text-[10px] uppercase tracking-widest text-muted";
 
 export default function LeadModal({ isOpen, onClose, getContext, onLead, onScheduled }: Props) {
-  const [step, setStep] = useState<"form" | "calendar">("form");
+  const [step, setStep] = useState<"form" | "thanks" | "calendar">("form");
   const [input, setInput] = useState<LeadInput>(EMPTY);
   const [errors, setErrors] = useState<LeadErrors>({});
   const [formError, setFormError] = useState("");
@@ -112,7 +112,7 @@ export default function LeadModal({ isOpen, onClose, getContext, onLead, onSched
         if (value) config[`metadata[${key}]`] = value;
       }
       setCalConfig(config);
-      setStep("calendar");
+      setStep("thanks");
     } catch {
       setFormError("Network error: retry.");
     }
@@ -162,7 +162,7 @@ export default function LeadModal({ isOpen, onClose, getContext, onLead, onSched
             <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5 px-6 py-7 md:px-9 md:py-9">
               <div>
                 <h2 className="font-serif text-3xl leading-tight text-dark">Book the call</h2>
-                <p className="mt-2 font-sans text-sm text-muted">Calendar opens after this form.</p>
+                <p className="mt-2 font-sans text-sm text-muted">A founder replies on WhatsApp, phone or email.</p>
               </div>
 
               <div>
@@ -219,13 +219,37 @@ export default function LeadModal({ isOpen, onClose, getContext, onLead, onSched
                 disabled={submitting}
                 className="group mt-1 inline-flex w-full items-center justify-center gap-2 rounded-full bg-dark px-7 py-4 font-sans text-base font-medium text-white transition-colors duration-300 hover:bg-coral disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {submitting ? "Saving" : "Continue to calendar"}
+                {submitting ? "Saving" : "Send my details"}
                 <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">→</span>
               </button>
               <a href="/privacy" target="_blank" rel="noopener" className="self-center font-mono text-[10px] uppercase tracking-widest text-muted hover:text-dark">
                 Privacy policy
               </a>
             </form>
+          )}
+
+          {step === "thanks" && (
+            <div className="flex flex-col gap-5 px-6 py-10 md:px-9">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-coral/10 font-sans text-2xl text-coral" aria-hidden="true">
+                ✓
+              </span>
+              <div>
+                <h2 className="font-serif text-3xl leading-tight text-dark">Thank you, we have your details.</h2>
+                <p className="mt-2 font-sans text-base text-gray-600">A founder will get back to you on WhatsApp, phone or email.</p>
+              </div>
+              <div className="border-t border-dark/10 pt-5">
+                <p className="font-sans text-base font-semibold text-dark">Pick a time yourself</p>
+                <p className="mt-1 font-sans text-sm text-muted">30 minutes with a founder, free.</p>
+                <button
+                  type="button"
+                  onClick={() => setStep("calendar")}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-coral px-7 py-4 font-sans text-base font-medium text-white transition-colors duration-300 hover:bg-dark sm:w-auto"
+                >
+                  Schedule a call now
+                  <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            </div>
           )}
 
           {step === "calendar" && (
